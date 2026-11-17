@@ -1,0 +1,18 @@
+[package]
+name = "tiny-desk-spirit"
+version = "0.1.0"
+description = "A quiet pixel-art desktop companion for macOS and Windows"
+edition = "2024"
+rust-version = "1.90"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "tiny_desk_spirit_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.7.5", features = [] }
+
+[dependencies]
+tauri = { version = "2.12.6", features = ["tray-icon"] }
