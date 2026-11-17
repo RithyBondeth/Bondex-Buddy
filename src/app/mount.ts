@@ -1,8 +1,11 @@
 import { FOCUS_MS, SpiritEngine, formatCountdown } from '../engine/spirit';
 import type { Mood } from '../engine/spirit';
+import { Ambience } from '../audio/ambience';
+import { AnimationClock } from '../rendering/animation-clock';
 import {
   observeActivity,
   observeHover,
+  observeVisibility,
   isDesktop,
   revealHabitat,
   setControlsVisible,
@@ -12,6 +15,8 @@ import { createHabitatRenderer } from '../rendering/habitat';
 
 export async function mountApp(root: HTMLElement): Promise<() => void> {
   const engine = new SpiritEngine(Date.now());
+  const audio = new Ambience();
+  const motion = matchMedia('(prefers-reduced-motion: reduce)');
   const habitat = document.createElement('div');
   habitat.className = 'habitat';
   const pet = document.createElement('button');
@@ -34,7 +39,14 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   reset.type = 'button';
   reset.textContent = 'Reset';
   reset.setAttribute('aria-label', 'Reset session without completion');
-  controls.append(toggle, reset);
+  const sound = document.createElement('button');
+  sound.type = 'button';
+  sound.textContent = 'Muted';
+  sound.setAttribute('aria-label', 'Enable rain ambience and gentle chimes');
+  sound.setAttribute('aria-pressed', 'false');
+  sound.title =
+    'Sound is off by default. Enable quiet procedural rain and chimes.';
+  controls.append(toggle, reset, sound);
   const moodLabel = document.createElement('p');
   moodLabel.className = 'mood-label';
   const announcement = document.createElement('span');
@@ -48,6 +60,10 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   let hovering = false;
   let visible = false;
   let lastMood: Mood | undefined;
+  let moodStartedAt = performance.now();
+  let lastMask: number[] | undefined;
+  let completed = 0;
+  let habitatVisible = false;
   let lastAnnouncement = '';
   // Serialize native updates so older masks or hover commands cannot overtake new ones.
   let updates = Promise.resolve();
@@ -91,10 +107,14 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     const snapshot = engine.read(now, date.getHours() * 60 + date.getMinutes());
     let mask: number[] | undefined;
     if (lastMood !== snapshot.mood) {
-      mask = renderer.draw(snapshot.mood);
+      moodStartedAt = performance.now();
+      mask = renderer.draw(snapshot.mood, 0, motion.matches);
+      lastMask = mask;
       if (!initial) enqueue(() => updateHitMask(mask!));
       lastMood = snapshot.mood;
     }
+    if (snapshot.completedFocusSessions > completed) audio.chime(true);
+    completed = snapshot.completedFocusSessions;
     const timer = snapshot.timer;
     const label = timer
       ? timer.status === 'paused'
@@ -135,8 +155,27 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     engine.observeActivity(reading, Date.now());
     render();
   });
+  const animation = new AnimationClock((time, reduced) => {
+    const mask = renderer.draw(
+      lastMood ?? 'Idle',
+      time - moodStartedAt,
+      reduced,
+    );
+    if (mask !== lastMask) {
+      lastMask = mask;
+      enqueue(() => updateHitMask(mask));
+    }
+  });
+  const syncMotion = () => animation.setState(habitatVisible, motion.matches);
+  motion.addEventListener('change', syncMotion);
+  const unsubscribeVisibility = await observeVisibility((visible) => {
+    habitatVisible = visible;
+    audio.setVisible(visible);
+    syncMotion();
+  });
   pet.addEventListener('click', () => {
     engine.interact(Date.now());
+    audio.chime();
     render();
   });
   toggle.addEventListener('click', () => {
@@ -147,12 +186,42 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     engine.resetTimer(Date.now());
     render();
   });
+  sound.addEventListener('click', () => {
+    sound.disabled = true;
+    void audio
+      .setEnabled(!audio.enabled)
+      .then((enabled) => {
+        sound.textContent = enabled ? 'Sound' : 'Muted';
+        sound.title = enabled
+          ? 'Mute rain ambience and chimes.'
+          : 'Enable quiet procedural rain and chimes.';
+        sound.setAttribute('aria-pressed', String(enabled));
+        sound.setAttribute(
+          'aria-label',
+          enabled
+            ? 'Mute ambience and chimes'
+            : 'Enable rain ambience and gentle chimes',
+        );
+      })
+      .catch(() => {
+        sound.textContent = 'Retry';
+        sound.title = 'Audio could not start. Click to try again.';
+        sound.setAttribute('aria-pressed', 'false');
+      })
+      .finally(() => {
+        sound.disabled = false;
+      });
+  });
   const interval = setInterval(render, 1000);
   const dispose = () => {
     disposed = true;
     clearInterval(interval);
     unsubscribeHover();
     unsubscribeActivity();
+    unsubscribeVisibility();
+    motion.removeEventListener('change', syncMotion);
+    animation.dispose();
+    audio.dispose();
     window.removeEventListener('focus', updateControls);
     window.removeEventListener('blur', updateControls);
     window.removeEventListener('beforeunload', dispose);

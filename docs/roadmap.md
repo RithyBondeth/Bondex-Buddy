@@ -38,13 +38,18 @@ Acceptance: verify transitions from activity, idle duration, local time, timer c
 
 ## Phase 3: Art, audio, and polish
 
+- [x] Cached two-pose animation prototypes for all five moods, with a 30 fps render cap.
 - [ ] Consistent pixel-art animation loops for all five moods.
-- [ ] Steam, hearts, and sleep particles.
-- [ ] Optional muted-by-default sound controls and approved audio assets.
+- [x] Decorative steam, hearts, and sleep particles with stable interactive hit masks.
+- [x] Muted-by-default procedural rain/chimes and a keyboard-accessible sound toggle.
+- [ ] Approved final Foley/ambient audio assets.
 - [ ] Dragging, edge snapping, and optional Ghost Mode.
-- [ ] Respect reduced motion and measure resource usage.
+- [x] Reduced-motion support and hidden-window animation/audio suspension.
+- [ ] Profile total native + WebView CPU and memory on both platforms.
 
 Acceptance: interactions feel calm and responsive; pixel edges stay sharp at supported display scales. Check audio toggles and CPU usage while visible and hidden.
+
+Phase 3 is in progress. The first slice builds animation, particles, audio, and lifecycle infrastructure around the temporary concept. Final pet selection, clean sprite sheets, approved sound assets, dragging, snapping, Ghost Mode, and full resource measurements remain open. See [Phase 3 notes](architecture/phase-3.md).
 
 ## Phase 4: Local progression
 

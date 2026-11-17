@@ -4,6 +4,28 @@ import type { ActivityReading } from '../engine/spirit';
 
 export const isDesktop = isTauri;
 
+export async function observeVisibility(
+  onVisible: (visible: boolean) => void,
+): Promise<() => void> {
+  if (!isTauri()) {
+    const update = () => onVisible(!document.hidden);
+    document.addEventListener('visibilitychange', update);
+    update();
+    return () => document.removeEventListener('visibilitychange', update);
+  }
+  const unsubscribe = await listen<boolean>(
+    'habitat-visibility',
+    ({ payload }) => onVisible(payload),
+  );
+  try {
+    onVisible(await invoke<boolean>('shell_visibility'));
+  } catch (error) {
+    unsubscribe();
+    throw error;
+  }
+  return unsubscribe;
+}
+
 /** Register the rendered alpha mask before revealing the native window. */
 export async function revealHabitat(mask: number[]): Promise<void> {
   if (isTauri()) await invoke('show_shell', { mask });

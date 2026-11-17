@@ -1,5 +1,6 @@
 import testSpiritUrl from '../../assets/pets/test-spirit/reference.png';
 import type { Mood } from '../engine/spirit';
+import { drawParticles } from './particles';
 
 /** Crop transparent padding at render time; the concept source stays untouched. */
 function opaqueBounds(
@@ -31,9 +32,11 @@ function opaqueBounds(
 
 export async function createHabitatRenderer(
   canvas: HTMLCanvasElement,
-): Promise<{ draw: (mood: Mood) => number[] }> {
-  const context = canvas.getContext('2d', { willReadFrequently: true });
-  if (!context) throw new Error('Canvas is unavailable.');
+): Promise<{
+  draw: (mood: Mood, elapsedMs?: number, reduced?: boolean) => number[];
+}> {
+  const output = canvas.getContext('2d');
+  if (!output) throw new Error('Canvas is unavailable.');
   const image = new Image();
   image.src = testSpiritUrl;
   await image.decode();
@@ -50,69 +53,116 @@ export async function createHabitatRenderer(
   pixels.imageSmoothingEnabled = false;
   pixels.drawImage(image, ...bounds, 0, 0, width, height);
 
-  return {
-    draw(mood) {
-      context.clearRect(0, 0, canvas.width, canvas.height);
-      context.imageSmoothingEnabled = false;
-      if (mood === 'Sleeping') {
-        context.save();
-        context.translate(55, 70);
-        context.rotate(Math.PI / 2);
-        context.drawImage(
-          sprite,
-          -Math.floor(width / 2),
-          -Math.floor(height / 2),
-        );
-        context.restore();
-        context.fillStyle = '#707e91';
-        context.fillRect(32, 80, 46, 14);
-        context.fillStyle = '#adb7bf';
-        context.fillRect(32, 80, 46, 2);
-      } else {
-        context.drawImage(sprite, Math.floor((110 - width) / 2), 96 - height);
-      }
-      // Provisional pixel cues for testing state changes; final animation art is Phase 3.
-      if (mood === 'Working') {
-        context.strokeStyle = '#50382d';
-        context.lineWidth = 1;
-        context.strokeRect(41.5, 64.5, 7, 5);
-        context.strokeRect(53.5, 64.5, 7, 5);
-        context.fillStyle = '#50382d';
-        context.fillRect(49, 65, 4, 1);
-        context.fillStyle = '#d3a765';
-        context.fillRect(81, 86, 12, 8);
-        context.fillStyle = '#fff0cb';
-        context.fillRect(82, 87, 10, 5);
-      } else if (mood === 'TeaBreak') {
-        context.fillStyle = '#50382d';
-        context.fillRect(81, 84, 9, 10);
-        context.fillRect(90, 86, 3, 5);
-        context.fillStyle = '#fff0cb';
-        context.fillRect(82, 85, 7, 8);
-        context.fillStyle = '#b9b8aa';
-        context.fillRect(83, 78, 1, 4);
-        context.fillRect(86, 76, 1, 5);
-      } else if (mood === 'Happy') {
-        context.fillStyle = '#c46e72';
-        const heart = ['0110110', '1111111', '0111110', '0011100', '0001000'];
-        heart.forEach((row, y) =>
-          [...row].forEach((pixel, x) => {
-            if (pixel === '1') context.fillRect(78 + x, 48 + y, 1, 1);
-          }),
-        );
-      }
-      // A simple test ledge grounds the sprite. Final habitat art comes later.
-      context.fillStyle = '#50382d';
-      context.fillRect(5, 94, 100, 3);
-      context.fillStyle = '#bb8957';
-      context.fillRect(6, 94, 98, 1);
-      context.fillStyle = '#77513c';
-      context.fillRect(9, 97, 92, 3);
-      // Use the final rendered pixels for hit testing, including the shelf.
-      const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
-      return Array.from({ length: canvas.width * canvas.height }, (_, pixel) =>
-        data[pixel * 4 + 3] > 0 ? 1 : 0,
+  const frames = new Map<
+    string,
+    { canvas: HTMLCanvasElement; mask: number[] }
+  >();
+  let lastCanvas: HTMLCanvasElement | undefined;
+  let lastHadParticles = false;
+  const frameFor = (mood: Mood, pose: number) => {
+    const key = `${mood}:${pose}`;
+    const cached = frames.get(key);
+    if (cached) return cached;
+    const frame = document.createElement('canvas');
+    frame.width = canvas.width;
+    frame.height = canvas.height;
+    const context = frame.getContext('2d', { willReadFrequently: true });
+    if (!context) throw new Error('Canvas is unavailable.');
+    context.imageSmoothingEnabled = false;
+    const lift = mood === 'Happy' ? pose * 2 : mood === 'Idle' ? pose : 0;
+    context.save();
+    context.translate(0, -lift);
+    if (mood === 'Sleeping') {
+      context.save();
+      context.translate(55, 70);
+      context.rotate(Math.PI / 2);
+      context.drawImage(
+        sprite,
+        -Math.floor(width / 2),
+        -Math.floor(height / 2),
       );
+      context.restore();
+      context.fillStyle = '#707e91';
+      context.fillRect(32, 80 - pose, 46, 14 + pose);
+      context.fillStyle = '#adb7bf';
+      context.fillRect(32, 80 - pose, 46, 2);
+    } else {
+      context.drawImage(sprite, Math.floor((110 - width) / 2), 96 - height);
+    }
+    // Provisional pixel cues for testing state changes; final animation art is Phase 3.
+    if (mood === 'Working') {
+      context.strokeStyle = '#50382d';
+      context.lineWidth = 1;
+      context.strokeRect(41.5, 64.5, 7, 5);
+      context.strokeRect(53.5, 64.5, 7, 5);
+      context.fillStyle = '#50382d';
+      context.fillRect(49, 65, 4, 1);
+      context.fillStyle = '#d3a765';
+      context.fillRect(81, 86, 12, 8);
+      context.fillStyle = '#fff0cb';
+      context.fillRect(82, 87, 10, 5);
+      context.fillStyle = '#50382d';
+      context.fillRect(90 - pose, 85, 1, 6);
+    } else if (mood === 'TeaBreak') {
+      context.save();
+      context.translate(0, -pose);
+      context.fillStyle = '#50382d';
+      context.fillRect(81, 84, 9, 10);
+      context.fillRect(90, 86, 3, 5);
+      context.fillStyle = '#fff0cb';
+      context.fillRect(82, 85, 7, 8);
+      context.restore();
+    }
+    context.restore();
+    // A simple test ledge grounds the sprite. Final habitat art comes later.
+    context.fillStyle = '#50382d';
+    context.fillRect(5, 94, 100, 3);
+    context.fillStyle = '#bb8957';
+    context.fillRect(6, 94, 98, 1);
+    context.fillStyle = '#77513c';
+    context.fillRect(9, 97, 92, 3);
+    // Read pixels only when a cached pose is created, never on every RAF frame.
+    const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+    let mask: number[] = Array.from(
+      { length: canvas.width * canvas.height },
+      (_, pixel) => (data[pixel * 4 + 3] > 0 ? 1 : 0),
+    );
+    // Share identical silhouettes, so color-only pose changes need no native IPC.
+    for (const cached of frames.values()) {
+      if (mask.every((value, index) => value === cached.mask[index])) {
+        mask = cached.mask;
+        break;
+      }
+    }
+    const result = { canvas: frame, mask };
+    frames.set(key, result);
+    return result;
+  };
+
+  return {
+    draw(mood, elapsedMs = 0, reduced = false) {
+      const elapsed = Math.max(0, elapsedMs);
+      const period =
+        mood === 'Idle' || mood === 'Sleeping'
+          ? 1600
+          : mood === 'Happy'
+            ? 260
+            : 700;
+      const pose = reduced ? 0 : Math.floor(elapsed / period) % 2;
+      const frame = frameFor(mood, pose);
+      const particles =
+        !reduced &&
+        (mood === 'TeaBreak' || mood === 'Sleeping' || mood === 'Happy');
+      if (lastCanvas !== frame.canvas || particles || lastHadParticles) {
+        output.clearRect(0, 0, canvas.width, canvas.height);
+        output.imageSmoothingEnabled = false;
+        output.drawImage(frame.canvas, 0, 0);
+        if (particles) drawParticles(output, mood, elapsed);
+      }
+      lastCanvas = frame.canvas;
+      lastHadParticles = particles;
+      // Particles remain decorative and click-through, even where visibly painted.
+      return frame.mask;
     },
   };
 }
