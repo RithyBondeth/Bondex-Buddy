@@ -67,7 +67,7 @@ canvas {
   background: transparent;
   color: #50382d;
   font:
-    12px system-ui,
+    11px system-ui,
     sans-serif;
   font-variant-numeric: tabular-nums;
   cursor: pointer;
@@ -75,7 +75,7 @@ canvas {
 }
 
 .controls button:first-child {
-  flex: 2;
+  flex: 2.6;
 }
 .controls button:hover {
   background: #efd4a2;
@@ -106,6 +106,40 @@ canvas {
 }
 .show-controls .mood-label {
   visibility: visible;
+}
+
+.items-drawer {
+  position: absolute;
+  box-sizing: border-box;
+  left: 6px;
+  top: 46px;
+  width: 208px;
+  height: 70px;
+  padding: 5px;
+  border: 1px solid #77513c;
+  background: #fff0cb;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  z-index: 1;
+}
+.items-drawer[hidden] {
+  display: none;
+}
+.items-drawer select {
+  min-width: 0;
+  width: 100%;
+  font-size: 10px;
+  color: #50382d;
+  background: #fff5de;
+}
+.progress-label {
+  grid-column: 1 / -1;
+  font-size: 10px;
+  color: #50382d;
+}
+.drawer-open .mood-label {
+  visibility: hidden;
 }
 
 .sr-only {

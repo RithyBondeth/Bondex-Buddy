@@ -1,5 +1,6 @@
 import testSpiritUrl from '../../assets/pets/test-spirit/reference.png';
 import type { Mood } from '../engine/spirit';
+import type { Decor } from '../engine/progress';
 import { drawParticles } from './particles';
 
 /** Crop transparent padding at render time; the concept source stays untouched. */
@@ -33,7 +34,12 @@ function opaqueBounds(
 export async function createHabitatRenderer(
   canvas: HTMLCanvasElement,
 ): Promise<{
-  draw: (mood: Mood, elapsedMs?: number, reduced?: boolean) => number[];
+  draw: (
+    mood: Mood,
+    elapsedMs?: number,
+    reduced?: boolean,
+    appearance?: { decor: Decor; night: boolean },
+  ) => number[];
 }> {
   const output = canvas.getContext('2d');
   if (!output) throw new Error('Canvas is unavailable.');
@@ -59,8 +65,9 @@ export async function createHabitatRenderer(
   >();
   let lastCanvas: HTMLCanvasElement | undefined;
   let lastHadParticles = false;
-  const frameFor = (mood: Mood, pose: number) => {
-    const key = `${mood}:${pose}`;
+  let lastNight = false;
+  const frameFor = (mood: Mood, pose: number, decor: Decor) => {
+    const key = `${mood}:${pose}:${decor}`;
     const cached = frames.get(key);
     if (cached) return cached;
     const frame = document.createElement('canvas');
@@ -114,6 +121,22 @@ export async function createHabitatRenderer(
       context.restore();
     }
     context.restore();
+    if (decor === 'plant') {
+      context.fillStyle = '#77513c';
+      context.fillRect(14, 86, 12, 8);
+      context.fillStyle = '#b98963';
+      context.fillRect(15, 87, 10, 2);
+      context.fillStyle = '#638260';
+      context.fillRect(19, 77, 2, 10);
+      context.fillRect(14, 79, 6, 3);
+      context.fillRect(21, 76, 5, 3);
+    } else if (decor === 'lantern') {
+      context.fillStyle = '#77513c';
+      context.fillRect(15, 80, 11, 14);
+      context.fillRect(18, 77, 5, 3);
+      context.fillStyle = '#edc574';
+      context.fillRect(17, 82, 7, 9);
+    }
     // A simple test ledge grounds the sprite. Final habitat art comes later.
     context.fillStyle = '#50382d';
     context.fillRect(5, 94, 100, 3);
@@ -140,7 +163,12 @@ export async function createHabitatRenderer(
   };
 
   return {
-    draw(mood, elapsedMs = 0, reduced = false) {
+    draw(
+      mood,
+      elapsedMs = 0,
+      reduced = false,
+      appearance = { decor: 'none', night: false },
+    ) {
       const elapsed = Math.max(0, elapsedMs);
       const period =
         mood === 'Idle' || mood === 'Sleeping'
@@ -149,18 +177,31 @@ export async function createHabitatRenderer(
             ? 260
             : 700;
       const pose = reduced ? 0 : Math.floor(elapsed / period) % 2;
-      const frame = frameFor(mood, pose);
+      const frame = frameFor(mood, pose, appearance.decor);
       const particles =
         !reduced &&
         (mood === 'TeaBreak' || mood === 'Sleeping' || mood === 'Happy');
-      if (lastCanvas !== frame.canvas || particles || lastHadParticles) {
+      if (
+        lastCanvas !== frame.canvas ||
+        particles ||
+        lastHadParticles ||
+        lastNight !== appearance.night
+      ) {
         output.clearRect(0, 0, canvas.width, canvas.height);
         output.imageSmoothingEnabled = false;
         output.drawImage(frame.canvas, 0, 0);
         if (particles) drawParticles(output, mood, elapsed);
+        if (appearance.night) {
+          output.save();
+          output.globalCompositeOperation = 'source-atop';
+          output.fillStyle = 'rgba(224, 158, 77, 0.12)';
+          output.fillRect(0, 0, canvas.width, canvas.height);
+          output.restore();
+        }
       }
       lastCanvas = frame.canvas;
       lastHadParticles = particles;
+      lastNight = appearance.night;
       // Particles remain decorative and click-through, even where visibly painted.
       return frame.mask;
     },

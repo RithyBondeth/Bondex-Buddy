@@ -4,6 +4,10 @@ import type { ActivityReading } from '../engine/spirit';
 
 export const isDesktop = isTauri;
 
+export async function setDrawerVisible(visible: boolean): Promise<void> {
+  if (isTauri()) await invoke('set_drawer_visible', { visible });
+}
+
 export async function observeVisibility(
   onVisible: (visible: boolean) => void,
 ): Promise<() => void> {

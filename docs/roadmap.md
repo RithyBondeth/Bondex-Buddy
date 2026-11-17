@@ -53,13 +53,17 @@ Phase 3 is in progress. The first slice builds animation, particles, audio, and 
 
 ## Phase 4: Local progression
 
-- [ ] Versioned local preferences and progress storage.
-- [ ] Cosmetic unlock rules and wardrobe/decor controls.
-- [ ] Restore equipped items across restarts.
-- [ ] Time-of-day lighting.
+- [x] Versioned local JSON storage with safe failure handling.
+- [x] Permanent plant/lantern unlock rules and Items drawer.
+- [x] Restore saved decor and lighting choices on startup.
+- [x] Time-of-day warm tint with a saved daylight override.
+- [ ] Wardrobe/outfit inventory and final cosmetic art.
+- [ ] Complete native reward/equipment acceptance on macOS and Windows.
 - [ ] Launch-at-login preference.
 
 Acceptance: completing a focus session unlocks an item that can be equipped and restored on restart, without penalties or streaks.
+
+Phase 4 is in progress on a local branch. See [save/progression notes](architecture/phase-4.md); launch at login and wardrobe expansion remain open.
 
 ## Release preparation
 
