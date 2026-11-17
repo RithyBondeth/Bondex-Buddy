@@ -4,9 +4,9 @@ A quiet, pixel-art desktop companion for macOS and Windows, based on the project
 
 ## Current stage
 
-Phases 1 and 2 are merged into `develop` through PRs #1 and #2, with macOS and Windows CI passing. Phase 3 is in progress on a separate branch: cached animated test poses, floating particles, reduced-motion/visibility handling, and opt-in procedural sound are implemented around the temporary pet. Final pet selection, production sprite sheets, approved Foley, dragging/snapping, Ghost Mode, and progression remain open.
+Phases 1–3 have been published into `develop` through PRs #1–#3, with macOS and Windows CI passing. Phase 3 still has final-art, dragging/snapping, Ghost Mode, and profiling work open. Phase 4 is in progress locally: versioned saves, permanent decor unlocks, an Items drawer, and saved lighting choices are implemented around the temporary pet.
 
-Phase 2 has browser interaction and native macOS timer-control checks. Duration-based activity transitions, scaled cross-window click-through, and Windows desktop behavior still need acceptance testing. Phase 3 adds lifecycle tests and browser rendering checks; it is not yet published. See the [Phase 1 checklist](docs/verification/phase-1.md), [Phase 2 checklist](docs/verification/phase-2.md), and [Phase 3 notes](docs/architecture/phase-3.md).
+Phase 4 has 23 TypeScript tests, four native tests, and browser/native macOS preference-restoration checks. Windows runtime acceptance, real-session reward/equipment checks, wardrobe expansion, and launch at login remain open. See the [Phase 4 notes](docs/architecture/phase-4.md) and the [roadmap](docs/roadmap.md) for the remaining work across phases.
 
 ## Requirements
 

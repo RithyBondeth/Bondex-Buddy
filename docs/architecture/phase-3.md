@@ -1,6 +1,6 @@
 # Phase 3 first slice
 
-Phases 1 and 2 are merged through PRs #1 and #2. Phase 3 is local work in progress on `bondeth/phase-3-animation-polish`.
+Phases 1 and 2 are merged through PRs #1 and #2. This first Phase 3 slice was merged through PR #3 after macOS and Windows CI passed. Remaining Phase 3 work is listed below.
 
 ## Implemented
 

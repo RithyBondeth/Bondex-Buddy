@@ -18,6 +18,7 @@ const LOGICAL_HEIGHT: f64 = 200.0;
 pub struct ShellState {
     mask: Mutex<Vec<u8>>,
     controls_visible: AtomicBool,
+    drawer_visible: AtomicBool,
 }
 
 fn logical_point(x: f64, y: f64, scale: f64) -> Option<(f64, f64)> {
@@ -33,6 +34,19 @@ fn hits_controls(x: f64, y: f64, scale: f64, visible: bool) -> bool {
     visible
         && logical_point(x, y, scale)
             .is_some_and(|(x, y)| (6.0..214.0).contains(&x) && (10.0..42.0).contains(&y))
+}
+
+#[tauri::command]
+pub fn set_drawer_visible(
+    window: WebviewWindow,
+    state: tauri::State<'_, ShellState>,
+    visible: bool,
+) -> Result<(), String> {
+    if window.label() != "main" {
+        return Err("Invalid habitat window".into());
+    }
+    state.drawer_visible.store(visible, Ordering::Relaxed);
+    Ok(())
 }
 
 /// Convert desktop physical coordinates into the fixed-resolution Canvas mask.
@@ -149,6 +163,7 @@ pub fn show_shell_error(
 ) -> Result<(), String> {
     state.mask.lock().map_err(|e| e.to_string())?.clear();
     state.controls_visible.store(false, Ordering::Relaxed);
+    state.drawer_visible.store(false, Ordering::Relaxed);
     window
         .set_ignore_cursor_events(false)
         .map_err(|e| e.to_string())?;
@@ -198,6 +213,10 @@ pub fn start_hit_testing(window: WebviewWindow) {
                 }
                 let hit = state.mask.lock().is_ok_and(|mask| {
                     hits_mask(&mask, x, y, scale)
+                        || (state.drawer_visible.load(Ordering::Relaxed)
+                            && logical_point(x, y, scale).is_some_and(|(x, y)| {
+                                (6.0..214.0).contains(&x) && (46.0..116.0).contains(&y)
+                            }))
                         || hits_controls(
                             x,
                             y,

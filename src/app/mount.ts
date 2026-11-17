@@ -1,5 +1,8 @@
 import { FOCUS_MS, SpiritEngine, formatCountdown } from '../engine/spirit';
 import type { Mood } from '../engine/spirit';
+import { awardCompletions, canEquip } from '../engine/progress';
+import type { Decor } from '../engine/progress';
+import { openProgressStore } from '../platform/progress-store';
 import { Ambience } from '../audio/ambience';
 import { AnimationClock } from '../rendering/animation-clock';
 import {
@@ -9,11 +12,15 @@ import {
   isDesktop,
   revealHabitat,
   setControlsVisible,
+  setDrawerVisible,
   updateHitMask,
 } from '../platform/desktop';
 import { createHabitatRenderer } from '../rendering/habitat';
 
 export async function mountApp(root: HTMLElement): Promise<() => void> {
+  const store = await openProgressStore();
+  let progress = store.data;
+  let saveProblem = store.readOnly;
   const engine = new SpiritEngine(Date.now());
   const audio = new Ambience();
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -47,19 +54,85 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   sound.title =
     'Sound is off by default. Enable quiet procedural rain and chimes.';
   controls.append(toggle, reset, sound);
+  const items = document.createElement('button');
+  items.type = 'button';
+  items.textContent = 'Items';
+  items.setAttribute('aria-expanded', 'false');
+  items.setAttribute('aria-label', 'Open decor and lighting');
+  controls.append(items);
+  const drawer = document.createElement('div');
+  drawer.className = 'items-drawer';
+  drawer.hidden = true;
+  drawer.setAttribute('role', 'group');
+  drawer.setAttribute('aria-label', 'Decor and lighting');
+  const progressLabel = document.createElement('span');
+  progressLabel.className = 'progress-label';
+  const decor = document.createElement('select');
+  decor.setAttribute('aria-label', 'Desk decor');
+  for (const [value, text] of [
+    ['none', 'Bare desk'],
+    ['plant', 'Plant · 1 focus'],
+    ['lantern', 'Lantern · 3 focus'],
+  ]) {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = text;
+    decor.append(option);
+  }
+  const lighting = document.createElement('select');
+  lighting.setAttribute('aria-label', 'Habitat lighting');
+  for (const [value, text] of [
+    ['auto', 'Time of day'],
+    ['day', 'Daylight'],
+  ]) {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = text;
+    lighting.append(option);
+  }
+  drawer.append(progressLabel, decor, lighting);
+  const refreshItems = () => {
+    progressLabel.textContent = saveProblem
+      ? 'Progress stays in memory for now'
+      : `${progress.completedFocusSessions} completed focus sessions`;
+    progressLabel.title = saveProblem
+      ? 'Existing progress could not be read or saved. Your existing file has been preserved.'
+      : 'Unlocks are permanent. No streaks or penalties.';
+    for (const option of decor.options)
+      option.disabled = !canEquip(progress, option.value as Decor);
+    decor.value = progress.decor;
+    lighting.value = progress.lighting;
+  };
+  const persist = () => {
+    refreshItems();
+    void store
+      .save(progress)
+      .then(() => {
+        saveProblem = false;
+        refreshItems();
+      })
+      .catch(() => {
+        saveProblem = true;
+        refreshItems();
+      });
+  };
+  refreshItems();
   const moodLabel = document.createElement('p');
   moodLabel.className = 'mood-label';
   const announcement = document.createElement('span');
   announcement.className = 'sr-only';
   announcement.setAttribute('role', 'status');
-  habitat.append(pet, controls, moodLabel, announcement);
+  habitat.append(pet, controls, drawer, moodLabel, announcement);
   root.replaceChildren(habitat);
 
   const renderer = await createHabitatRenderer(canvas);
   let disposed = false;
   let hovering = false;
   let visible = false;
+  let drawerOpen = false;
+  let drawerVisible = false;
   let lastMood: Mood | undefined;
+  let lastAppearance = '';
   let moodStartedAt = performance.now();
   let lastMask: number[] | undefined;
   let completed = 0;
@@ -84,7 +157,21 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     if (next === visible) return;
     visible = next;
     habitat.classList.toggle('show-controls', visible);
+    if (!visible) {
+      drawerOpen = false;
+      syncDrawer();
+    }
     enqueue(() => setControlsVisible(visible));
+  };
+  const syncDrawer = () => {
+    const next = drawerOpen && visible;
+    drawer.hidden = !next;
+    habitat.classList.toggle('drawer-open', next);
+    items.setAttribute('aria-expanded', String(next));
+    if (drawerVisible !== next) {
+      drawerVisible = next;
+      enqueue(() => setDrawerVisible(next));
+    }
   };
   habitat.addEventListener('pointerenter', () => {
     if (isDesktop()) return;
@@ -106,14 +193,23 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     const date = new Date(now);
     const snapshot = engine.read(now, date.getHours() * 60 + date.getMinutes());
     let mask: number[] | undefined;
-    if (lastMood !== snapshot.mood) {
-      moodStartedAt = performance.now();
-      mask = renderer.draw(snapshot.mood, 0, motion.matches);
+    const appearanceKey = JSON.stringify(appearance());
+    if (lastMood !== snapshot.mood || lastAppearance !== appearanceKey) {
+      if (lastMood !== snapshot.mood) moodStartedAt = performance.now();
+      lastAppearance = appearanceKey;
+      mask = renderer.draw(snapshot.mood, 0, motion.matches, appearance());
       lastMask = mask;
       if (!initial) enqueue(() => updateHitMask(mask!));
       lastMood = snapshot.mood;
     }
-    if (snapshot.completedFocusSessions > completed) audio.chime(true);
+    if (snapshot.completedFocusSessions > completed) {
+      audio.chime(true);
+      progress = awardCompletions(
+        progress,
+        snapshot.completedFocusSessions - completed,
+      );
+      persist();
+    }
     completed = snapshot.completedFocusSessions;
     const timer = snapshot.timer;
     const label = timer
@@ -141,6 +237,13 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     }
     return mask;
   };
+  const appearance = () => {
+    const hour = new Date().getHours();
+    return {
+      decor: progress.decor,
+      night: progress.lighting === 'auto' && (hour >= 18 || hour < 6),
+    };
+  };
   const unsubscribeHover = await observeHover((inside) => {
     hovering = inside;
     updateControls();
@@ -160,6 +263,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       lastMood ?? 'Idle',
       time - moodStartedAt,
       reduced,
+      appearance(),
     );
     if (mask !== lastMask) {
       lastMask = mask;
@@ -185,6 +289,45 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   reset.addEventListener('click', () => {
     engine.resetTimer(Date.now());
     render();
+  });
+  items.addEventListener('click', () => {
+    drawerOpen = !drawerOpen;
+    syncDrawer();
+  });
+  habitat.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      drawerOpen = false;
+      syncDrawer();
+      items.focus();
+    }
+  });
+  const redrawAppearance = () => {
+    const mask = renderer.draw(
+      lastMood ?? 'Idle',
+      performance.now() - moodStartedAt,
+      motion.matches,
+      appearance(),
+    );
+    lastMask = mask;
+    enqueue(() => updateHitMask(mask));
+  };
+  decor.addEventListener('change', () => {
+    const choice = decor.value as Decor;
+    if (!canEquip(progress, choice)) {
+      refreshItems();
+      return;
+    }
+    progress = { ...progress, decor: choice };
+    persist();
+    redrawAppearance();
+  });
+  lighting.addEventListener('change', () => {
+    progress = {
+      ...progress,
+      lighting: lighting.value === 'day' ? 'day' : 'auto',
+    };
+    persist();
+    redrawAppearance();
   });
   sound.addEventListener('click', () => {
     sound.disabled = true;
