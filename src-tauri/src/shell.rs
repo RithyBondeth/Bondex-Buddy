@@ -138,6 +138,11 @@ pub fn set_controls_visible(
 }
 
 #[tauri::command]
+pub fn shell_visibility(window: WebviewWindow) -> Result<bool, String> {
+    window.is_visible().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub fn show_shell_error(
     window: WebviewWindow,
     state: tauri::State<'_, ShellState>,
@@ -156,9 +161,15 @@ pub fn start_hit_testing(window: WebviewWindow) {
     thread::spawn(move || {
         let mut ignoring = None;
         let mut hovered = false;
+        let mut was_visible = false;
         let mut ticks = 0;
         loop {
-            if !window.is_visible().unwrap_or(false) {
+            let visible = window.is_visible().unwrap_or(false);
+            if was_visible != visible {
+                was_visible = visible;
+                let _ = window.emit("habitat-visibility", visible);
+            }
+            if !visible {
                 ignoring = None;
                 if hovered {
                     hovered = false;

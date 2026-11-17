@@ -4,9 +4,9 @@ A quiet, pixel-art desktop companion for macOS and Windows, based on the project
 
 ## Current stage
 
-Phase 1 is merged into `develop` through PR #1. Phase 2 implementation adds a deterministic five-mood engine, native five-second idle-time observation, hover/keyboard focus controls, and a 25-minute focus / 5-minute break timer with pause, resume, and reset. The pixel-art Canvas redraws provisional test poses when the mood changes; full sprite animation, audio, and progression are later milestones. No final pet is selected.
+Phases 1 and 2 are merged into `develop` through PRs #1 and #2, with macOS and Windows CI passing. Phase 3 is in progress on a separate branch: cached animated test poses, floating particles, reduced-motion/visibility handling, and opt-in procedural sound are implemented around the temporary pet. Final pet selection, production sprite sheets, approved Foley, dragging/snapping, Ghost Mode, and progression remain open.
 
-Phase 1 passed macOS and Windows CI. Phase 2 has local engine tests, browser interaction checks, and native macOS timer-control checks. Duration-based activity transitions, cross-window click-through, and the new Windows idle adapter still need acceptance testing. See the [Phase 1 checklist](docs/verification/phase-1.md) and [Phase 2 checklist](docs/verification/phase-2.md).
+Phase 2 has browser interaction and native macOS timer-control checks. Duration-based activity transitions, scaled cross-window click-through, and Windows desktop behavior still need acceptance testing. Phase 3 adds lifecycle tests and browser rendering checks; it is not yet published. See the [Phase 1 checklist](docs/verification/phase-1.md), [Phase 2 checklist](docs/verification/phase-2.md), and [Phase 3 notes](docs/architecture/phase-3.md).
 
 ## Requirements
 
@@ -27,6 +27,8 @@ npm run desktop:dev
 For the Canvas preview in a browser, run `npm run dev`. Native placement, transparency, tray, idle observation, and click-through must be checked in the Tauri app. Use the menu bar/system tray icon to **Show spirit**, **Hide spirit**, **Reset to bottom right**, **Move to next display**, or **Quit Tiny Desk Spirit**.
 
 Hover over the habitat (or focus the pet with the keyboard) to reveal **Start/Pause/Resume** and **Reset**. A completed focus starts one five-minute break; finishing the break returns to idle. Reset cancels the current session without completion. Clicking the pet gives a two-second Happy reaction, except during a running focus session. Browser previews support the timer but do not simulate OS activity.
+
+Sound starts **Muted**. Enable it explicitly for quiet procedural rain and gentle pet/completion chimes; the setting is not saved yet. Hidden habitats suspend audio and animation. The OS reduced-motion preference disables the animation loop and floating particles while keeping state changes and timer controls functional.
 
 ## Commands
 

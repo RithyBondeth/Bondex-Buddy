@@ -1,7 +1,7 @@
 # Rendering
 
-`habitat.ts` caches the temporary sprite on a small offscreen Canvas and redraws a test pose only when the mood changes. It uses a 110 × 100 Canvas displayed at 2×, disables image smoothing, and derives a binary hit mask from the final alpha pixels after every redraw.
+`habitat.ts` caches two provisional poses per mood in 110 × 100 offscreen Canvases, displayed at 2× without image smoothing. Each pose has a cached alpha mask; identical silhouettes share the same mask reference, so native updates happen only when the interactive silhouette changes. There is no per-frame pixel readback.
 
-The concept image is sampled into a maximum 48 × 48 area for testing; it is not an approved sprite sheet. Working glasses/notebook, a Sleeping test pose/blanket, a TeaBreak mug, and a static Happy heart are provisional code-drawn cues for testing the FSM. Full sprite sheets and animation loops remain Phase 3 work.
+The concept is sampled into a maximum 48 × 48 area. The slow body lift, moving pen/mug, and breathing blanket are test prototypes, not final sprite animation. `particles.ts` draws time-based steam, hearts, and sleep glyphs on top; those decorative pixels intentionally do not intercept clicks.
 
-Future animation and particles should consume engine state; do not decide focus or idle behavior here. When animations change the visible silhouette, update the native mask along with the rendered frame.
+`AnimationClock` caps rendering at 30 fps and cancels its RAF loop while hidden or reduced motion is requested. Reduced motion uses a static pose without floating particles. Rendering consumes mood state; it does not decide focus, break, or progression rules. Final approved sprite sheets can replace the cached prototypes without changing the engine.

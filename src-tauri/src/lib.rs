@@ -12,6 +12,7 @@ pub fn run() {
             shell::show_shell_error,
             shell::update_shell_mask,
             shell::set_controls_visible,
+            shell::shell_visibility,
             activity::activity_snapshot
         ])
         .setup(|app| {

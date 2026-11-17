@@ -71,6 +71,7 @@ canvas {
     sans-serif;
   font-variant-numeric: tabular-nums;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .controls button:first-child {
