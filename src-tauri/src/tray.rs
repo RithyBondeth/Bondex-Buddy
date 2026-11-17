@@ -15,7 +15,7 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
     let quit = MenuItem::with_id(app, "quit", "Quit Tiny Desk Spirit", true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&show, &hide, &reset, &display, &separator, &quit])?;
     let mut tray = TrayIconBuilder::with_id("habitat")
-        .tooltip("Tiny Desk Spirit · Phase 1")
+        .tooltip("Tiny Desk Spirit")
         .menu(&menu)
         .show_menu_on_left_click(true)
         .on_menu_event(|app, event| {

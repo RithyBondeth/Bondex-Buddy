@@ -4,9 +4,9 @@ A quiet, pixel-art desktop companion for macOS and Windows, based on the project
 
 ## Current stage
 
-Phase 1 shell implemented: a frameless transparent 220 × 200 window, a static pixel-art Canvas, bottom-right work-area placement, tray controls, and alpha-mask click-through. A moon-cat concept is used as a temporary test sprite; no final pet is selected. Activity detection, moods, the focus timer, animation, audio, and progression are future milestones.
+Phase 1 is merged into `develop` through PR #1. Phase 2 implementation adds a deterministic five-mood engine, native five-second idle-time observation, hover/keyboard focus controls, and a 25-minute focus / 5-minute break timer with pause, resume, and reset. The pixel-art Canvas redraws provisional test poses when the mood changes; full sprite animation, audio, and progression are later milestones. No final pet is selected.
 
-The macOS app builds and opens, and the browser Canvas preview was visually checked. Native visual/click-through checks and Windows validation remain pending; see the [Phase 1 verification checklist](docs/verification/phase-1.md).
+Phase 1 passed macOS and Windows CI. Phase 2 has local engine tests, browser interaction checks, and native macOS timer-control checks. Duration-based activity transitions, cross-window click-through, and the new Windows idle adapter still need acceptance testing. See the [Phase 1 checklist](docs/verification/phase-1.md) and [Phase 2 checklist](docs/verification/phase-2.md).
 
 ## Requirements
 
@@ -24,7 +24,9 @@ npm ci
 npm run desktop:dev
 ```
 
-For the Canvas preview in a browser, run `npm run dev`. Native placement, transparency, tray, and click-through must be checked in the Tauri app. Use the menu bar/system tray icon to **Show spirit**, **Hide spirit**, **Reset to bottom right**, **Move to next display**, or **Quit Tiny Desk Spirit**. Clicking the pet briefly brightens it as a test interaction.
+For the Canvas preview in a browser, run `npm run dev`. Native placement, transparency, tray, idle observation, and click-through must be checked in the Tauri app. Use the menu bar/system tray icon to **Show spirit**, **Hide spirit**, **Reset to bottom right**, **Move to next display**, or **Quit Tiny Desk Spirit**.
+
+Hover over the habitat (or focus the pet with the keyboard) to reveal **Start/Pause/Resume** and **Reset**. A completed focus starts one five-minute break; finishing the break returns to idle. Reset cancels the current session without completion. Clicking the pet gives a two-second Happy reaction, except during a running focus session. Browser previews support the timer but do not simulate OS activity.
 
 ## Commands
 
@@ -33,6 +35,7 @@ For the Canvas preview in a browser, run `npm run dev`. Native placement, transp
 | `npm run desktop:dev`                                                                     | Run the native app with frontend hot reload |
 | `npm run dev`                                                                             | Run the frontend development server         |
 | `npm run check`                                                                           | Check TypeScript, lint, and formatting      |
+| `npm test`                                                                                | Run deterministic engine and timer tests    |
 | `npm run build`                                                                           | Build frontend assets into `dist/`          |
 | `npm run format`                                                                          | Format frontend files and documentation     |
 | `npm run desktop:build`                                                                   | Build the desktop app and native bundle     |

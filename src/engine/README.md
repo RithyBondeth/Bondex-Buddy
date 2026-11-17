@@ -1,5 +1,5 @@
 # Core engine
 
-Future home of the deterministic mood state machine, focus/break clock, and cosmetic progression rules. Keep this layer independent of the DOM, Canvas, Tauri, and OS APIs. Pass activity signals and time into the engine so behavior can be tested with a fake clock.
+`spirit.ts` owns the deterministic mood state machine and focus/break clock. It accepts injected wall-clock times, local minutes of day, and high-level OS idle samples. It never calls the DOM, Canvas, Tauri, or OS APIs.
 
-No pet behavior is implemented during project setup.
+Run `npm test` for fake-clock tests of priorities, timer completion, pause/resume/reset, suspended callbacks, stale activity, night boundaries, and return-from-away behavior. Full behavioral defaults are in `docs/architecture/phase-2.md`. Cosmetic progression and persistence remain Phase 4 work.
