@@ -1,0 +1,51 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color-scheme: light;
+  background: transparent;
+  font-synthesis: none;
+}
+
+html,
+body,
+#app {
+  width: 220px;
+  height: 200px;
+  margin: 0;
+  overflow: hidden;
+  background: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.habitat {
+  all: unset;
+  display: block;
+  width: 220px;
+  height: 200px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.habitat:focus-visible {
+  outline: 1px dashed #bb8957;
+  outline-offset: -3px;
+}
+
+.habitat.is-greeting {
+  filter: brightness(1.2);
+}
+
+canvas {
+  display: block;
+  width: 220px;
+  height: 200px;
+  image-rendering: pixelated;
+}
+
+.startup-error {
+  margin: 16px;
+  padding: 12px;
+  background: #fff3da;
+  color: #50382d;
+  font-size: 13px;
+}
