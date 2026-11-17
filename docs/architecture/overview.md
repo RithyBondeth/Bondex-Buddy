@@ -34,7 +34,7 @@ This is a polling-based approximation, not an OS-native per-pixel hit-test callb
 
 `src-tauri/src/tray.rs` owns show/hide, position reset, display cycling, and quit. Closing the window hides it; quitting is explicit through the tray. The window stays hidden until its first Canvas/mask is ready. A load failure reveals an error message instead of silently leaving an invisible window.
 
-Built-in frontend permissions remain empty. The frontend uses only the app-defined `show_shell` and `show_shell_error` startup commands. Add the minimum additional permissions when a feature needs them; no shell, filesystem, network, or global input plugins are enabled.
+Phase 2 adds scoped event listen/unlisten permissions and app-defined commands for mask updates, control visibility, and an initial activity snapshot. No shell, filesystem, network, or global input plugins are enabled. See [Phase 2 architecture](phase-2.md) for the engine and timer rules.
 
 ## Desktop verification
 

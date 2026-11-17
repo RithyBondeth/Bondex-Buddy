@@ -1,3 +1,4 @@
+mod activity;
 mod shell;
 mod tray;
 
@@ -8,7 +9,10 @@ pub fn run() {
         .manage(shell::ShellState::default())
         .invoke_handler(tauri::generate_handler![
             shell::show_shell,
-            shell::show_shell_error
+            shell::show_shell_error,
+            shell::update_shell_mask,
+            shell::set_controls_visible,
+            activity::activity_snapshot
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]
@@ -22,6 +26,7 @@ pub fn run() {
             if let Some(monitor) = window.primary_monitor()? {
                 shell::dock(&window, &monitor)?;
             }
+            activity::start_observer(window.clone());
             shell::start_hit_testing(window);
             Ok(())
         })

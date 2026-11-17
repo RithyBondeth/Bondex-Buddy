@@ -1,6 +1,13 @@
-use std::{sync::Mutex, thread, time::Duration};
+use std::{
+    sync::{
+        Mutex,
+        atomic::{AtomicBool, Ordering},
+    },
+    thread,
+    time::Duration,
+};
 
-use tauri::{Manager, PhysicalPosition, WebviewWindow};
+use tauri::{Emitter, Manager, PhysicalPosition, WebviewWindow};
 
 pub const MASK_WIDTH: usize = 110;
 pub const MASK_HEIGHT: usize = 100;
@@ -10,6 +17,22 @@ const LOGICAL_HEIGHT: f64 = 200.0;
 #[derive(Default)]
 pub struct ShellState {
     mask: Mutex<Vec<u8>>,
+    controls_visible: AtomicBool,
+}
+
+fn logical_point(x: f64, y: f64, scale: f64) -> Option<(f64, f64)> {
+    if !scale.is_finite() || scale <= 0.0 || !x.is_finite() || !y.is_finite() {
+        return None;
+    }
+    let (x, y) = (x / scale, y / scale);
+    ((0.0..LOGICAL_WIDTH).contains(&x) && (0.0..LOGICAL_HEIGHT).contains(&y)).then_some((x, y))
+}
+
+fn hits_controls(x: f64, y: f64, scale: f64, visible: bool) -> bool {
+    // Must match the opaque .controls rectangle in base.css (no rounded corners).
+    visible
+        && logical_point(x, y, scale)
+            .is_some_and(|(x, y)| (6.0..214.0).contains(&x) && (10.0..42.0).contains(&y))
 }
 
 /// Convert desktop physical coordinates into the fixed-resolution Canvas mask.
@@ -81,6 +104,16 @@ pub fn show_shell(
     state: tauri::State<'_, ShellState>,
     mask: Vec<u8>,
 ) -> Result<(), String> {
+    update_shell_mask(window.clone(), state, mask)?;
+    window.show().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn update_shell_mask(
+    window: WebviewWindow,
+    state: tauri::State<'_, ShellState>,
+    mask: Vec<u8>,
+) -> Result<(), String> {
     if window.label() != "main"
         || mask.len() != MASK_WIDTH * MASK_HEIGHT
         || mask.iter().any(|&v| v > 1)
@@ -88,11 +121,29 @@ pub fn show_shell(
         return Err("Invalid habitat hit mask".into());
     }
     *state.mask.lock().map_err(|e| e.to_string())? = mask;
-    window.show().map_err(|e| e.to_string())
+    Ok(())
 }
 
 #[tauri::command]
-pub fn show_shell_error(window: WebviewWindow) -> Result<(), String> {
+pub fn set_controls_visible(
+    window: WebviewWindow,
+    state: tauri::State<'_, ShellState>,
+    visible: bool,
+) -> Result<(), String> {
+    if window.label() != "main" {
+        return Err("Invalid habitat window".into());
+    }
+    state.controls_visible.store(visible, Ordering::Relaxed);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn show_shell_error(
+    window: WebviewWindow,
+    state: tauri::State<'_, ShellState>,
+) -> Result<(), String> {
+    state.mask.lock().map_err(|e| e.to_string())?.clear();
+    state.controls_visible.store(false, Ordering::Relaxed);
     window
         .set_ignore_cursor_events(false)
         .map_err(|e| e.to_string())?;
@@ -103,16 +154,23 @@ pub fn show_shell_error(window: WebviewWindow) -> Result<(), String> {
 /// Cursor coordinates are used transiently for hit testing and never recorded.
 pub fn start_hit_testing(window: WebviewWindow) {
     thread::spawn(move || {
-        let mut ignoring = true;
+        let mut ignoring = None;
+        let mut hovered = false;
         let mut ticks = 0;
         loop {
             if !window.is_visible().unwrap_or(false) {
+                ignoring = None;
+                if hovered {
+                    hovered = false;
+                    let _ = window.emit("habitat-hover", false);
+                }
                 thread::sleep(Duration::from_millis(250));
                 continue;
             }
             let state = window.state::<ShellState>();
             let ready = state.mask.lock().is_ok_and(|mask| !mask.is_empty());
             if !ready {
+                ignoring = None;
                 thread::sleep(Duration::from_millis(250));
                 continue;
             }
@@ -120,19 +178,27 @@ pub fn start_hit_testing(window: WebviewWindow) {
                 .cursor_position()
                 .and_then(|cursor| Ok((cursor, window.inner_position()?, window.scale_factor()?)));
             if let Ok((cursor, origin, scale)) = geometry {
+                let x = cursor.x - origin.x as f64;
+                let y = cursor.y - origin.y as f64;
+                let inside = logical_point(x, y, scale).is_some();
+                if hovered != inside {
+                    hovered = inside;
+                    let _ = window.emit("habitat-hover", hovered);
+                }
                 let hit = state.mask.lock().is_ok_and(|mask| {
-                    hits_mask(
-                        &mask,
-                        cursor.x - origin.x as f64,
-                        cursor.y - origin.y as f64,
-                        scale,
-                    )
+                    hits_mask(&mask, x, y, scale)
+                        || hits_controls(
+                            x,
+                            y,
+                            scale,
+                            state.controls_visible.load(Ordering::Relaxed),
+                        )
                 });
                 let should_ignore = !hit;
-                if should_ignore != ignoring
+                if Some(should_ignore) != ignoring
                     && window.set_ignore_cursor_events(should_ignore).is_ok()
                 {
-                    ignoring = should_ignore;
+                    ignoring = Some(should_ignore);
                 }
             }
             // Re-dock if the current display's work area changes (e.g. Dock moves).
@@ -150,6 +216,16 @@ pub fn start_hit_testing(window: WebviewWindow) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn hidden_controls_pass_through_and_visible_controls_use_scaled_bounds() {
+        assert!(!hits_controls(10.0, 20.0, 1.0, false));
+        assert!(hits_controls(10.0, 20.0, 1.0, true));
+        assert!(hits_controls(20.0, 40.0, 2.0, true));
+        assert!(!hits_controls(214.0, 20.0, 1.0, true));
+        assert!(!hits_controls(100.0, 42.0, 1.0, true));
+        assert!(!hits_controls(5.0, 20.0, 1.0, true));
+    }
 
     #[test]
     fn hit_testing_handles_transparency_bounds_and_display_scale() {

@@ -18,6 +18,12 @@ body,
 }
 
 .habitat {
+  position: relative;
+  width: 220px;
+  height: 200px;
+}
+
+.pet {
   all: unset;
   display: block;
   width: 220px;
@@ -26,13 +32,9 @@ body,
   -webkit-tap-highlight-color: transparent;
 }
 
-.habitat:focus-visible {
+.pet:focus-visible {
   outline: 1px dashed #bb8957;
   outline-offset: -3px;
-}
-
-.habitat.is-greeting {
-  filter: brightness(1.2);
 }
 
 canvas {
@@ -40,6 +42,80 @@ canvas {
   width: 220px;
   height: 200px;
   image-rendering: pixelated;
+}
+
+/* Matches hits_controls() in Rust: opaque logical rectangle x=6..214, y=10..42. */
+.controls {
+  position: absolute;
+  left: 6px;
+  top: 10px;
+  box-sizing: border-box;
+  width: 208px;
+  height: 32px;
+  padding: 3px;
+  display: flex;
+  gap: 4px;
+  background: #fff0cb;
+  border: 1px solid #77513c;
+  visibility: hidden;
+}
+
+.controls button {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: #50382d;
+  font:
+    12px system-ui,
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.controls button:first-child {
+  flex: 2;
+}
+.controls button:hover {
+  background: #efd4a2;
+}
+.controls button:focus-visible {
+  outline: 2px solid #77513c;
+  outline-offset: -2px;
+}
+.controls button:disabled {
+  color: #82705e;
+  cursor: default;
+}
+.show-controls .controls {
+  visibility: visible;
+}
+
+.mood-label {
+  position: absolute;
+  top: 44px;
+  width: 220px;
+  margin: 0;
+  color: #50382d;
+  font-size: 11px;
+  text-align: center;
+  pointer-events: none;
+  visibility: hidden;
+  text-shadow: 0 1px #fff0cb;
+}
+.show-controls .mood-label {
+  visibility: visible;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .startup-error {

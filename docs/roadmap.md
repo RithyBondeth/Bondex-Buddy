@@ -26,13 +26,15 @@ Implementation and automated checks are in place. Phase 1 acceptance remains ope
 
 ## Phase 2: Activity, moods, and focus
 
-- [ ] Poll OS idle duration every five seconds without recording input contents.
-- [ ] Deterministic Idle, Working, Sleeping, TeaBreak, and Happy states.
-- [ ] Guard focus sessions against brief interaction overrides.
-- [ ] Hover controls and a 25-minute focus / 5-minute break timer.
-- [ ] Focused tests for state priority, elapsed time, sleep/resume, and timer completion.
+- [x] Native five-second OS idle-duration observer, without recording input contents.
+- [x] Deterministic Idle, Working, Sleeping, TeaBreak, and Happy states.
+- [x] Guard running focus sessions against interaction overrides.
+- [x] Hover/keyboard controls and a 25-minute focus / 5-minute break timer.
+- [x] Pause/resume/reset semantics and focused fake-clock tests.
+- [x] Provisional mood poses with matching hit-mask updates.
+- [ ] Native activity/hover/timer acceptance checks on macOS and Windows.
 
-Acceptance: verify transitions from activity, idle duration, local time, timer completion, and interaction. Clarify pause/resume semantics before implementing the clock.
+Acceptance: verify transitions from activity, idle duration, local time, timer completion, and interaction. Pause freezes remaining time, Resume continues it, and Reset cancels without completion. See [Phase 2 behavior](architecture/phase-2.md) and the [verification checklist](verification/phase-2.md).
 
 ## Phase 3: Art, audio, and polish
 
