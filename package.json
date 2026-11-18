@@ -19,7 +19,12 @@
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "npm run typecheck && npm run lint && npm run format:check"
+    "check": "npm run typecheck && npm run lint && npm run format:check",
+    "notices:generate": "node scripts/notices.mjs",
+    "notices:check": "node scripts/notices.mjs --check",
+    "notices:require-texts": "node scripts/notices.mjs --check --require-texts",
+    "notices:test": "node --test scripts/notices.node-test.mjs",
+    "notices:stage": "node scripts/notices.mjs --stage"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.12.5"

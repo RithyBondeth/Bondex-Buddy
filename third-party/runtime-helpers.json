@@ -1,0 +1,6 @@
+[
+  {
+    "package": "node_modules/vite",
+    "usage": "Vite emits the module-preload polyfill into production frontend chunks."
+  }
+]

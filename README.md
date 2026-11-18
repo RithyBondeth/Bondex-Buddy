@@ -6,9 +6,9 @@ A quiet, pixel-art desktop companion for macOS and Windows, based on the project
 
 Phases 1–4 and the Ember fox desktop-polish follow-up are merged into `develop` through [PR #6](https://github.com/RithyBondeth/Bondex-Buddy/pull/6). Artwork and the native acceptance fixture are merged through [PR #7](https://github.com/RithyBondeth/Bondex-Buddy/pull/7); both macOS Intel and Windows CI passed. Native GUI acceptance remains separate from those automated checks.
 
-The motion follow-up adds held pixel motion timelines: grounded breathing, a reading nod, a cup lift, and a single Happy hop. It also adds an isolated motion review page with pause, scrubbing, reduced motion, and cosmetic previews. Original illustration files are unchanged; final motion and cosmetic approval remain open.
+The motion work is merged through [PR #8](https://github.com/RithyBondeth/Bondex-Buddy/pull/8), with macOS and Windows CI passing. The release-notices follow-up adds a deterministic dependency inventory, copied third-party license texts, pinned upstream supplements, asset provenance, and bundle/CI integration. This follow-up is not committed or pushed yet.
 
-Passed locally: 33 TypeScript tests, frontend checks/build, and 165 browser renderer assertions. PR #7 additionally passed five native tests, Rust Clippy with all features, and macOS/Windows CI. The native shelf keyboard movement check confirmed a 24-logical-pixel change at scale 2. Native pointer checks remain inconclusive because coordinate automation reported window-location and screen-capture errors. Windows GUI checks, full profiling, signing, and distribution remain open. See [motion review](docs/verification/motion.md), [artwork/native report](docs/verification/artwork-native.md), and [roadmap](docs/roadmap.md).
+The inventory covers 276 packages and 177 distinct texts. Fifteen license-evidence entries remain flagged for curation; no project license has been selected. Eight notice-tool tests and 33 TypeScript tests pass locally, with frontend checks and macOS debug packaging. Native mouse/Windows GUI acceptance, final art/audio approval, full profiling, signing, and distribution remain open. See [release notice verification](docs/verification/release-notices.md), [motion review](docs/verification/motion.md), and [roadmap](docs/roadmap.md).
 
 ## Requirements
 
@@ -48,7 +48,7 @@ Sound starts **Muted**. Enable it explicitly for quiet procedural rain and gentl
 | `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`                               | Check Rust formatting                       |
 | `cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings` | Lint Rust code                              |
 
-The first native build downloads and compiles the Rust dependencies and takes longer than later builds. Commit both `package-lock.json` and `src-tauri/Cargo.lock` for reproducible dependency resolution. Signing, notarization, and release distribution are not configured yet.
+The first native build downloads and compiles the Rust dependencies and takes longer than later builds. Commit both `package-lock.json` and `src-tauri/Cargo.lock` for reproducible dependency resolution. Dependency notices are bundled automatically; run `npm run notices:generate` after changing dependencies and use `npm run notices:check` to verify freshness. Signing, notarization, and release distribution remain open.
 
 ## Folder structure
 
