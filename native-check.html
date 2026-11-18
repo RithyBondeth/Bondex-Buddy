@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Native acceptance test</title>
+  </head>
+  <body>
+    <button id="surface" aria-label="Owned click-through test surface"></button>
+    <header>
+      <h1>Native acceptance test</h1>
+      <p id="counter">Background clicks: 0</p>
+      <nav>
+        <button data-action="place">Place pet</button>
+        <button data-action="ghost">Ghost preview</button>
+        <button data-action="solid">Solid preview</button>
+        <button data-action="hide">Hide pet</button>
+        <button data-action="show">Show pet</button>
+        <button data-action="dock">Dock pet</button>
+      </nav>
+      <p id="status" role="status">Loading native diagnostics</p>
+    </header>
+    <section id="gallery" aria-label="Rendered mood artwork"></section>
+    <div id="outline" aria-hidden="true"></div>
+    <script type="module" src="/src/testing/native-check.ts"></script>
+  </body>
+</html>

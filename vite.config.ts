@@ -8,5 +8,10 @@ export default defineConfig({
     strictPort: true,
     watch: { ignored: ['**/src-tauri/**'] },
   },
-  build: { target: ['es2022', 'safari15'] },
+  build: {
+    target: ['es2022', 'safari15'],
+    rolldownOptions: {
+      input: { main: 'index.html', nativeCheck: 'native-check.html' },
+    },
+  },
 });

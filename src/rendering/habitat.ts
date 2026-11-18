@@ -1,9 +1,14 @@
-import testSpiritUrl from '../../assets/pets/ember-fox/reference.png';
+import idleUrl from '../../assets/pets/ember-fox/reference.png';
+import workingUrl from '../../assets/pets/ember-fox/artwork/working.png';
+import sleepingUrl from '../../assets/pets/ember-fox/artwork/sleeping.png';
+import teaUrl from '../../assets/pets/ember-fox/artwork/tea-break.png';
+import happyUrl from '../../assets/pets/ember-fox/artwork/happy.png';
+import { normalizeFoxPixels } from './palette';
 import type { Mood } from '../engine/spirit';
 import type { Decor, Outfit } from '../engine/progress';
 import { drawParticles } from './particles';
 
-/** Crop transparent padding at render time; the concept source stays untouched. */
+/** Crop transparent padding at render time; source artwork stays untouched. */
 function opaqueBounds(
   image: HTMLImageElement,
 ): [number, number, number, number] {
@@ -20,14 +25,14 @@ function opaqueBounds(
   let bottom = -1;
   for (let y = 0; y < source.height; y++) {
     for (let x = 0; x < source.width; x++) {
-      if (data[(y * source.width + x) * 4 + 3] === 0) continue;
+      if (data[(y * source.width + x) * 4 + 3]! < 128) continue;
       left = Math.min(left, x);
       top = Math.min(top, y);
       right = Math.max(right, x);
       bottom = Math.max(bottom, y);
     }
   }
-  if (right < left) throw new Error('The test sprite is empty.');
+  if (right < left) throw new Error('The fox artwork is empty.');
   return [left, top, right - left + 1, bottom - top + 1];
 }
 
@@ -43,21 +48,34 @@ export async function createHabitatRenderer(
 }> {
   const output = canvas.getContext('2d');
   if (!output) throw new Error('Canvas is unavailable.');
-  const image = new Image();
-  image.src = testSpiritUrl;
-  await image.decode();
-  const bounds = opaqueBounds(image);
-  const ratio = 48 / Math.max(bounds[2], bounds[3]);
-  const width = Math.round(bounds[2] * ratio);
-  const height = Math.round(bounds[3] * ratio);
-  // Cache the test sprite at its source grid once; redraw only when mood changes.
-  const sprite = document.createElement('canvas');
-  sprite.width = width;
-  sprite.height = height;
-  const pixels = sprite.getContext('2d');
-  if (!pixels) throw new Error('Canvas is unavailable.');
-  pixels.imageSmoothingEnabled = false;
-  pixels.drawImage(image, ...bounds, 0, 0, width, height);
+  const sources: Record<Mood, string> = {
+    Idle: idleUrl,
+    Working: workingUrl,
+    Sleeping: sleepingUrl,
+    TeaBreak: teaUrl,
+    Happy: happyUrl,
+  };
+  const sprites = new Map<Mood, HTMLCanvasElement>();
+  await Promise.all(
+    Object.entries(sources).map(async ([mood, url]) => {
+      const image = new Image();
+      image.src = url;
+      await image.decode();
+      const bounds = opaqueBounds(image);
+      const ratio = 48 / Math.max(bounds[2], bounds[3]);
+      const sprite = document.createElement('canvas');
+      sprite.width = Math.round(bounds[2] * ratio);
+      sprite.height = Math.round(bounds[3] * ratio);
+      const pixels = sprite.getContext('2d');
+      if (!pixels) throw new Error('Canvas is unavailable.');
+      pixels.imageSmoothingEnabled = false;
+      pixels.drawImage(image, ...bounds, 0, 0, sprite.width, sprite.height);
+      const frame = pixels.getImageData(0, 0, sprite.width, sprite.height);
+      normalizeFoxPixels(frame.data);
+      pixels.putImageData(frame, 0, 0);
+      sprites.set(mood as Mood, sprite);
+    }),
+  );
 
   const frames = new Map<
     string,
@@ -76,50 +94,15 @@ export async function createHabitatRenderer(
     const context = frame.getContext('2d', { willReadFrequently: true });
     if (!context) throw new Error('Canvas is unavailable.');
     context.imageSmoothingEnabled = false;
-    const lift = mood === 'Happy' ? pose * 2 : mood === 'Idle' ? pose : 0;
+    const sprite = sprites.get(mood)!;
+    const lift = mood === 'Happy' ? pose * 2 : pose;
     context.save();
     context.translate(0, -lift);
-    if (mood === 'Sleeping') {
-      context.save();
-      context.translate(55, 70);
-      context.rotate(Math.PI / 2);
-      context.drawImage(
-        sprite,
-        -Math.floor(width / 2),
-        -Math.floor(height / 2),
-      );
-      context.restore();
-      context.fillStyle = '#707e91';
-      context.fillRect(32, 80 - pose, 46, 14 + pose);
-      context.fillStyle = '#adb7bf';
-      context.fillRect(32, 80 - pose, 46, 2);
-    } else {
-      context.drawImage(sprite, Math.floor((110 - width) / 2), 96 - height);
-    }
-    // Provisional pixel cues for testing state changes; final animation art is Phase 3.
-    if (mood === 'Working') {
-      context.strokeStyle = '#50382d';
-      context.lineWidth = 1;
-      context.strokeRect(41.5, 64.5, 7, 5);
-      context.strokeRect(53.5, 64.5, 7, 5);
-      context.fillStyle = '#50382d';
-      context.fillRect(49, 65, 4, 1);
-      context.fillStyle = '#d3a765';
-      context.fillRect(81, 86, 12, 8);
-      context.fillStyle = '#fff0cb';
-      context.fillRect(82, 87, 10, 5);
-      context.fillStyle = '#50382d';
-      context.fillRect(90 - pose, 85, 1, 6);
-    } else if (mood === 'TeaBreak') {
-      context.save();
-      context.translate(0, -pose);
-      context.fillStyle = '#50382d';
-      context.fillRect(81, 84, 9, 10);
-      context.fillRect(90, 86, 3, 5);
-      context.fillStyle = '#fff0cb';
-      context.fillRect(82, 85, 7, 8);
-      context.restore();
-    }
+    context.drawImage(
+      sprite,
+      Math.floor((110 - sprite.width) / 2),
+      94 - sprite.height,
+    );
     if (mood !== 'Sleeping' && outfit === 'beanie') {
       context.fillStyle = '#6c8390';
       context.fillRect(38, 49, 31, 5);
@@ -149,7 +132,7 @@ export async function createHabitatRenderer(
       context.fillStyle = '#edc574';
       context.fillRect(17, 82, 7, 9);
     }
-    // A simple test ledge grounds the sprite. Final habitat art comes later.
+    // The pixel ledge anchors the character and doubles as its drag handle.
     context.fillStyle = '#50382d';
     context.fillRect(5, 94, 100, 3);
     context.fillStyle = '#bb8957';

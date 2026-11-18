@@ -4,13 +4,13 @@ Pixel art is the required visual style for the pet, habitat, props, particles, a
 
 ## Current status
 
-Three generated pet concepts are stored in `concepts/`: ember fox, moon cat, and moss bunny. They are visual references only. Ember fox was selected on 2026-11-18. Final native sprite dimensions, a clean palette, and production animation frames are still pending.
+Three generated pet concepts are stored in `concepts/`: ember fox, moon cat, and moss bunny. They are visual references only. Ember fox was selected on 2026-11-18. The renderer now uses a maximum 48 × 48 body grid and a shared 16-color palette. Four dedicated mood illustrations are integrated alongside the Idle reference. Final approved source sheets and animation frames are still pending; see [the artwork/native report](../verification/artwork-native.md).
 
 The concept PNGs are large generated previews, not grid-accurate runtime sprite sheets. Production assets need a consistent source pixel grid and palette cleanup before animation. Do not directly treat a generated preview as a finished animated sprite.
 
 ## Production guidelines
 
-- Choose one native sprite grid after selecting the pet; explore 32, 48, or 64 pixels per frame.
+- Use the current maximum 48 × 48 character grid within the 110 × 100 habitat Canvas, displayed at 2×. The 16-color body/blanket palette is defined in `src/rendering/palette.ts`; props and UI have separate palettes.
 - Use crisp square pixels, a consistent outline weight, and a small documented palette.
 - Use flat color clusters; avoid gradients, blur, antialiasing, and texture noise.
 - Keep facial expressions readable at the intended desktop size.

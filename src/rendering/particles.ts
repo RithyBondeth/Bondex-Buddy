@@ -34,9 +34,9 @@ export function drawParticles(
     context.globalAlpha = (1 - progress) * 0.8;
     if (mood === 'TeaBreak') {
       context.fillStyle = '#b9b8aa';
-      const x = 83 + i * 3 + (Math.floor(progress * 4) % 2);
-      context.fillRect(x, 81 - rise, 1, 3);
-      context.fillRect(x + 1, 80 - rise, 1, 2);
+      const x = 54 + i * 3 + (Math.floor(progress * 4) % 2);
+      context.fillRect(x, 75 - rise, 1, 3);
+      context.fillRect(x + 1, 74 - rise, 1, 2);
     } else if (mood === 'Sleeping') {
       context.fillStyle = '#8896a8';
       stamp(context, SLEEP, 77 + i * 6, 63 - rise);
