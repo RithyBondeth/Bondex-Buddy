@@ -18,6 +18,8 @@ const LOGICAL_HEIGHT: f64 = 200.0;
 pub struct ShellState {
     pub manual_placement: AtomicBool,
     pub dragging: AtomicBool,
+    pub ignored: AtomicBool,
+    pub ghosted: AtomicBool,
     ghost_enabled: AtomicBool,
     working: AtomicBool,
     mask: Mutex<Vec<u8>>,
@@ -140,6 +142,7 @@ pub fn show_shell(
     mask: Vec<u8>,
 ) -> Result<(), String> {
     update_shell_mask(window.clone(), state, mask)?;
+    crate::native_check::place_overlay(&window).map_err(|e| e.to_string())?;
     window.show().map_err(|e| e.to_string())
 }
 
@@ -207,6 +210,10 @@ pub fn start_hit_testing(window: WebviewWindow) {
                 let _ = window.emit("habitat-visibility", visible);
             }
             if !visible {
+                window
+                    .state::<ShellState>()
+                    .ghosted
+                    .store(false, Ordering::Relaxed);
                 if ghosted {
                     ghosted = false;
                     let _ = window.emit("habitat-ghost", false);
@@ -221,8 +228,10 @@ pub fn start_hit_testing(window: WebviewWindow) {
             }
             let state = window.state::<ShellState>();
             if crate::placement::finish_drag(&window) {
-                let _ = window.set_ignore_cursor_events(false);
-                ignoring = Some(false);
+                if window.set_ignore_cursor_events(false).is_ok() {
+                    ignoring = Some(false);
+                    state.ignored.store(false, Ordering::Relaxed);
+                }
                 thread::sleep(Duration::from_millis(40));
                 continue;
             }
@@ -264,6 +273,7 @@ pub fn start_hit_testing(window: WebviewWindow) {
                     && inside;
                 if ghosted != ghost {
                     ghosted = ghost;
+                    state.ghosted.store(ghost, Ordering::Relaxed);
                     let _ = window.emit("habitat-ghost", ghost);
                 }
                 let should_ignore = !hit;
@@ -271,6 +281,7 @@ pub fn start_hit_testing(window: WebviewWindow) {
                     && window.set_ignore_cursor_events(should_ignore).is_ok()
                 {
                     ignoring = Some(should_ignore);
+                    state.ignored.store(should_ignore, Ordering::Relaxed);
                 }
             }
             // Re-dock if the current display's work area changes (e.g. Dock moves).

@@ -40,7 +40,8 @@ Acceptance: verify transitions from activity, idle duration, local time, timer c
 ## Phase 3: Art, audio, and polish
 
 - [x] Cached two-pose animation prototypes for all five moods, with a 30 fps render cap.
-- [ ] Consistent pixel-art animation loops for all five moods.
+- [x] Dedicated mood illustrations on a shared 48-pixel grid and 16-color runtime palette.
+- [ ] Approved pixel-art animation loops for all five moods.
 - [x] Decorative steam, hearts, and sleep particles with stable interactive hit masks.
 - [x] Muted-by-default procedural rain/chimes and a keyboard-accessible sound toggle.
 - [ ] Approved final Foley/ambient audio assets.
@@ -51,7 +52,7 @@ Acceptance: verify transitions from activity, idle duration, local time, timer c
 
 Acceptance: interactions feel calm and responsive; pixel edges stay sharp at supported display scales. Check audio toggles and CPU usage while visible and hidden.
 
-Phase 3 is in progress. The first slice builds animation, particles, audio, and lifecycle infrastructure around the temporary concept. Final pet selection, clean sprite sheets, approved sound assets, dragging, snapping, Ghost Mode, and full resource measurements remain open. See [Phase 3 notes](architecture/phase-3.md).
+Phase 3 is in progress. Ember fox is selected and dedicated mood illustrations are integrated. Final animation sheets, cosmetic art, approved sound assets, native mouse acceptance, and full resource measurements remain open. Native keyboard movement is verified on macOS; see [artwork/native follow-up](verification/artwork-native.md) and [Phase 3 notes](architecture/phase-3.md).
 
 ## Phase 4: Local progression
 
@@ -67,7 +68,7 @@ Phase 3 is in progress. The first slice builds animation, particles, audio, and 
 
 Acceptance: completing a focus session unlocks an item that can be equipped and restored on restart, without penalties or streaks.
 
-Phase 4 is in progress on a local branch. See [save/progression notes](architecture/phase-4.md); launch at login and wardrobe expansion remain open.
+Phase 4 storage, wardrobe, and opt-in login implementations are merged into develop. Final cosmetic art, native progression acceptance, and installed release login verification remain open. See [save/progression notes](architecture/phase-4.md).
 
 ## Release preparation
 
@@ -78,4 +79,4 @@ Phase 4 is in progress on a local branch. See [save/progression notes](architect
 - [x] Privacy documentation.
 - [ ] Complete dependency/asset license notices before distribution.
 
-The current local follow-up is described in [desktop polish notes](architecture/desktop-polish.md). Production art, native acceptance, profiling, and signed distribution are still open.
+Desktop polish is merged; the current local follow-up is described in [artwork/native checks](verification/artwork-native.md). Production art, native acceptance, profiling, and signed distribution are still open.

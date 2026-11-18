@@ -4,11 +4,11 @@ A quiet, pixel-art desktop companion for macOS and Windows, based on the project
 
 ## Current stage
 
-Phases 1–4 have published code in `develop` through PRs #1–#4. PR #4 passed Windows CI and local macOS checks; hosted macOS CI was queued at merge and later cancelled because no runner could be acquired. CI-only PR #5 changes the runner label and removes duplicate feature runs; hosted Mac validation remains pending. Those milestones still have open acceptance/art tasks in the roadmap.
+Phases 1–4 and the Ember fox desktop-polish follow-up are merged into `develop` through [PR #6](https://github.com/RithyBondeth/Bondex-Buddy/pull/6). Both hosted macOS Intel and Windows CI jobs passed for PR #6. Native GUI acceptance remains separate from those automated checks.
 
-The current local follow-up uses the selected **Ember fox**, adds shelf movement/snapping, optional native Ghost Mode, outfit unlocks with versioned save migration, and an opt-in release-build launch-at-login tray item. It also adds privacy documentation and a manual unsigned packaging workflow. These new changes are not committed or pushed yet.
+The artwork/native-testing follow-up integrates four dedicated Ember fox mood illustrations, a shared 48-pixel/16-color runtime treatment, and an optional debug native acceptance fixture. Final animation sheets and cosmetic artwork still need review.
 
-Passed locally: 25 TypeScript tests, five native tests, frontend checks/build, Rust Clippy, and macOS debug packaging. Native pointer acceptance, clean production artwork, full resource profiling, signing, and distribution remain open. See the [desktop polish notes](docs/architecture/desktop-polish.md), [roadmap](docs/roadmap.md), and [release preparation](docs/release.md).
+Passed locally: 27 TypeScript tests, five native tests, frontend checks/build, Rust Clippy with all features, and normal macOS debug packaging. The native WebView renders all five moods, and a shelf-keyboard movement check confirms a 24-logical-pixel change at scale 2. Native mouse acceptance remains inconclusive because coordinate automation reported window-location and screen-capture errors. Windows GUI checks, full profiling, signing, and distribution remain open. See the [artwork/native report](docs/verification/artwork-native.md), [roadmap](docs/roadmap.md), and [release preparation](docs/release.md).
 
 ## Requirements
 
@@ -53,7 +53,7 @@ The first native build downloads and compiles the Rust dependencies and takes lo
 ## Folder structure
 
 ```text
-assets/                    Runtime assets (including a temporary test pet)
+assets/                    Runtime assets and preserved source artwork
   pets/                    Sprite sheets and animation metadata
   decor/                   Habitat, outfits, and props
   audio/                   Ambient loops and interaction sounds
@@ -64,13 +64,14 @@ docs/
   *.pdf                    Original project plan
 src/
   app/                     Startup and application wiring
-  engine/                  Future mood, timer, and progression logic
-  rendering/               Canvas renderer; future animation
+  engine/                  Mood, timer, and progression logic
+  rendering/               Canvas renderer, palette, animation, particles
   platform/                Typed desktop startup adapters
   styles/                  Shared styles and pixel rendering rules
+  testing/                 Optional native acceptance surface
 src-tauri/
   capabilities/            Explicit frontend permissions
-  icons/                   Temporary scaffold app icons
+  icons/                   Ember fox app icons
   src/                     Native Rust entry points and OS integration
 ```
 
@@ -84,4 +85,4 @@ src-tauri/
 - Keep data local. No accounts, analytics, cloud storage, or external APIs are needed for the planned app.
 - Add focused behavior tests when implementing the engine and timer. Use manual desktop checks for transparency, placement, tray, and click-through behavior.
 
-Read the [architecture](docs/architecture/overview.md), [art direction](docs/design/art-direction.md), and [roadmap](docs/roadmap.md) before implementing the first milestone.
+Read the [architecture](docs/architecture/overview.md), [art direction](docs/design/art-direction.md), and [roadmap](docs/roadmap.md) for the next implementation and acceptance steps.

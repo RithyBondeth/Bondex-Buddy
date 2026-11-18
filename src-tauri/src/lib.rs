@@ -1,4 +1,5 @@
 mod activity;
+mod native_check;
 mod placement;
 mod shell;
 mod storage;
@@ -27,13 +28,16 @@ pub fn run() {
             shell::shell_visibility,
             activity::activity_snapshot,
             storage::load_progress,
-            storage::save_progress
+            storage::save_progress,
+            native_check::native_check_status,
+            native_check::native_check_action
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 
             tray::setup(app)?;
+            native_check::setup(app)?;
             let window = app
                 .get_webview_window("main")
                 .ok_or("Habitat window missing")?;

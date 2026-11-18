@@ -1,0 +1,25 @@
+{
+  "generatedOn": "2026-11-18",
+  "tool": "Built-in Imagegen",
+  "reference": "../reference.png",
+  "transparentBackground": true,
+  "status": "First integrated mood artwork; pending final visual approval. Runtime samples to a 48-pixel maximum dimension and a shared 16-color palette. These are single poses, not hand-authored animation sheets.",
+  "images": [
+    {
+      "file": "working.png",
+      "prompt": "Use case: identity-preserve. Asset: Tiny Desk Spirit pixel-art game sprite. Input image is the approved Ember fox identity reference. Create ONE Working/Focus pose of EXACTLY this same tiny terracotta fox: same rounded head, short dark-tipped triangular ears, cream muzzle and chest, cocoa paws, huge cream-tipped tail curled around the feet. Seated front view, quietly concentrating with tiny cocoa reading glasses and a very small open notebook held in paws. Full body centered, tail and notebook completely visible, transparent generous padding. Source composition 1024 x 1024. Authentic low-resolution pixel art designed on a virtual 48 x 48 grid, hard square clusters, dark brown 1-source-pixel outline, maximum 16 muted colors, flat fills. No gradients, texture, anti-aliasing, glows, furniture, ground, scene, text, labels, extra characters, or multiple poses. Preserve original identity, proportions, palette, and gentle mood. True transparent alpha background. This is one runtime character pose, not a concept sheet."
+    },
+    {
+      "file": "sleeping.png",
+      "prompt": "Use case: identity-preserve. Asset: Tiny Desk Spirit pixel-art game sprite. Input image is the approved Ember fox identity reference. Create ONE Sleeping pose of EXACTLY this same tiny terracotta fox: same rounded head, short dark-tipped triangular ears, cream muzzle and chest, cocoa paws, huge cream-tipped tail. Fox is naturally curled up low and horizontal, eyes closed, head resting on its curled tail, a small muted slate-blue woven blanket over lower body. Do not rotate an upright fox sideways. Peaceful cozy sleep. Full body centered with generous transparent padding, all ears and tail visible. Source composition 1024 x 1024. Authentic low-resolution pixel art on a virtual 48 x 48 grid, hard square clusters, dark brown 1-source-pixel outline, maximum 16 muted colors, flat fills. No gradients, texture, anti-aliasing, glows, furniture, ground, scene, z letters, particles, text, labels, extra characters, or multiple poses. Preserve original identity and palette. True transparent alpha background. One runtime character pose."
+    },
+    {
+      "file": "tea-break.png",
+      "prompt": "Use case: identity-preserve. Asset: Tiny Desk Spirit pixel-art game sprite. Input image is the approved Ember fox identity reference. Create ONE TeaBreak pose of EXACTLY this same tiny terracotta fox: same rounded head, short dark-tipped triangular ears, cream muzzle/chest, cocoa paws, huge cream-tipped tail curled around feet. Same seated front view and proportions, relaxed closed eyes, both paws gently holding a small oatmeal ceramic tea mug at chest height. Full body centered and completely visible with generous transparent padding. Source composition 1024 x 1024. Authentic low-resolution pixel art on a virtual 48 x 48 grid, hard square clusters, dark brown 1-source-pixel outline, maximum 16 muted colors, flat fills. No gradients, texture, anti-aliasing, glows, furniture, ground, scene, baked steam or particles, text, labels, extra characters, or multiple poses. Preserve original identity, palette and quiet cozy mood. True transparent alpha background. One runtime character pose."
+    },
+    {
+      "file": "happy.png",
+      "prompt": "Use case: identity-preserve. Asset: Tiny Desk Spirit pixel-art game sprite. Input image is the approved Ember fox identity reference. Create ONE Happy/Petted pose of EXACTLY this same tiny terracotta fox: same rounded head, short dark-tipped triangular ears, cream muzzle and chest, cocoa paws, huge cream-tipped tail curled around feet. Same seated front view and proportions. Slightly lifted tiny paws, eyes squinting contentedly, a tiny warm smile and subtle peach cheeks; gently happy, not excited or manic. Full body centered and entirely visible with generous transparent padding. Source composition 1024 x 1024. Authentic low-resolution pixel art on a virtual 48 x 48 grid, hard square clusters, dark brown 1-source-pixel outline, maximum 16 muted colors, flat fills. No gradients, texture, anti-aliasing, glow, hearts, particles, furniture, ground, scene, text, labels, extra characters, or multiple poses. Preserve original identity and palette. True transparent alpha background. One runtime character pose."
+    }
+  ]
+}

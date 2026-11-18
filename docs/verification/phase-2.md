@@ -1,5 +1,7 @@
 # Phase 2 verification
 
+For the latest artwork, CI, and native acceptance status, see [the 2026-11-18 follow-up](artwork-native.md). The notes below record the original phase checks.
+
 ## Checks completed locally
 
 - Twelve deterministic TypeScript tests cover mood priority, sustained activity, sleep/night boundaries, return from away, happy expiry, focus/break completion, pause/resume/reset, delayed callbacks, backward clock changes, stale input, and countdown formatting.

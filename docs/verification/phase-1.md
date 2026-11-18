@@ -1,5 +1,7 @@
 # Phase 1 verification
 
+For the latest artwork, CI, and native acceptance status, see [the 2026-11-18 follow-up](artwork-native.md). The notes below record the original phase checks.
+
 ## Verified in this workspace
 
 - Frontend strict TypeScript, ESLint, Prettier, and production build pass.
