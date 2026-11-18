@@ -4,7 +4,7 @@ Pixel art is the required visual style for the pet, habitat, props, particles, a
 
 ## Current status
 
-Three generated pet concepts are stored in `concepts/`: ember fox, moon cat, and moss bunny. They are visual references only. No pet, final sprite dimensions, palette, or animation frames have been approved.
+Three generated pet concepts are stored in `concepts/`: ember fox, moon cat, and moss bunny. They are visual references only. Ember fox was selected on 2026-11-18. Final native sprite dimensions, a clean palette, and production animation frames are still pending.
 
 The concept PNGs are large generated previews, not grid-accurate runtime sprite sheets. Production assets need a consistent source pixel grid and palette cleanup before animation. Do not directly treat a generated preview as a finished animated sprite.
 

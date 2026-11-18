@@ -1,6 +1,6 @@
-import testSpiritUrl from '../../assets/pets/test-spirit/reference.png';
+import testSpiritUrl from '../../assets/pets/ember-fox/reference.png';
 import type { Mood } from '../engine/spirit';
-import type { Decor } from '../engine/progress';
+import type { Decor, Outfit } from '../engine/progress';
 import { drawParticles } from './particles';
 
 /** Crop transparent padding at render time; the concept source stays untouched. */
@@ -38,7 +38,7 @@ export async function createHabitatRenderer(
     mood: Mood,
     elapsedMs?: number,
     reduced?: boolean,
-    appearance?: { decor: Decor; night: boolean },
+    appearance?: { decor: Decor; night: boolean; outfit?: Outfit },
   ) => number[];
 }> {
   const output = canvas.getContext('2d');
@@ -66,8 +66,8 @@ export async function createHabitatRenderer(
   let lastCanvas: HTMLCanvasElement | undefined;
   let lastHadParticles = false;
   let lastNight = false;
-  const frameFor = (mood: Mood, pose: number, decor: Decor) => {
-    const key = `${mood}:${pose}:${decor}`;
+  const frameFor = (mood: Mood, pose: number, decor: Decor, outfit: Outfit) => {
+    const key = `${mood}:${pose}:${decor}:${outfit}`;
     const cached = frames.get(key);
     if (cached) return cached;
     const frame = document.createElement('canvas');
@@ -119,6 +119,18 @@ export async function createHabitatRenderer(
       context.fillStyle = '#fff0cb';
       context.fillRect(82, 85, 7, 8);
       context.restore();
+    }
+    if (mood !== 'Sleeping' && outfit === 'beanie') {
+      context.fillStyle = '#6c8390';
+      context.fillRect(38, 49, 31, 5);
+      context.fillRect(42, 46, 23, 4);
+      context.fillRect(51, 43, 5, 3);
+      context.fillStyle = '#b9c6cb';
+      context.fillRect(38, 53, 31, 2);
+    } else if (mood !== 'Sleeping' && outfit === 'scarf') {
+      context.fillStyle = '#b65e50';
+      context.fillRect(42, 76, 23, 3);
+      context.fillRect(43, 79, 5, 9);
     }
     context.restore();
     if (decor === 'plant') {
@@ -177,7 +189,12 @@ export async function createHabitatRenderer(
             ? 260
             : 700;
       const pose = reduced ? 0 : Math.floor(elapsed / period) % 2;
-      const frame = frameFor(mood, pose, appearance.decor);
+      const frame = frameFor(
+        mood,
+        pose,
+        appearance.decor,
+        appearance.outfit ?? 'none',
+      );
       const particles =
         !reduced &&
         (mood === 'TeaBreak' || mood === 'Sleeping' || mood === 'Happy');

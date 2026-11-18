@@ -4,9 +4,11 @@ A quiet, pixel-art desktop companion for macOS and Windows, based on the project
 
 ## Current stage
 
-Phases 1–3 have been published into `develop` through PRs #1–#3, with macOS and Windows CI passing. Phase 3 still has final-art, dragging/snapping, Ghost Mode, and profiling work open. Phase 4 is in progress locally: versioned saves, permanent decor unlocks, an Items drawer, and saved lighting choices are implemented around the temporary pet.
+Phases 1–4 have published code in `develop` through PRs #1–#4. PR #4 passed Windows CI and local macOS checks; hosted macOS CI was queued at merge and later cancelled because no runner could be acquired. CI-only PR #5 changes the runner label and removes duplicate feature runs; hosted Mac validation remains pending. Those milestones still have open acceptance/art tasks in the roadmap.
 
-Phase 4 has 23 TypeScript tests, four native tests, and browser/native macOS preference-restoration checks. Windows runtime acceptance, real-session reward/equipment checks, wardrobe expansion, and launch at login remain open. See the [Phase 4 notes](docs/architecture/phase-4.md) and the [roadmap](docs/roadmap.md) for the remaining work across phases.
+The current local follow-up uses the selected **Ember fox**, adds shelf movement/snapping, optional native Ghost Mode, outfit unlocks with versioned save migration, and an opt-in release-build launch-at-login tray item. It also adds privacy documentation and a manual unsigned packaging workflow. These new changes are not committed or pushed yet.
+
+Passed locally: 25 TypeScript tests, five native tests, frontend checks/build, Rust Clippy, and macOS debug packaging. Native pointer acceptance, clean production artwork, full resource profiling, signing, and distribution remain open. See the [desktop polish notes](docs/architecture/desktop-polish.md), [roadmap](docs/roadmap.md), and [release preparation](docs/release.md).
 
 ## Requirements
 

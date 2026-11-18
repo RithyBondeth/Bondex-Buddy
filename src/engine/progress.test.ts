@@ -39,7 +39,9 @@ it('round-trips progress, equipment, and preferences and strips unrelated fields
     activity: 'must not persist',
   };
   expect(decodeProgress(JSON.stringify(data))).toEqual({
-    version: 1,
+    version: 2,
+    outfit: 'none',
+    ghost: false,
     completedFocusSessions: 3,
     decor: 'lantern',
     lighting: 'day',
@@ -48,7 +50,7 @@ it('round-trips progress, equipment, and preferences and strips unrelated fields
 it('rejects corrupt/future data and clears locked equipment without losing progress', () => {
   expect(() => decodeProgress('{')).toThrow();
   expect(() =>
-    decodeProgress(JSON.stringify({ ...freshProgress(), version: 2 })),
+    decodeProgress(JSON.stringify({ ...freshProgress(), version: 3 })),
   ).toThrow();
   expect(() =>
     decodeProgress(
@@ -93,4 +95,38 @@ it('serializes updates and retries after an earlier write fails', async () => {
   await expect(first).rejects.toThrow();
   await second;
   expect((await openProgressStore(backend)).data).toEqual(latest);
+});
+
+it('migrates version 1 without losing earned progress or equipped decor', () => {
+  expect(
+    decodeProgress(
+      JSON.stringify({
+        version: 1,
+        completedFocusSessions: 5,
+        decor: 'lantern',
+        lighting: 'day',
+      }),
+    ),
+  ).toEqual({
+    ...freshProgress(),
+    completedFocusSessions: 5,
+    decor: 'lantern',
+    lighting: 'day',
+  });
+});
+it('clears locked outfits and retains unlocked wardrobe choices', () => {
+  expect(
+    decodeProgress(JSON.stringify({ ...freshProgress(), outfit: 'beanie' }))
+      .outfit,
+  ).toBe('none');
+  expect(
+    decodeProgress(
+      JSON.stringify({
+        ...freshProgress(),
+        completedFocusSessions: 5,
+        outfit: 'scarf',
+        ghost: true,
+      }),
+    ),
+  ).toMatchObject({ outfit: 'scarf', ghost: true });
 });

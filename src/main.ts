@@ -6,10 +6,15 @@ const root = document.querySelector<HTMLElement>('#app');
 if (!root) throw new Error('Application root is missing.');
 
 let dispose: (() => void) | undefined;
-import.meta.hot?.dispose(() => dispose?.());
+let stopped = false;
+import.meta.hot?.dispose(() => {
+  stopped = true;
+  dispose?.();
+});
 void mountApp(root)
   .then((cleanup) => {
-    dispose = cleanup;
+    if (stopped) cleanup();
+    else dispose = cleanup;
   })
   .catch(async (error: unknown) => {
     console.error('Habitat startup failed:', error);

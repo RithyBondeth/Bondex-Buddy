@@ -114,7 +114,7 @@ canvas {
   left: 6px;
   top: 46px;
   width: 208px;
-  height: 70px;
+  height: 100px;
   padding: 5px;
   border: 1px solid #77513c;
   background: #fff0cb;
@@ -140,6 +140,30 @@ canvas {
 }
 .drawer-open .mood-label {
   visibility: hidden;
+}
+
+.drag-handle {
+  all: unset;
+  position: absolute;
+  left: 10px;
+  bottom: 0;
+  width: 200px;
+  height: 12px;
+  cursor: grab;
+}
+.drag-handle:focus-visible {
+  outline: 1px dashed #fff0cb;
+  outline-offset: -2px;
+}
+.ghosted canvas {
+  opacity: 0.3;
+}
+.items-drawer button {
+  min-width: 0;
+  font-size: 10px;
+  color: #50382d;
+  background: #fff5de;
+  border: 1px solid #77513c;
 }
 
 .sr-only {

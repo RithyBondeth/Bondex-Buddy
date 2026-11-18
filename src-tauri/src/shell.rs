@@ -16,9 +16,22 @@ const LOGICAL_HEIGHT: f64 = 200.0;
 
 #[derive(Default)]
 pub struct ShellState {
+    pub manual_placement: AtomicBool,
+    pub dragging: AtomicBool,
+    ghost_enabled: AtomicBool,
+    working: AtomicBool,
     mask: Mutex<Vec<u8>>,
     controls_visible: AtomicBool,
     drawer_visible: AtomicBool,
+}
+
+#[tauri::command]
+pub fn set_working(state: tauri::State<'_, ShellState>, working: bool) {
+    state.working.store(working, Ordering::Relaxed);
+}
+#[tauri::command]
+pub fn set_ghost_mode(state: tauri::State<'_, ShellState>, enabled: bool) {
+    state.ghost_enabled.store(enabled, Ordering::Relaxed);
 }
 
 fn logical_point(x: f64, y: f64, scale: f64) -> Option<(f64, f64)> {
@@ -90,6 +103,10 @@ pub fn dock(window: &WebviewWindow, monitor: &tauri::Monitor) -> tauri::Result<(
 }
 
 pub fn reset_position(window: &WebviewWindow) -> tauri::Result<()> {
+    window
+        .state::<ShellState>()
+        .manual_placement
+        .store(false, Ordering::Relaxed);
     if let Some(monitor) = window.current_monitor()?.or(window.primary_monitor()?) {
         dock(window, &monitor)?;
     }
@@ -97,6 +114,10 @@ pub fn reset_position(window: &WebviewWindow) -> tauri::Result<()> {
 }
 
 pub fn next_display(window: &WebviewWindow) -> tauri::Result<()> {
+    window
+        .state::<ShellState>()
+        .manual_placement
+        .store(false, Ordering::Relaxed);
     let monitors = window.available_monitors()?;
     let current = window.current_monitor()?;
     let index = current
@@ -178,6 +199,7 @@ pub fn start_hit_testing(window: WebviewWindow) {
         let mut hovered = false;
         let mut was_visible = false;
         let mut ticks = 0;
+        let mut ghosted = false;
         loop {
             let visible = window.is_visible().unwrap_or(false);
             if was_visible != visible {
@@ -185,6 +207,10 @@ pub fn start_hit_testing(window: WebviewWindow) {
                 let _ = window.emit("habitat-visibility", visible);
             }
             if !visible {
+                if ghosted {
+                    ghosted = false;
+                    let _ = window.emit("habitat-ghost", false);
+                }
                 ignoring = None;
                 if hovered {
                     hovered = false;
@@ -194,6 +220,12 @@ pub fn start_hit_testing(window: WebviewWindow) {
                 continue;
             }
             let state = window.state::<ShellState>();
+            if crate::placement::finish_drag(&window) {
+                let _ = window.set_ignore_cursor_events(false);
+                ignoring = Some(false);
+                thread::sleep(Duration::from_millis(40));
+                continue;
+            }
             let ready = state.mask.lock().is_ok_and(|mask| !mask.is_empty());
             if !ready {
                 ignoring = None;
@@ -212,10 +244,13 @@ pub fn start_hit_testing(window: WebviewWindow) {
                     let _ = window.emit("habitat-hover", hovered);
                 }
                 let hit = state.mask.lock().is_ok_and(|mask| {
-                    hits_mask(&mask, x, y, scale)
+                    (hits_mask(&mask, x, y, scale)
+                        && !(state.ghost_enabled.load(Ordering::Relaxed)
+                            && state.working.load(Ordering::Relaxed)
+                            && inside))
                         || (state.drawer_visible.load(Ordering::Relaxed)
                             && logical_point(x, y, scale).is_some_and(|(x, y)| {
-                                (6.0..214.0).contains(&x) && (46.0..116.0).contains(&y)
+                                (6.0..214.0).contains(&x) && (46.0..146.0).contains(&y)
                             }))
                         || hits_controls(
                             x,
@@ -224,6 +259,13 @@ pub fn start_hit_testing(window: WebviewWindow) {
                             state.controls_visible.load(Ordering::Relaxed),
                         )
                 });
+                let ghost = state.ghost_enabled.load(Ordering::Relaxed)
+                    && state.working.load(Ordering::Relaxed)
+                    && inside;
+                if ghosted != ghost {
+                    ghosted = ghost;
+                    let _ = window.emit("habitat-ghost", ghost);
+                }
                 let should_ignore = !hit;
                 if Some(should_ignore) != ignoring
                     && window.set_ignore_cursor_events(should_ignore).is_ok()
@@ -232,10 +274,15 @@ pub fn start_hit_testing(window: WebviewWindow) {
                 }
             }
             // Re-dock if the current display's work area changes (e.g. Dock moves).
-            if ticks % 50 == 0
-                && let Err(error) = reset_position(&window)
-            {
-                eprintln!("Could not update habitat placement: {error}");
+            if ticks % 50 == 0 {
+                let result = if state.manual_placement.load(Ordering::Relaxed) {
+                    crate::placement::keep_visible(&window)
+                } else {
+                    reset_position(&window)
+                };
+                if let Err(error) = result {
+                    eprintln!("Could not update habitat placement: {error}");
+                }
             }
             ticks = (ticks + 1) % 50;
             thread::sleep(Duration::from_millis(40));
