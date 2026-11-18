@@ -8,3 +8,5 @@ package-lock.json
 *.png
 *.ico
 *.icns
+third-party/generated
+third-party/upstream

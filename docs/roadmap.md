@@ -79,6 +79,9 @@ Phase 4 storage, wardrobe, and opt-in login implementations are merged into deve
 - [ ] Final app identifier/version and installer review.
 - [ ] Signing/notarization and installer validation.
 - [x] Privacy documentation.
-- [ ] Complete dependency/asset license notices before distribution.
+- [x] Generate dependency/license-text inventory and asset provenance, with CI freshness checks.
+- [x] Bundle notices and stage a standalone copy with unsigned QA artifacts.
+- [ ] Curate the 15 remaining license-evidence entries and complete distribution notice review.
+- [ ] Select the project license before distribution.
 
-Desktop polish is merged; the current local follow-up is described in [artwork/native checks](verification/artwork-native.md). Production art, native acceptance, profiling, and signed distribution are still open.
+Desktop polish and motion are merged; the current local follow-up is described in [release notice verification](verification/release-notices.md). Production art, native acceptance, profiling, and signed distribution are still open.

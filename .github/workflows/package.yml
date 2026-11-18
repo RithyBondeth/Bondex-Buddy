@@ -27,9 +27,12 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm test
+      - run: npm run notices:test
+      - run: npm run notices:check
       - run: npm run build
       - run: cargo test --locked --manifest-path src-tauri/Cargo.toml
       - run: npm run desktop:build -- --bundles ${{ matrix.bundle }}
+      - run: npm run notices:stage
       - uses: actions/upload-artifact@v4
         with:
           name: tiny-desk-spirit-${{ runner.os }}-${{ runner.arch }}-unsigned

@@ -3,3 +3,5 @@
 *.ico binary
 *.icns binary
 *.pdf binary
+third-party/generated/** -text -whitespace
+third-party/upstream/** -text -whitespace
