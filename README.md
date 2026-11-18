@@ -4,11 +4,11 @@ A quiet, pixel-art desktop companion for macOS and Windows, based on the project
 
 ## Current stage
 
-Phases 1–4 and the Ember fox desktop-polish follow-up are merged into `develop` through [PR #6](https://github.com/RithyBondeth/Bondex-Buddy/pull/6). Both hosted macOS Intel and Windows CI jobs passed for PR #6. Native GUI acceptance remains separate from those automated checks.
+Phases 1–4 and the Ember fox desktop-polish follow-up are merged into `develop` through [PR #6](https://github.com/RithyBondeth/Bondex-Buddy/pull/6). Artwork and the native acceptance fixture are merged through [PR #7](https://github.com/RithyBondeth/Bondex-Buddy/pull/7); both macOS Intel and Windows CI passed. Native GUI acceptance remains separate from those automated checks.
 
-The artwork/native-testing follow-up integrates four dedicated Ember fox mood illustrations, a shared 48-pixel/16-color runtime treatment, and an optional debug native acceptance fixture. Final animation sheets and cosmetic artwork still need review.
+The motion follow-up adds held pixel motion timelines: grounded breathing, a reading nod, a cup lift, and a single Happy hop. It also adds an isolated motion review page with pause, scrubbing, reduced motion, and cosmetic previews. Original illustration files are unchanged; final motion and cosmetic approval remain open.
 
-Passed locally: 27 TypeScript tests, five native tests, frontend checks/build, Rust Clippy with all features, and normal macOS debug packaging. The native WebView renders all five moods, and a shelf-keyboard movement check confirms a 24-logical-pixel change at scale 2. Native mouse acceptance remains inconclusive because coordinate automation reported window-location and screen-capture errors. Windows GUI checks, full profiling, signing, and distribution remain open. See the [artwork/native report](docs/verification/artwork-native.md), [roadmap](docs/roadmap.md), and [release preparation](docs/release.md).
+Passed locally: 33 TypeScript tests, frontend checks/build, and 165 browser renderer assertions. PR #7 additionally passed five native tests, Rust Clippy with all features, and macOS/Windows CI. The native shelf keyboard movement check confirmed a 24-logical-pixel change at scale 2. Native pointer checks remain inconclusive because coordinate automation reported window-location and screen-capture errors. Windows GUI checks, full profiling, signing, and distribution remain open. See [motion review](docs/verification/motion.md), [artwork/native report](docs/verification/artwork-native.md), and [roadmap](docs/roadmap.md).
 
 ## Requirements
 
@@ -26,7 +26,7 @@ npm ci
 npm run desktop:dev
 ```
 
-For the Canvas preview in a browser, run `npm run dev`. Native placement, transparency, tray, idle observation, and click-through must be checked in the Tauri app. Use the menu bar/system tray icon to **Show spirit**, **Hide spirit**, **Reset to bottom right**, **Move to next display**, or **Quit Tiny Desk Spirit**.
+For the Canvas preview in a browser, run `npm run dev`. Open `/motion-review.html` on that server to review all five animations and preview cosmetics without altering saved progress. Native placement, transparency, tray, idle observation, and click-through must be checked in the Tauri app. Use the menu bar/system tray icon to **Show spirit**, **Hide spirit**, **Reset to bottom right**, **Move to next display**, or **Quit Tiny Desk Spirit**.
 
 Hover over the habitat (or focus the pet with the keyboard) to reveal **Start/Pause/Resume** and **Reset**. A completed focus starts one five-minute break; finishing the break returns to idle. Reset cancels the current session without completion. Clicking the pet gives a two-second Happy reaction, except during a running focus session. Browser previews support the timer but do not simulate OS activity.
 

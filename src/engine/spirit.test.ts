@@ -59,7 +59,7 @@ describe('focus clock', () => {
     const engine = new SpiritEngine();
     engine.toggleTimer(0);
     engine.observeActivity({ idleSeconds: 700, sampledAtMs: 1000 }, 1000);
-    engine.interact(1000);
+    expect(engine.interact(1000)).toBe(false);
     expect(engine.read(1000, 23 * 60 + 45)).toMatchObject({
       mood: 'Working',
       timer: { status: 'running', remainingMs: FOCUS_MS - 1000 },
@@ -92,7 +92,7 @@ describe('activity and mood priorities', () => {
 
   it('clears a temporary happy reaction and uses the current underlying mood', () => {
     const engine = new SpiritEngine();
-    engine.interact(0);
+    expect(engine.interact(0)).toBe(true);
     expect(engine.read(1999).mood).toBe('Happy');
     expect(engine.read(2000, 23 * 60 + 30).mood).toBe('Sleeping');
     expect(engine.read(2001, 6 * 60).mood).toBe('Idle');

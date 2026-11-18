@@ -122,11 +122,12 @@ export class SpiritEngine {
     this.happyUntil = 0;
   }
 
-  interact(nowMs: number): void {
+  interact(nowMs: number): boolean {
     this.advance(nowMs);
     // Interaction cannot displace Working during a running focus session.
-    if (this.session?.phase === 'Focus' && this.session.running) return;
+    if (this.session?.phase === 'Focus' && this.session.running) return false;
     this.happyUntil = this.now + 2000;
+    return true;
   }
 
   read(nowMs: number, localMinutes = 12 * 60): SpiritSnapshot {
