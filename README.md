@@ -6,9 +6,9 @@ A quiet, pixel-art desktop companion for macOS and Windows, based on the project
 
 Phases 1–4 and the Ember fox desktop-polish follow-up are merged into `develop` through [PR #6](https://github.com/RithyBondeth/Bondex-Buddy/pull/6). Artwork and the native acceptance fixture are merged through [PR #7](https://github.com/RithyBondeth/Bondex-Buddy/pull/7); both macOS Intel and Windows CI passed. Native GUI acceptance remains separate from those automated checks.
 
-The motion work is merged through [PR #8](https://github.com/RithyBondeth/Bondex-Buddy/pull/8), with macOS and Windows CI passing. The release-notices follow-up adds a deterministic dependency inventory, copied third-party license texts, pinned upstream supplements, asset provenance, and bundle/CI integration. This follow-up is not committed or pushed yet.
+The motion work is merged through [PR #8](https://github.com/RithyBondeth/Bondex-Buddy/pull/8), with macOS and Windows CI passing. Release notices are merged through [PR #9](https://github.com/RithyBondeth/Bondex-Buddy/pull/9), with macOS and Windows CI passing. The single-instance follow-up adds single-instance startup protection and macOS reopen handling. Relaunch requests restore the existing habitat and its in-memory session.
 
-The inventory covers 276 packages and 177 distinct texts. Fifteen license-evidence entries remain flagged for curation; no project license has been selected. Eight notice-tool tests and 33 TypeScript tests pass locally, with frontend checks and macOS debug packaging. Native mouse/Windows GUI acceptance, final art/audio approval, full profiling, signing, and distribution remain open. See [release notice verification](docs/verification/release-notices.md), [motion review](docs/verification/motion.md), and [roadmap](docs/roadmap.md).
+The refreshed notice inventory covers 278 packages and 178 distinct texts, with 15 evidence reviews open. Frontend checks, 33 TypeScript tests, eight notice-tool tests, five Rust tests, and Clippy pass locally. Native restore automation remains inconclusive. See [relaunch verification](docs/verification/relaunch.md) and [roadmap](docs/roadmap.md).
 
 ## Requirements
 

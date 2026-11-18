@@ -27,6 +27,12 @@ pub struct ShellState {
     drawer_visible: AtomicBool,
 }
 
+/// Restore the existing habitat without recreating its WebView.
+pub fn show_existing(window: &WebviewWindow) -> tauri::Result<()> {
+    window.unminimize()?;
+    window.show()
+}
+
 #[tauri::command]
 pub fn set_working(state: tauri::State<'_, ShellState>, working: bool) {
     state.working.store(working, Ordering::Relaxed);
@@ -185,6 +191,9 @@ pub fn show_shell_error(
     window: WebviewWindow,
     state: tauri::State<'_, ShellState>,
 ) -> Result<(), String> {
+    if window.label() != "main" {
+        return Err("Invalid habitat window".into());
+    }
     state.mask.lock().map_err(|e| e.to_string())?.clear();
     state.controls_visible.store(false, Ordering::Relaxed);
     state.drawer_visible.store(false, Ordering::Relaxed);

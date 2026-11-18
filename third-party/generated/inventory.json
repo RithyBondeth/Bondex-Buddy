@@ -8,10 +8,10 @@
   ],
   "locks": {
     "package-lock.json": "63ffd21249ea268f7943effabdb15ec39c066815939531ba960240fa08251a1f",
-    "src-tauri/Cargo.lock": "7de5ee908a827017bcf555ed73228fba5d6ded43170d0376015252c35d6cda7e"
+    "src-tauri/Cargo.lock": "471467bff04fe93ca97bbfcb01b2fd782090e1a72e15ce9a0db82a612ebf8c7d"
   },
-  "packageCount": 276,
-  "uniqueLicenseFiles": 177,
+  "packageCount": 278,
+  "uniqueLicenseFiles": 178,
   "unresolved": [
     "cargo:block2@0.6.2",
     "cargo:dispatch2@0.3.1",
@@ -5432,6 +5432,39 @@
       "issues": []
     },
     {
+      "id": "cargo:tauri-plugin-single-instance@2.5.5",
+      "ecosystem": "cargo",
+      "name": "tauri-plugin-single-instance",
+      "version": "2.5.5",
+      "license": "Apache-2.0 OR MIT",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/tauri-apps/plugins-workspace",
+      "revision": "128190689dbe59b59d344e01bf07b00862aa3791",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "LICENSE.spdx",
+          "file": "licenses/eb8a6c84630461b352badcab1dbe5d0168c56d377358b2b8c86b51003272d5ef.txt",
+          "sha256": "eb8a6c84630461b352badcab1dbe5d0168c56d377358b2b8c86b51003272d5ef"
+        },
+        {
+          "name": "LICENSE_APACHE-2.0",
+          "file": "licenses/0cec06e0e55fbc3dc5cee4fca9b607f66cb8f4e4dbcf3b3c013594dd156732e9.txt",
+          "sha256": "0cec06e0e55fbc3dc5cee4fca9b607f66cb8f4e4dbcf3b3c013594dd156732e9"
+        },
+        {
+          "name": "LICENSE_MIT",
+          "file": "licenses/b7f455413bfe5f9d7da501a4468d4c5f866a432c325947e98cc9535e8b26cd6d.txt",
+          "sha256": "b7f455413bfe5f9d7da501a4468d4c5f866a432c325947e98cc9535e8b26cd6d"
+        }
+      ],
+      "issues": []
+    },
+    {
       "id": "cargo:tauri-plugin@2.7.3",
       "ecosystem": "cargo",
       "name": "tauri-plugin",
@@ -5956,6 +5989,29 @@
       "issues": []
     },
     {
+      "id": "cargo:tracing-attributes@0.1.31",
+      "ecosystem": "cargo",
+      "name": "tracing-attributes",
+      "version": "0.1.31",
+      "license": "MIT",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/tokio-rs/tracing",
+      "revision": "55086231ec4aaeffcaab9932e696f40278f06bd1",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "LICENSE",
+          "file": "licenses/898b1ae9821e98daf8964c8d6c7f61641f5f5aa78ad500020771c0939ee0dea1.txt",
+          "sha256": "898b1ae9821e98daf8964c8d6c7f61641f5f5aa78ad500020771c0939ee0dea1"
+        }
+      ],
+      "issues": []
+    },
+    {
       "id": "cargo:tracing-core@0.1.36",
       "ecosystem": "cargo",
       "name": "tracing-core",
@@ -5965,6 +6021,8 @@
       "repository": "https://github.com/tokio-rs/tracing",
       "revision": "10a9e838a35e6ded79d66af246be2ee05417136d",
       "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
         "x86_64-pc-windows-msvc"
       ],
       "files": [
@@ -5986,6 +6044,8 @@
       "repository": "https://github.com/tokio-rs/tracing",
       "revision": "2d55f6faf9be83e7e4634129fb96813241aac2b8",
       "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
         "x86_64-pc-windows-msvc"
       ],
       "files": [
