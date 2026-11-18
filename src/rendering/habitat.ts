@@ -4,6 +4,7 @@ import sleepingUrl from '../../assets/pets/ember-fox/artwork/sleeping.png';
 import teaUrl from '../../assets/pets/ember-fox/artwork/tea-break.png';
 import happyUrl from '../../assets/pets/ember-fox/artwork/happy.png';
 import { normalizeFoxPixels } from './palette';
+import { anchorOffset, poseAt, spriteBands, type Pose } from './motion';
 import type { Mood } from '../engine/spirit';
 import type { Decor, Outfit } from '../engine/progress';
 import { drawParticles } from './particles';
@@ -84,7 +85,7 @@ export async function createHabitatRenderer(
   let lastCanvas: HTMLCanvasElement | undefined;
   let lastHadParticles = false;
   let lastNight = false;
-  const frameFor = (mood: Mood, pose: number, decor: Decor, outfit: Outfit) => {
+  const frameFor = (mood: Mood, pose: Pose, decor: Decor, outfit: Outfit) => {
     const key = `${mood}:${pose}:${decor}:${outfit}`;
     const cached = frames.get(key);
     if (cached) return cached;
@@ -95,27 +96,39 @@ export async function createHabitatRenderer(
     if (!context) throw new Error('Canvas is unavailable.');
     context.imageSmoothingEnabled = false;
     const sprite = sprites.get(mood)!;
-    const lift = mood === 'Happy' ? pose * 2 : pose;
-    context.save();
-    context.translate(0, -lift);
-    context.drawImage(
-      sprite,
-      Math.floor((110 - sprite.width) / 2),
-      94 - sprite.height,
+    const x = Math.floor((110 - sprite.width) / 2);
+    const y = 94 - sprite.height;
+    for (const band of spriteBands(sprite.height, pose)) {
+      context.drawImage(
+        sprite,
+        0,
+        band.sourceY,
+        sprite.width,
+        band.sourceHeight,
+        x,
+        y + band.destinationY,
+        sprite.width,
+        band.destinationHeight,
+      );
+    }
+    const head = anchorOffset(sprite.height, 0, pose);
+    const collar = anchorOffset(
+      sprite.height,
+      Math.min(sprite.height - 1, 76 - y),
+      pose,
     );
     if (mood !== 'Sleeping' && outfit === 'beanie') {
       context.fillStyle = '#6c8390';
-      context.fillRect(38, 49, 31, 5);
-      context.fillRect(42, 46, 23, 4);
-      context.fillRect(51, 43, 5, 3);
+      context.fillRect(38, 49 + head, 31, 5);
+      context.fillRect(42, 46 + head, 23, 4);
+      context.fillRect(51, 43 + head, 5, 3);
       context.fillStyle = '#b9c6cb';
-      context.fillRect(38, 53, 31, 2);
+      context.fillRect(38, 53 + head, 31, 2);
     } else if (mood !== 'Sleeping' && outfit === 'scarf') {
       context.fillStyle = '#b65e50';
-      context.fillRect(42, 76, 23, 3);
-      context.fillRect(43, 79, 5, 9);
+      context.fillRect(42, 76 + collar, 23, 3);
+      context.fillRect(43, 79 + collar, 5, 9);
     }
-    context.restore();
     if (decor === 'plant') {
       context.fillStyle = '#77513c';
       context.fillRect(14, 86, 12, 8);
@@ -164,14 +177,8 @@ export async function createHabitatRenderer(
       reduced = false,
       appearance = { decor: 'none', night: false },
     ) {
-      const elapsed = Math.max(0, elapsedMs);
-      const period =
-        mood === 'Idle' || mood === 'Sleeping'
-          ? 1600
-          : mood === 'Happy'
-            ? 260
-            : 700;
-      const pose = reduced ? 0 : Math.floor(elapsed / period) % 2;
+      const elapsed = Number.isFinite(elapsedMs) ? Math.max(0, elapsedMs) : 0;
+      const pose = poseAt(mood, elapsed, reduced);
       const frame = frameFor(
         mood,
         pose,

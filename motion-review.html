@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ember fox motion review</title>
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">Tiny Desk Spirit · artwork review</p>
+        <h1>A little life on the shelf.</h1>
+        <p>
+          Five pixel motion studies. Preview cosmetics freely; saved progress
+          stays untouched.
+        </p>
+      </header>
+      <section class="controls" aria-label="Motion review controls">
+        <button id="play" type="button">Pause motion</button>
+        <button id="restart" type="button">Restart motions</button>
+        <label><input id="reduced" type="checkbox" /> Reduced motion</label>
+        <label
+          >Outfit
+          <select id="outfit">
+            <option value="none">None</option>
+            <option value="beanie">Beanie</option>
+            <option value="scarf">Scarf</option>
+          </select></label
+        >
+        <label
+          >Decor
+          <select id="decor">
+            <option value="none">None</option>
+            <option value="plant">Plant</option>
+            <option value="lantern">Lantern</option>
+          </select></label
+        >
+        <label><input id="night" type="checkbox" /> Evening tint</label>
+        <label class="scrubber"
+          >Preview time
+          <input
+            id="time"
+            type="range"
+            min="0"
+            max="5200"
+            step="20"
+            value="0"
+          /><output id="elapsed">0 ms</output></label
+        >
+      </section>
+      <p id="checks" role="status">Checking renderer…</p>
+      <section id="scenes" aria-label="Five animated fox moods"></section>
+      <p class="note">
+        Held integer-pixel poses, no smoothing. Happy plays once per greeting;
+        restart to replay it. Final motion and cosmetic approval remain open.
+      </p>
+    </main>
+    <script type="module" src="/src/testing/motion-review.ts"></script>
+  </body>
+</html>

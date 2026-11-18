@@ -241,7 +241,12 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     if (lastMood !== snapshot.mood || lastAppearance !== appearanceKey) {
       if (lastMood !== snapshot.mood) moodStartedAt = performance.now();
       lastAppearance = appearanceKey;
-      mask = renderer.draw(snapshot.mood, 0, motion.matches, appearance());
+      mask = renderer.draw(
+        snapshot.mood,
+        performance.now() - moodStartedAt,
+        motion.matches,
+        appearance(),
+      );
       lastMask = mask;
       if (!initial) enqueue(() => updateHitMask(mask!));
       lastMood = snapshot.mood;
@@ -328,7 +333,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     syncMotion();
   });
   pet.addEventListener('click', () => {
-    engine.interact(Date.now());
+    if (engine.interact(Date.now())) moodStartedAt = performance.now();
     audio.chime();
     render();
   });

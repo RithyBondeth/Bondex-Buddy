@@ -41,7 +41,9 @@ Acceptance: verify transitions from activity, idle duration, local time, timer c
 
 - [x] Cached two-pose animation prototypes for all five moods, with a 30 fps render cap.
 - [x] Dedicated mood illustrations on a shared 48-pixel grid and 16-color runtime palette.
-- [ ] Approved pixel-art animation loops for all five moods.
+- [x] Held pixel motion timelines with grounded breathing/reading, cup lift, and a single Happy hop.
+- [x] Isolated motion review with scrubbing, reduced motion, and cosmetic previews.
+- [ ] Final visual approval of motion loops and character/cosmetic art.
 - [x] Decorative steam, hearts, and sleep particles with stable interactive hit masks.
 - [x] Muted-by-default procedural rain/chimes and a keyboard-accessible sound toggle.
 - [ ] Approved final Foley/ambient audio assets.
@@ -52,7 +54,7 @@ Acceptance: verify transitions from activity, idle duration, local time, timer c
 
 Acceptance: interactions feel calm and responsive; pixel edges stay sharp at supported display scales. Check audio toggles and CPU usage while visible and hidden.
 
-Phase 3 is in progress. Ember fox is selected and dedicated mood illustrations are integrated. Final animation sheets, cosmetic art, approved sound assets, native mouse acceptance, and full resource measurements remain open. Native keyboard movement is verified on macOS; see [artwork/native follow-up](verification/artwork-native.md) and [Phase 3 notes](architecture/phase-3.md).
+Phase 3 is in progress. Ember fox is selected and dedicated mood illustrations are integrated. Runtime motion studies and a review page are implemented; final visual approval, cosmetic art, approved sound assets, native mouse acceptance, and full resource measurements remain open. See [motion review](verification/motion.md). Native keyboard movement is verified on macOS; see [artwork/native follow-up](verification/artwork-native.md) and [Phase 3 notes](architecture/phase-3.md).
 
 ## Phase 4: Local progression
 

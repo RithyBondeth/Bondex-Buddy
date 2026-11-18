@@ -11,7 +11,11 @@ export default defineConfig({
   build: {
     target: ['es2022', 'safari15'],
     rolldownOptions: {
-      input: { main: 'index.html', nativeCheck: 'native-check.html' },
+      input: {
+        main: 'index.html',
+        nativeCheck: 'native-check.html',
+        motionReview: 'motion-review.html',
+      },
     },
   },
 });
