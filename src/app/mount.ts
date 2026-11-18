@@ -1,7 +1,7 @@
 import { FOCUS_MS, SpiritEngine, formatCountdown } from '../engine/spirit';
 import type { Mood } from '../engine/spirit';
-import { awardCompletions, canEquip } from '../engine/progress';
-import type { Decor } from '../engine/progress';
+import { awardCompletions, canEquip, canWear } from '../engine/progress';
+import type { Decor, Outfit } from '../engine/progress';
 import { openProgressStore } from '../platform/progress-store';
 import { Ambience } from '../audio/ambience';
 import { AnimationClock } from '../rendering/animation-clock';
@@ -13,6 +13,11 @@ import {
   revealHabitat,
   setControlsVisible,
   setDrawerVisible,
+  beginDrag,
+  nudgeHabitat,
+  setGhostMode,
+  setWorking,
+  observeGhost,
   updateHitMask,
 } from '../platform/desktop';
 import { createHabitatRenderer } from '../rendering/habitat';
@@ -29,7 +34,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   const pet = document.createElement('button');
   pet.className = 'pet';
   pet.type = 'button';
-  pet.setAttribute('aria-label', 'Greet the test spirit');
+  pet.setAttribute('aria-label', 'Greet Ember fox');
   pet.title = 'Say hello. Hover here for focus controls.';
   const canvas = document.createElement('canvas');
   canvas.width = 110;
@@ -91,6 +96,26 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     lighting.append(option);
   }
   drawer.append(progressLabel, decor, lighting);
+  const outfit = document.createElement('select');
+  outfit.setAttribute('aria-label', 'Fox outfit');
+  for (const [value, text] of [
+    ['none', 'No outfit'],
+    ['beanie', 'Beanie · 2 focus'],
+    ['scarf', 'Scarf · 5 focus'],
+  ]) {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = text;
+    outfit.append(option);
+  }
+  const ghost = document.createElement('button');
+  ghost.type = 'button';
+  ghost.setAttribute('aria-label', 'Ghost Mode during work');
+  ghost.title =
+    'Fade and pass clicks through the fox during work. Controls remain usable.';
+  ghost.disabled = !isDesktop();
+  if (!isDesktop()) ghost.title = 'Ghost Mode is available in the desktop app.';
+  drawer.append(outfit, ghost);
   const refreshItems = () => {
     progressLabel.textContent = saveProblem
       ? 'Progress stays in memory for now'
@@ -102,6 +127,11 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       option.disabled = !canEquip(progress, option.value as Decor);
     decor.value = progress.decor;
     lighting.value = progress.lighting;
+    for (const option of outfit.options)
+      option.disabled = !canWear(progress, option.value as Outfit);
+    outfit.value = progress.outfit;
+    ghost.textContent = progress.ghost ? 'Ghost on' : 'Ghost off';
+    ghost.setAttribute('aria-pressed', String(progress.ghost));
   };
   const persist = () => {
     refreshItems();
@@ -122,7 +152,15 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   const announcement = document.createElement('span');
   announcement.className = 'sr-only';
   announcement.setAttribute('role', 'status');
-  habitat.append(pet, controls, drawer, moodLabel, announcement);
+  const handle = document.createElement('button');
+  handle.className = 'drag-handle';
+  handle.type = 'button';
+  handle.setAttribute(
+    'aria-label',
+    'Move habitat: drag shelf or use arrow keys',
+  );
+  handle.title = 'Drag the shelf to move. Arrow keys move by 24 pixels.';
+  habitat.append(pet, handle, controls, drawer, moodLabel, announcement);
   root.replaceChildren(habitat);
 
   const renderer = await createHabitatRenderer(canvas);
@@ -133,6 +171,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   let drawerVisible = false;
   let lastMood: Mood | undefined;
   let lastAppearance = '';
+  let wasWorking: boolean | undefined;
   let moodStartedAt = performance.now();
   let lastMask: number[] | undefined;
   let completed = 0;
@@ -192,6 +231,11 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     const now = Date.now();
     const date = new Date(now);
     const snapshot = engine.read(now, date.getHours() * 60 + date.getMinutes());
+    const working = snapshot.mood === 'Working';
+    if (wasWorking !== working) {
+      wasWorking = working;
+      enqueue(() => setWorking(working));
+    }
     let mask: number[] | undefined;
     const appearanceKey = JSON.stringify(appearance());
     if (lastMood !== snapshot.mood || lastAppearance !== appearanceKey) {
@@ -240,6 +284,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   const appearance = () => {
     const hour = new Date().getHours();
     return {
+      outfit: progress.outfit,
       decor: progress.decor,
       night: progress.lighting === 'auto' && (hour >= 18 || hour < 6),
     };
@@ -248,10 +293,15 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     hovering = inside;
     updateControls();
   });
+  const unsubscribeGhost = await observeGhost((ghost) =>
+    habitat.classList.toggle('ghosted', ghost),
+  );
   try {
+    await setGhostMode(progress.ghost);
     await revealHabitat(render(true)!);
   } catch (error) {
     unsubscribeHover();
+    unsubscribeGhost();
     throw error;
   }
   const unsubscribeActivity = await observeActivity((reading) => {
@@ -321,6 +371,38 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     persist();
     redrawAppearance();
   });
+  outfit.addEventListener('change', () => {
+    const choice = outfit.value as Outfit;
+    if (!canWear(progress, choice)) {
+      refreshItems();
+      return;
+    }
+    progress = { ...progress, outfit: choice };
+    persist();
+    redrawAppearance();
+  });
+  ghost.addEventListener('click', () => {
+    progress = { ...progress, ghost: !progress.ghost };
+    persist();
+    enqueue(() => setGhostMode(progress.ghost));
+  });
+  handle.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0 || !isDesktop()) return;
+    event.preventDefault();
+    void beginDrag().catch(console.error);
+  });
+  handle.addEventListener('keydown', (event) => {
+    const delta: Record<string, [number, number]> = {
+      ArrowLeft: [-24, 0],
+      ArrowRight: [24, 0],
+      ArrowUp: [0, -24],
+      ArrowDown: [0, 24],
+    };
+    if (delta[event.key]) {
+      event.preventDefault();
+      void nudgeHabitat(...delta[event.key]).catch(console.error);
+    }
+  });
   lighting.addEventListener('change', () => {
     progress = {
       ...progress,
@@ -360,6 +442,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     disposed = true;
     clearInterval(interval);
     unsubscribeHover();
+    unsubscribeGhost();
     unsubscribeActivity();
     unsubscribeVisibility();
     motion.removeEventListener('change', syncMotion);

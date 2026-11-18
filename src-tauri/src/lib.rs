@@ -1,4 +1,5 @@
 mod activity;
+mod placement;
 mod shell;
 mod storage;
 mod tray;
@@ -9,12 +10,20 @@ pub fn run() {
     tauri::Builder::default()
         .manage(shell::ShellState::default())
         .manage(storage::ProgressStorage::default())
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            None,
+        ))
         .invoke_handler(tauri::generate_handler![
             shell::show_shell,
             shell::show_shell_error,
             shell::update_shell_mask,
             shell::set_controls_visible,
             shell::set_drawer_visible,
+            shell::set_working,
+            shell::set_ghost_mode,
+            placement::begin_drag,
+            placement::nudge_habitat,
             shell::shell_visibility,
             activity::activity_snapshot,
             storage::load_progress,

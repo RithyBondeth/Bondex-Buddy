@@ -9,7 +9,8 @@ The original PDF remains the product reference. This checklist tracks implementa
 - [x] Reserve runtime asset folders and preserve pet concept references.
 - [x] Document architecture, pixel-art direction, and local setup.
 - [x] Configure frontend checks and native macOS/Windows CI.
-- [ ] Select one pet and approve a grid-clean idle sprite.
+- [x] Select Ember fox as the character direction.
+- [ ] Approve grid-clean production sprite sheets.
 
 ## Phase 1: Window and Canvas shell
 
@@ -43,7 +44,8 @@ Acceptance: verify transitions from activity, idle duration, local time, timer c
 - [x] Decorative steam, hearts, and sleep particles with stable interactive hit masks.
 - [x] Muted-by-default procedural rain/chimes and a keyboard-accessible sound toggle.
 - [ ] Approved final Foley/ambient audio assets.
-- [ ] Dragging, edge snapping, and optional Ghost Mode.
+- [x] Implement shelf dragging, edge snapping, and optional Ghost Mode.
+- [ ] Complete native placement and Ghost Mode acceptance.
 - [x] Reduced-motion support and hidden-window animation/audio suspension.
 - [ ] Profile total native + WebView CPU and memory on both platforms.
 
@@ -57,9 +59,11 @@ Phase 3 is in progress. The first slice builds animation, particles, audio, and 
 - [x] Permanent plant/lantern unlock rules and Items drawer.
 - [x] Restore saved decor and lighting choices on startup.
 - [x] Time-of-day warm tint with a saved daylight override.
-- [ ] Wardrobe/outfit inventory and final cosmetic art.
+- [x] Outfit inventory, unlock rules, and version-1 save migration.
+- [ ] Final cosmetic art.
 - [ ] Complete native reward/equipment acceptance on macOS and Windows.
-- [ ] Launch-at-login preference.
+- [x] Implement an explicit release-build launch-at-login preference.
+- [ ] Verify OS registration and a real login from an installed build.
 
 Acceptance: completing a focus session unlocks an item that can be equipped and restored on restart, without penalties or streaks.
 
@@ -68,6 +72,10 @@ Phase 4 is in progress on a local branch. See [save/progression notes](architect
 ## Release preparation
 
 - [ ] Native smoke checks on macOS and Windows.
-- [ ] Final icons, app identifier review, and packaging metadata.
+- [x] Generate Ember fox desktop icons.
+- [ ] Final app identifier/version and installer review.
 - [ ] Signing/notarization and installer validation.
-- [ ] Privacy documentation and third-party asset notices.
+- [x] Privacy documentation.
+- [ ] Complete dependency/asset license notices before distribution.
+
+The current local follow-up is described in [desktop polish notes](architecture/desktop-polish.md). Production art, native acceptance, profiling, and signed distribution are still open.

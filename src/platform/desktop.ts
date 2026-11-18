@@ -4,6 +4,25 @@ import type { ActivityReading } from '../engine/spirit';
 
 export const isDesktop = isTauri;
 
+export async function beginDrag(): Promise<void> {
+  if (isTauri()) await invoke('begin_drag');
+}
+export async function nudgeHabitat(dx: number, dy: number): Promise<void> {
+  if (isTauri()) await invoke('nudge_habitat', { dx, dy });
+}
+export async function setGhostMode(enabled: boolean): Promise<void> {
+  if (isTauri()) await invoke('set_ghost_mode', { enabled });
+}
+export async function setWorking(working: boolean): Promise<void> {
+  if (isTauri()) await invoke('set_working', { working });
+}
+export async function observeGhost(
+  callback: (ghost: boolean) => void,
+): Promise<() => void> {
+  if (!isTauri()) return () => {};
+  return listen<boolean>('habitat-ghost', ({ payload }) => callback(payload));
+}
+
 export async function setDrawerVisible(visible: boolean): Promise<void> {
   if (isTauri()) await invoke('set_drawer_visible', { visible });
 }

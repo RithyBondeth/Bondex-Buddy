@@ -31,7 +31,7 @@ fn valid(raw: &str) -> Result<(), String> {
         return Err("Progress exceeds size limit".into());
     }
     let value: serde_json::Value = serde_json::from_str(raw).map_err(|e| e.to_string())?;
-    if value.get("version").and_then(|v| v.as_u64()) != Some(1) {
+    if !matches!(value.get("version").and_then(|v| v.as_u64()), Some(1 | 2)) {
         return Err("Unsupported progress version".into());
     }
     Ok(())
