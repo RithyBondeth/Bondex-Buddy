@@ -58,7 +58,7 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
                 return;
             };
             let result = match event.id.as_ref() {
-                "show" => window.show(),
+                "show" => shell::show_existing(&window),
                 "hide" => window.hide(),
                 "reset" => shell::reset_position(&window),
                 "display" => shell::next_display(&window),

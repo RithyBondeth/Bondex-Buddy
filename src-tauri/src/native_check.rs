@@ -94,10 +94,10 @@ pub fn native_check_action(window: WebviewWindow, action: String) -> Result<(), 
         "place" => {
             crate::shell::set_ghost_mode(pet.state(), false);
             place_overlay(&pet).map_err(|e| e.to_string())?;
-            pet.show().map_err(|e| e.to_string())
+            crate::shell::show_existing(&pet).map_err(|e| e.to_string())
         }
         "hide" => pet.hide().map_err(|e| e.to_string()),
-        "show" => pet.show().map_err(|e| e.to_string()),
+        "show" => crate::shell::show_existing(&pet).map_err(|e| e.to_string()),
         "ghost" => {
             crate::shell::set_working(pet.state(), true);
             crate::shell::set_ghost_mode(pet.state(), true);

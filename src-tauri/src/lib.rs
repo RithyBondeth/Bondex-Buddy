@@ -7,8 +7,20 @@ mod tray;
 
 use tauri::Manager;
 
+fn reveal_existing(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main")
+        && let Err(error) = shell::show_existing(&window)
+    {
+        eprintln!("Could not restore habitat: {error}");
+    }
+}
+
 pub fn run() {
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
+        // Detect a second process before startup observers or storage are initialized.
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            reveal_existing(app);
+        }))
         .manage(shell::ShellState::default())
         .manage(storage::ProgressStorage::default())
         .plugin(tauri_plugin_autostart::init(
@@ -57,6 +69,16 @@ pub fn run() {
                 }
             }
         })
-        .run(tauri::generate_context!())
-        .expect("failed to run Tiny Desk Spirit");
+        .build(tauri::generate_context!())
+        .expect("failed to build Tiny Desk Spirit");
+
+    app.run(|handle, event| {
+        // LaunchServices reuses the process on macOS and sends Reopen instead.
+        #[cfg(target_os = "macos")]
+        if matches!(event, tauri::RunEvent::Reopen { .. }) {
+            reveal_existing(handle);
+        }
+        #[cfg(not(target_os = "macos"))]
+        let _ = (handle, event);
+    });
 }

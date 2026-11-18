@@ -79,6 +79,8 @@ Phase 4 storage, wardrobe, and opt-in login implementations are merged into deve
 - [ ] Final app identifier/version and installer review.
 - [ ] Signing/notarization and installer validation.
 - [x] Privacy documentation.
+- [x] Single-instance startup and macOS reopen handling implemented.
+- [ ] Native duplicate-launch and hidden-session restoration acceptance.
 - [x] Generate dependency/license-text inventory and asset provenance, with CI freshness checks.
 - [x] Bundle notices and stage a standalone copy with unsigned QA artifacts.
 - [ ] Curate the 15 remaining license-evidence entries and complete distribution notice review.
