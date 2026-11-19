@@ -72,6 +72,16 @@ Acceptance: completing a focus session unlocks an item that can be equipped and 
 
 Phase 4 storage, wardrobe, and opt-in login implementations are merged into develop. Final cosmetic art, native progression acceptance, and installed release login verification remain open. See [save/progression notes](architecture/phase-4.md).
 
+## Desktop utilities
+
+- [x] Pet-attached, keyboard-accessible Focus / Clipboard / Agents / Style pocket, also reachable from the tray.
+- [x] Opt-in local text history, search, pins, copy, pause, remove, and clear.
+- [x] Codex and Claude Code lifecycle adapters, additive setup, and disconnect controls.
+- [x] Working, waiting, response-ready, error, and stale status with Ember cues.
+- [ ] Native end-to-end agent trust/event acceptance and clipboard checks on both platforms.
+
+See [tool behavior and setup](architecture/buddy-tools.md) for storage, integration, and privacy details.
+
 ## Release preparation
 
 - [ ] Native smoke checks on macOS and Windows.

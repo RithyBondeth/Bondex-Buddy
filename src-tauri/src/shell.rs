@@ -20,6 +20,7 @@ pub struct ShellState {
     pub dragging: AtomicBool,
     pub ignored: AtomicBool,
     pub ghosted: AtomicBool,
+    pub tools_open: AtomicBool,
     ghost_enabled: AtomicBool,
     working: AtomicBool,
     mask: Mutex<Vec<u8>>,
@@ -57,6 +58,25 @@ fn hits_controls(x: f64, y: f64, scale: f64, visible: bool) -> bool {
     visible
         && logical_point(x, y, scale)
             .is_some_and(|(x, y)| (6.0..214.0).contains(&x) && (10.0..42.0).contains(&y))
+}
+
+fn pet_local(x: f64, y: f64, scale: f64, width: f64, height: f64, open: bool) -> (f64, f64) {
+    if open {
+        (
+            x - (width - 220.0 * scale).max(0.0),
+            y - (height - 200.0 * scale).max(0.0),
+        )
+    } else {
+        (x, y)
+    }
+}
+
+fn hits_pocket(x: f64, y: f64, width: f64, height: f64, open: bool) -> bool {
+    // The opaque sheet, including its small speech-bubble tail. Transparent gaps pass through.
+    open && ((x >= 12.0 && x < width - 12.0 && y >= 12.0 && y < height - 130.0)
+        || (y >= height - 130.0
+            && y < height - 118.0
+            && (x - (width - 96.0)).abs() < height - 118.0 - y))
 }
 
 #[tauri::command]
@@ -271,28 +291,51 @@ pub fn start_hit_testing(window: WebviewWindow) {
             if let Ok((cursor, origin, scale)) = geometry {
                 let x = cursor.x - origin.x as f64;
                 let y = cursor.y - origin.y as f64;
-                let inside = logical_point(x, y, scale).is_some();
+                let tools_open = state.tools_open.load(Ordering::Relaxed);
+                let size = window.inner_size().unwrap_or_default();
+                let (pet_x, pet_y) = pet_local(
+                    x,
+                    y,
+                    scale,
+                    size.width as f64,
+                    size.height as f64,
+                    tools_open,
+                );
+                let inside = logical_point(pet_x, pet_y, scale).is_some();
                 if hovered != inside {
                     hovered = inside;
                     let _ = window.emit("habitat-hover", hovered);
                 }
                 let hit = state.mask.lock().is_ok_and(|mask| {
-                    (hits_mask(&mask, x, y, scale)
-                        && !(state.ghost_enabled.load(Ordering::Relaxed)
+                    (hits_mask(&mask, pet_x, pet_y, scale)
+                        && !(!tools_open
+                            && state.ghost_enabled.load(Ordering::Relaxed)
                             && state.working.load(Ordering::Relaxed)
                             && inside))
-                        || (state.drawer_visible.load(Ordering::Relaxed)
-                            && logical_point(x, y, scale).is_some_and(|(x, y)| {
+                        || (!tools_open
+                            && state.drawer_visible.load(Ordering::Relaxed)
+                            && logical_point(pet_x, pet_y, scale).is_some_and(|(x, y)| {
                                 (6.0..214.0).contains(&x) && (46.0..146.0).contains(&y)
                             }))
                         || hits_controls(
-                            x,
-                            y,
+                            pet_x,
+                            pet_y,
                             scale,
-                            state.controls_visible.load(Ordering::Relaxed),
+                            !tools_open && state.controls_visible.load(Ordering::Relaxed),
                         )
+                        || hits_pocket(
+                            x / scale,
+                            y / scale,
+                            size.width as f64 / scale,
+                            size.height as f64 / scale,
+                            tools_open,
+                        )
+                        || logical_point(pet_x, pet_y, scale).is_some_and(|(x, y)| {
+                            (140.0..208.0).contains(&x) && (160.0..188.0).contains(&y)
+                        })
                 });
-                let ghost = state.ghost_enabled.load(Ordering::Relaxed)
+                let ghost = !tools_open
+                    && state.ghost_enabled.load(Ordering::Relaxed)
                     && state.working.load(Ordering::Relaxed)
                     && inside;
                 if ghosted != ghost {
@@ -320,7 +363,10 @@ pub fn start_hit_testing(window: WebviewWindow) {
                 crate::roaming::set_enabled(&window, false);
             }
             // Re-dock if the current display's work area changes (e.g. Dock moves).
-            if ticks % 50 == 0 && !crate::roaming::active(&window) {
+            if ticks % 50 == 0
+                && !state.tools_open.load(Ordering::Relaxed)
+                && !crate::roaming::active(&window)
+            {
                 let result = if state.manual_placement.load(Ordering::Relaxed) {
                     crate::placement::keep_visible(&window)
                 } else {
@@ -350,6 +396,22 @@ pub fn start_hit_testing(window: WebviewWindow) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn expanded_sheet_and_pet_mask_keep_transparent_gaps_click_through() {
+        assert_eq!(
+            pet_local(580.0, 1120.0, 2.0, 800.0, 1320.0, true),
+            (220.0, 200.0)
+        );
+        assert_eq!(
+            pet_local(110.0, 100.0, 1.0, 220.0, 200.0, false),
+            (110.0, 100.0)
+        );
+        assert!(hits_pocket(30.0, 40.0, 400.0, 660.0, true));
+        assert!(!hits_pocket(5.0, 40.0, 400.0, 660.0, true));
+        assert!(!hits_pocket(30.0, 560.0, 400.0, 660.0, true));
+        assert!(!hits_pocket(30.0, 40.0, 400.0, 660.0, false));
+    }
 
     #[test]
     fn hidden_controls_pass_through_and_visible_controls_use_scaled_bounds() {

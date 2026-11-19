@@ -1,5 +1,8 @@
 mod activity;
+mod agents;
+mod clipboard;
 mod native_check;
+mod panel;
 mod placement;
 mod roaming;
 mod shell;
@@ -17,6 +20,9 @@ fn reveal_existing(app: &tauri::AppHandle) {
 }
 
 pub fn run() {
+    if agents::handle_hook_cli() {
+        return;
+    }
     let app = tauri::Builder::default()
         // Detect a second process before startup observers or storage are initialized.
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
@@ -25,11 +31,22 @@ pub fn run() {
         .manage(shell::ShellState::default())
         .manage(roaming::PlayState::default())
         .manage(storage::ProgressStorage::default())
+        .manage(clipboard::ClipboardState::default())
+        .manage(agents::AgentSetup::default())
+        .manage(panel::PanelState::default())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             None,
         ))
         .invoke_handler(tauri::generate_handler![
+            panel::set_companion_open,
+            clipboard::clipboard_snapshot,
+            clipboard::clipboard_edit,
+            clipboard::clipboard_copy,
+            agents::agent_snapshot,
+            agents::agent_connect,
+            agents::agent_cue,
             roaming::play_snapshot,
             roaming::set_play_context,
             roaming::set_playful_roaming,
@@ -55,6 +72,7 @@ pub fn run() {
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 
             tray::setup(app)?;
+            clipboard::start(app.handle())?;
             native_check::setup(app)?;
             let window = app
                 .get_webview_window("main")
