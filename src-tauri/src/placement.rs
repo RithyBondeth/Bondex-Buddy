@@ -74,6 +74,7 @@ pub fn begin_drag(
     if !mouse_down() {
         return Ok(());
     }
+    crate::roaming::set_enabled(&window, false);
     state.manual_placement.store(true, Ordering::Relaxed);
     state.dragging.store(true, Ordering::Relaxed);
     if let Err(error) = window.start_dragging() {
@@ -94,6 +95,7 @@ pub fn nudge_habitat(
     }
     let p = window.outer_position().map_err(|e| e.to_string())?;
     let scale = window.scale_factor().map_err(|e| e.to_string())?;
+    crate::roaming::set_enabled(&window, false);
     state.manual_placement.store(true, Ordering::Relaxed);
     place(
         &window,

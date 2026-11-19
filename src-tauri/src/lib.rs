@@ -1,11 +1,12 @@
 mod activity;
 mod native_check;
 mod placement;
+mod roaming;
 mod shell;
 mod storage;
 mod tray;
 
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 fn reveal_existing(app: &tauri::AppHandle) {
     if let Some(window) = app.get_webview_window("main")
@@ -22,12 +23,16 @@ pub fn run() {
             reveal_existing(app);
         }))
         .manage(shell::ShellState::default())
+        .manage(roaming::PlayState::default())
         .manage(storage::ProgressStorage::default())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             None,
         ))
         .invoke_handler(tauri::generate_handler![
+            roaming::play_snapshot,
+            roaming::set_play_context,
+            roaming::set_playful_roaming,
             shell::show_shell,
             shell::show_shell_error,
             shell::update_shell_mask,
@@ -38,6 +43,7 @@ pub fn run() {
             placement::begin_drag,
             placement::nudge_habitat,
             shell::shell_visibility,
+            shell::shell_focused,
             activity::activity_snapshot,
             storage::load_progress,
             storage::save_progress,
@@ -62,6 +68,11 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
+            if window.label() == "main"
+                && let tauri::WindowEvent::Focused(focused) = event
+            {
+                let _ = window.emit("habitat-focus", focused);
+            }
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
                 if let Err(error) = window.hide() {

@@ -38,7 +38,8 @@ export class AnimationClock {
     this.handle = null;
     if (this.disposed || !this.visible || this.reduced) return;
     if (time - this.lastFrame >= 1000 / 30) {
-      this.lastFrame = time;
+      // Preserve the cadence on 60/120/144 Hz displays instead of losing a beat.
+      this.lastFrame = time - ((time - this.lastFrame) % (1000 / 30));
       this.draw(time, false);
     }
     this.handle = this.driver.request(this.frame);

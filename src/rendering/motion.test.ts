@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   MOTION,
+  motionAt,
   anchorOffset,
   clipDuration,
   poseAt,
@@ -24,9 +25,10 @@ describe('pixel motion timelines', () => {
     }
   });
   it('settles Happy after one greeting instead of repeating the hop forever', () => {
-    expect(poseAt('Happy', 100)).toBe('hop-high');
+    expect(poseAt('Happy', 100)).toBe('crouch');
+    expect(poseAt('Happy', 425)).toBe('hop-high');
     expect(clipDuration('Happy')).toBe(2000);
-    for (const time of [660, 1999, 2000, 60_000])
+    for (const time of [1290, 1999, 2000, 60_000])
       expect(poseAt('Happy', time)).toBe('rest');
   });
   it('uses a neutral pose for reduced motion at every phase', () => {
@@ -42,7 +44,16 @@ describe('pixel motion timelines', () => {
 });
 
 describe('pixel deformation geometry', () => {
-  const poses: Pose[] = ['rest', 'inhale', 'nod', 'sip', 'hop-low', 'hop-high'];
+  const poses: Pose[] = [
+    'rest',
+    'inhale',
+    'nod',
+    'sip',
+    'crouch',
+    'stretch',
+    'hop-low',
+    'hop-high',
+  ];
   it('covers every source/destination row without gaps and preserves grounded feet', () => {
     for (const height of [8, 32, 37, 48])
       for (const pose of poses) {
@@ -59,15 +70,63 @@ describe('pixel deformation geometry', () => {
           destinationEnd += b.destinationHeight;
         }
         expect(sourceEnd).toBe(height);
-        expect(destinationEnd).toBe(
-          height - (pose === 'hop-high' ? 2 : pose === 'hop-low' ? 1 : 0),
-        );
+        expect(destinationEnd).toBe(height);
       }
   });
   it('keeps the hat attached to the head and scarf moving with a hop', () => {
     expect(anchorOffset(48, 0, 'inhale')).toBe(-1);
     expect(anchorOffset(48, 0, 'nod')).toBe(1);
-    expect(anchorOffset(48, 30, 'hop-high')).toBe(-2);
+    expect(anchorOffset(48, 30, 'hop-high') - motionAt('Happy', 425).lift).toBe(
+      -9,
+    );
+    expect(anchorOffset(48, 0, 'rest', -2)).toBe(-2);
+    expect(anchorOffset(48, 47, 'rest', -2)).toBe(-1);
     expect(() => spriteBands(0, 'rest')).toThrow();
+  });
+});
+
+describe('natural motion sampling', () => {
+  it('lands both arcs at the shelf, with a smaller second hop and no repeated jumps', () => {
+    for (const time of [200, 650, 810, 1190, 2000, 60000])
+      expect(motionAt('Happy', time).lift).toBe(0);
+    expect(motionAt('Happy', 425).lift).toBe(9);
+    expect(motionAt('Happy', 1000).lift).toBe(4);
+    for (let time = 0; time < 2000; time += 33) {
+      const a = motionAt('Happy', time);
+      const b = motionAt('Happy', time + 33);
+      expect(a.lift).toBeGreaterThanOrEqual(0);
+      expect(a.lift).toBeLessThanOrEqual(9);
+      expect(Math.abs(b.lift - a.lift)).toBeLessThanOrEqual(3);
+      expect(
+        Object.values(a)
+          .filter((v) => typeof v === 'number')
+          .every(Number.isInteger),
+      ).toBe(true);
+    }
+  });
+  it('keeps calm motion grounded and breathing deformation attached to the feet', () => {
+    for (const mood of moods.filter((m) => m !== 'Happy')) {
+      for (let time = 0; time < 15000; time += 100) {
+        const frame = motionAt(mood, time);
+        expect(frame.lift).toBe(0);
+        expect(frame.x).toBe(0);
+        const bands = spriteBands(48, frame.pose, frame.breath);
+        const last = bands.at(-1)!;
+        expect(last.destinationY + last.destinationHeight).toBe(48);
+      }
+    }
+  });
+  it('removes all choreography for reduced motion and sanitizes invalid times', () => {
+    for (const mood of moods) {
+      for (const time of [0, 425, 6000])
+        expect(motionAt(mood, time, true)).toEqual({
+          pose: 'rest',
+          x: 0,
+          lift: 0,
+          breath: 0,
+        });
+      for (const time of [-1, NaN, Infinity])
+        expect(motionAt(mood, time)).toEqual(motionAt(mood, 0));
+    }
   });
 });

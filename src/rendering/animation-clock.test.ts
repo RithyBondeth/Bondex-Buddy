@@ -37,6 +37,18 @@ describe('animation lifecycle', () => {
     expect(pending.size).toBe(1);
   });
 
+  it('holds a steady thirty-frame cadence across common display refresh rates', () => {
+    for (const refresh of [60, 120, 144]) {
+      const { clock, draw, step } = setup();
+      clock.setState(true, false);
+      for (let frame = 1; frame <= refresh; frame++)
+        step((frame * 1000) / refresh);
+      expect(draw.mock.calls.length).toBeGreaterThanOrEqual(30);
+      expect(draw.mock.calls.length).toBeLessThanOrEqual(31);
+      clock.dispose();
+    }
+  });
+
   it('cancels frames while hidden and resumes without a catch-up burst', () => {
     const { clock, draw, pending, step } = setup();
     clock.setState(true, false);

@@ -24,25 +24,31 @@ export function drawParticles(
 ): void {
   if (mood !== 'TeaBreak' && mood !== 'Sleeping' && mood !== 'Happy') return;
   const count = mood === 'Happy' ? 3 : 2;
-  const lifetime = mood === 'Happy' ? 2000 : 2600;
+  const lifetime = mood === 'Happy' ? 1600 : 2600;
   context.save();
   for (let i = 0; i < count; i++) {
-    const age = elapsedMs - i * 650;
+    const age = elapsedMs - i * (mood === 'Happy' ? 160 : 650);
     if (age < 0 || (mood === 'Happy' && age >= lifetime)) continue;
     const progress = (age % lifetime) / lifetime;
     const rise = Math.floor(progress * 15);
     context.globalAlpha = (1 - progress) * 0.8;
     if (mood === 'TeaBreak') {
       context.fillStyle = '#b9b8aa';
-      const x = 54 + i * 3 + (Math.floor(progress * 4) % 2);
+      const x = 54 + i * 3 + Math.round(Math.sin(progress * Math.PI * 3));
       context.fillRect(x, 75 - rise, 1, 3);
       context.fillRect(x + 1, 74 - rise, 1, 2);
     } else if (mood === 'Sleeping') {
       context.fillStyle = '#8896a8';
-      stamp(context, SLEEP, 77 + i * 6, 63 - rise);
+      stamp(context, SLEEP, 77 + i * 6 + Math.floor(progress * 3), 63 - rise);
     } else {
       context.fillStyle = '#c46e72';
-      stamp(context, HEART, i === 1 ? 26 : 76 + i * 3, 53 - rise);
+      stamp(
+        context,
+        HEART,
+        (i === 1 ? 26 : 76 + i * 3) +
+          Math.round(Math.sin(progress * Math.PI) * 2),
+        53 - rise,
+      );
     }
   }
   context.restore();

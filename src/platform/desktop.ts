@@ -1,6 +1,7 @@
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import type { ActivityReading } from '../engine/spirit';
+import { restingPlay, type PetPlay } from '../rendering/playful';
 
 export const isDesktop = isTauri;
 
@@ -88,6 +89,50 @@ export async function observeActivity(
     onReading(await invoke<ActivityReading>('activity_snapshot'));
   } catch {
     onReading({ idleSeconds: null, sampledAtMs: Date.now() });
+  }
+  return unsubscribe;
+}
+
+export async function setPlayContext(
+  quiet: boolean,
+  reduced: boolean,
+): Promise<void> {
+  if (isTauri()) await invoke('set_play_context', { quiet, reduced });
+}
+export async function setPlayfulRoaming(enabled: boolean): Promise<void> {
+  if (isTauri()) await invoke('set_playful_roaming', { enabled });
+}
+export async function observePlay(
+  callback: (play: PetPlay) => void,
+): Promise<() => void> {
+  if (!isTauri()) {
+    callback({ ...restingPlay(), enabled: false });
+    return () => {};
+  }
+  const unsubscribe = await listen<PetPlay>('habitat-play', ({ payload }) =>
+    callback(payload),
+  );
+  try {
+    callback(await invoke<PetPlay>('play_snapshot'));
+  } catch (error) {
+    unsubscribe();
+    throw error;
+  }
+  return unsubscribe;
+}
+
+export async function observeFocus(
+  callback: (focused: boolean) => void,
+): Promise<() => void> {
+  if (!isTauri()) return () => {};
+  const unsubscribe = await listen<boolean>('habitat-focus', ({ payload }) =>
+    callback(payload),
+  );
+  try {
+    callback(await invoke<boolean>('shell_focused'));
+  } catch (error) {
+    unsubscribe();
+    throw error;
   }
   return unsubscribe;
 }
