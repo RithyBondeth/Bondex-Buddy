@@ -430,6 +430,16 @@ impl Roamer {
         self.last_tick = now;
         let state = window.state::<PlayState>();
         let enabled = state.enabled.load(Ordering::Relaxed);
+        if window
+            .state::<crate::shell::ShellState>()
+            .tools_open
+            .load(Ordering::Relaxed)
+        {
+            self.position = None;
+            self.layout = None;
+            self.publish(window, "rest", false, enabled);
+            return Ok(());
+        }
         let allowed = enabled
             && !state.reduced.load(Ordering::Relaxed)
             && !state.quiet.load(Ordering::Relaxed)

@@ -23,11 +23,20 @@ import {
   setWorking,
   observeGhost,
   updateHitMask,
+  openBuddyPanel,
+  readAgentCue,
+  setCompanionOpen,
+  observeBuddyOpen,
 } from '../platform/desktop';
+import { createCompanionPocket, type PocketTab } from '../buddy/companion';
+import { icon } from '../buddy/icons';
 import { createHabitatRenderer } from '../rendering/habitat';
 import { restingPlay } from '../rendering/playful';
 
 export async function mountApp(root: HTMLElement): Promise<() => void> {
+  document.documentElement.classList.toggle('browser-preview', !isDesktop());
+  document.documentElement.classList.remove('pocket-expanded');
+  await setCompanionOpen(false);
   const store = await openProgressStore();
   let progress = store.data;
   let saveProblem = store.readOnly;
@@ -39,8 +48,29 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   const pet = document.createElement('button');
   pet.className = 'pet';
   pet.type = 'button';
-  pet.setAttribute('aria-label', 'Greet Ember fox');
-  pet.title = 'Say hello. Hover here for focus controls.';
+  pet.setAttribute('aria-label', 'Ember fox · open your tools');
+  pet.setAttribute('aria-expanded', 'false');
+  pet.setAttribute('aria-controls', 'ember-pocket');
+  pet.title = 'Click Ember to open your pocket. Right-click for clipboard.';
+  pet.setAttribute(
+    'aria-description',
+    'Right-click or press U to open clipboard and AI agents.',
+  );
+  pet.addEventListener('contextmenu', (event) => {
+    event.preventDefault();
+    void openBuddyPanel().catch(console.error);
+  });
+  pet.addEventListener('keydown', (event) => {
+    if (
+      event.key.toLowerCase() === 'u' &&
+      !event.metaKey &&
+      !event.ctrlKey &&
+      !event.altKey
+    ) {
+      event.preventDefault();
+      void openBuddyPanel().catch(console.error);
+    }
+  });
   const canvas = document.createElement('canvas');
   canvas.width = 110;
   canvas.height = 100;
@@ -191,6 +221,75 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   );
   root.replaceChildren(habitat);
 
+  let companionOpen = false;
+  let pocketBusy = false;
+  const pocketToggle = document.createElement('button');
+  pocketToggle.type = 'button';
+  pocketToggle.className = 'pocket-toggle';
+  pocketToggle.append(icon('pocket'), document.createTextNode('Tools'));
+  pocketToggle.setAttribute('aria-label', 'Open Ember’s pocket');
+  pocketToggle.setAttribute('aria-controls', 'ember-pocket');
+  pocketToggle.setAttribute('aria-expanded', 'false');
+  const pocket = createCompanionPocket(() => void changePocket(false), {
+    toggle,
+    reset,
+    sound,
+    drawer,
+  });
+  habitat.append(pocket.sheet, pocketToggle);
+  async function changePocket(open: boolean, tab: PocketTab = 'focus') {
+    if (pocketBusy) return;
+    if (open && companionOpen) {
+      pocket.select(tab);
+      return;
+    }
+    if (!open && !companionOpen) return;
+    pocketBusy = true;
+    pocketToggle.disabled = true;
+    try {
+      if (!open) {
+        habitat.classList.remove('companion-open');
+        pocket.sheet.inert = true;
+        if (!motion.matches)
+          await new Promise((resolve) => setTimeout(resolve, 220));
+      }
+      await setCompanionOpen(open);
+      document.documentElement.classList.toggle('pocket-expanded', open);
+      companionOpen = open;
+      habitat.classList.toggle('companion-open', open);
+      pocket.setOpen(open, tab);
+      pocketToggle.setAttribute('aria-expanded', String(open));
+      pet.setAttribute('aria-expanded', String(open));
+      pocketToggle.setAttribute(
+        'aria-label',
+        open ? 'Close Ember’s pocket' : 'Open Ember’s pocket',
+      );
+      syncDrawer();
+      render();
+    } catch (error) {
+      habitat.classList.toggle('companion-open', companionOpen);
+      pocket.sheet.inert = !companionOpen;
+      moodLabel.textContent = 'Pocket could not open. Try again.';
+      console.error('Pocket update failed:', error);
+    } finally {
+      pocketBusy = false;
+      pocketToggle.disabled = false;
+      if (!companionOpen) pocketToggle.focus({ preventScroll: true });
+    }
+  }
+  pocketToggle.addEventListener(
+    'click',
+    () => void changePocket(!companionOpen),
+  );
+  const unsubscribePocket = await observeBuddyOpen((tab) => {
+    if (tab === 'close') {
+      void changePocket(false);
+      return;
+    }
+    if (['focus', 'clipboard', 'agents', 'style'].includes(tab))
+      void changePocket(true, tab as PocketTab);
+  });
+
   const renderer = await createHabitatRenderer(canvas);
   pet.addEventListener('pointermove', (event) => {
     const bounds = pet.getBoundingClientRect();
@@ -219,6 +318,8 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   let habitatVisible = false;
   let lastAnnouncement = '';
   let greetingEnd: ReturnType<typeof setTimeout> | undefined;
+  let agentCue = 'idle';
+  let cueReadPending = false;
   // Serialize native updates so older masks or hover commands cannot overtake new ones.
   let updates = Promise.resolve();
   const enqueue = (operation: () => Promise<void>) => {
@@ -247,7 +348,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     enqueue(() => setControlsVisible(visible));
   };
   const syncDrawer = () => {
-    const next = drawerOpen && visible;
+    const next = companionOpen || (drawerOpen && visible);
     drawer.hidden = !next;
     habitat.classList.toggle('drawer-open', next);
     items.setAttribute('aria-expanded', String(next));
@@ -277,6 +378,9 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     const snapshot = engine.read(now, date.getHours() * 60 + date.getMinutes());
     const working = snapshot.mood === 'Working';
     quietPlay =
+      companionOpen ||
+      agentCue === 'needsInput' ||
+      agentCue === 'working' ||
       snapshot.mood === 'Happy' ||
       (snapshot.timer?.phase === 'Focus' &&
         snapshot.timer.status === 'running');
@@ -289,23 +393,31 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       wasWorking = working;
       enqueue(() => setWorking(working));
     }
+    const displayMood: Mood =
+      snapshot.timer?.status === 'running'
+        ? snapshot.mood
+        : agentCue === 'working'
+          ? 'Working'
+          : agentCue === 'needsInput'
+            ? 'Idle'
+            : snapshot.mood;
     let mask: number[] | undefined;
     const appearanceKey = JSON.stringify({
       ...appearance(),
       play: { ...play, elapsedMs: 0 },
     });
-    if (lastMood !== snapshot.mood || lastAppearance !== appearanceKey) {
-      if (lastMood !== snapshot.mood) moodStartedAt = performance.now();
+    if (lastMood !== displayMood || lastAppearance !== appearanceKey) {
+      if (lastMood !== displayMood) moodStartedAt = performance.now();
       lastAppearance = appearanceKey;
       mask = renderer.draw(
-        snapshot.mood,
+        displayMood,
         performance.now() - moodStartedAt,
         motion.matches,
         appearance(),
       );
       lastMask = mask;
       if (!initial) enqueue(() => updateHitMask(mask!));
-      lastMood = snapshot.mood;
+      lastMood = displayMood;
     }
     if (snapshot.completedFocusSessions > completed) {
       audio.chime(true);
@@ -335,7 +447,14 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     habitat.dataset.session = timer?.status ?? 'idle';
     sessionProgress.hidden = !timer;
     const duration = timer?.phase === 'Break' ? 5 * 60_000 : FOCUS_MS;
-    progressFill.style.width = `${Math.max(0, Math.min(100, (1 - (timer?.remainingMs ?? duration) / duration) * 100))}%`;
+    progressFill.style.transform = `scaleX(${Math.max(0, Math.min(1, 1 - (timer?.remainingMs ?? duration) / duration))})`;
+    pocket.update(
+      formatCountdown(timer?.remainingMs ?? FOCUS_MS),
+      timer
+        ? `${timer.phase === 'Break' ? 'A well-earned break' : 'Focus time'}${timer.status === 'paused' ? ' · paused' : ''}`
+        : 'Ready when you are',
+      Math.max(0, Math.min(1, 1 - (timer?.remainingMs ?? duration) / duration)),
+    );
     toggle.setAttribute('aria-pressed', String(timer?.status === 'running'));
     const playLabels = {
       rest: 'Taking a breather',
@@ -345,13 +464,22 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       hide: 'Hide and seek',
       peek: 'Peekaboo',
     };
-    moodLabel.textContent = play.roaming
-      ? playLabels[play.action]
-      : `${snapshot.mood}${timer?.status === 'paused' ? ' · paused' : ''}`;
+    const cueLabels: Record<string, string> = {
+      working: 'An agent is working',
+      needsInput: 'An agent needs you · right-click',
+      done: 'An agent is ready',
+      error: 'An agent needs attention',
+    };
+    moodLabel.textContent =
+      agentCue !== 'idle' && cueLabels[agentCue]
+        ? cueLabels[agentCue]
+        : play.roaming
+          ? playLabels[play.action]
+          : `${snapshot.mood}${timer?.status === 'paused' ? ' · paused' : ''}`;
     moodLabel.title = snapshot.activityAvailable
       ? 'System idle time is available; no input content is collected.'
       : 'System activity unavailable. Manual focus sessions still work.';
-    const message = `${play.roaming ? 'Ember is playing' : snapshot.mood}. ${timer ? `${timer.phase} ${timer.status}.` : 'No focus session running.'}`;
+    const message = `${cueLabels[agentCue] ?? (play.roaming ? 'Ember is playing' : snapshot.mood)}. ${timer ? `${timer.phase} ${timer.status}.` : 'No focus session running.'}`;
     if (message !== lastAnnouncement) {
       announcement.textContent = message;
       lastAnnouncement = message;
@@ -392,6 +520,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       drawerOpen = false;
       syncDrawer();
       playToggle.blur();
+      if (companionOpen) void changePocket(false);
     }
   });
   const unsubscribeFocus = await observeFocus((focused) => {
@@ -450,6 +579,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       audio.chime();
     }
     render();
+    void changePocket(!companionOpen);
   });
   toggle.addEventListener('click', () => {
     engine.toggleTimer(Date.now());
@@ -460,8 +590,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     render();
   });
   items.addEventListener('click', () => {
-    drawerOpen = !drawerOpen;
-    syncDrawer();
+    void changePocket(true, 'style');
   });
   habitat.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && drawerOpen) {
@@ -557,11 +686,40 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       });
   });
   const interval = setInterval(render, 1000);
+  const updateAgentCue = async () => {
+    if (disposed || cueReadPending) return;
+    cueReadPending = true;
+    try {
+      const next = await readAgentCue();
+      if (disposed) return;
+      if (
+        next === 'done' &&
+        agentCue !== 'done' &&
+        engine.interact(Date.now())
+      ) {
+        moodStartedAt = performance.now();
+        clearTimeout(greetingEnd);
+        greetingEnd = setTimeout(render, 2000);
+      }
+      agentCue = next;
+      habitat.dataset.agent = next;
+      render();
+    } catch {
+      agentCue = 'idle';
+    } finally {
+      cueReadPending = false;
+    }
+  };
+  void updateAgentCue();
+  const agentInterval = setInterval(() => void updateAgentCue(), 2500);
   const dispose = () => {
     disposed = true;
     clearInterval(interval);
+    clearInterval(agentInterval);
     clearTimeout(greetingEnd);
     unsubscribePlay();
+    unsubscribePocket();
+    pocket.dispose();
     unsubscribeFocus();
     unsubscribeHover();
     unsubscribeGhost();

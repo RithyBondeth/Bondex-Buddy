@@ -10,6 +10,17 @@
       }
     ]
   },
+  "cargo:clipboard-win@5.4.3": {
+    "license": "BSL-1.0",
+    "revision": "ed27008ae5d1f10cfbb266de039f0fb35fd05a56",
+    "files": [
+      {
+        "file": "upstream/clipboard-win-5.4.3.txt",
+        "upstream": "https://raw.githubusercontent.com/DoumanAsh/clipboard-win/ed27008ae5d1f10cfbb266de039f0fb35fd05a56/LICENSE",
+        "sha256": "c9bff75738922193e67fa726fa225535870d2aa1059f91452c411736284ad566"
+      }
+    ]
+  },
   "cargo:tauri-plugin@2.7.3": {
     "license": "Apache-2.0 OR MIT",
     "revision": "4acdc0a2230ced11567a90962b07eedfa53dc3d2",

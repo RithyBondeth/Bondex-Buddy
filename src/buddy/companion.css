@@ -1,0 +1,393 @@
+.companion-sheet {
+  position: absolute;
+  inset: 12px 12px 130px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #d9c9ad;
+  border-radius: 22px;
+  background: #fff9ee;
+  color: #293e35;
+  box-shadow:
+    0 12px 28px #35281724,
+    0 2px 5px #35281712;
+  transform-origin: 80% 100%;
+  opacity: 0;
+  transform: translateY(16px) scale(0.94);
+  visibility: hidden;
+  transition:
+    transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 180ms ease,
+    visibility 220ms;
+  z-index: 4;
+}
+.companion-sheet::after {
+  content: '';
+  position: absolute;
+  right: 76px;
+  bottom: -9px;
+  width: 16px;
+  height: 16px;
+  background: #f7efdf;
+  border-right: 1px solid #d9c9ad;
+  border-bottom: 1px solid #d9c9ad;
+  transform: rotate(45deg);
+}
+.companion-open .companion-sheet {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  visibility: visible;
+  animation: pocket-arrive 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes pocket-arrive {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.92);
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.008);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.buddy-surface .pocket-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  flex-shrink: 0;
+}
+.buddy-surface .pocket-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.buddy-surface .pocket-name h1 {
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.3px;
+  margin: 0;
+}
+.buddy-surface .pocket-presence {
+  width: 8px;
+  height: 8px;
+  background: #cf8250;
+  border-radius: 3px 6px 3px 6px;
+  transform: rotate(-15deg);
+}
+.buddy-surface .pocket-close {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  color: #746c5d;
+  background: #f0e7d7;
+}
+.buddy-surface .pocket-close:hover {
+  background: #e4d6bf;
+}
+.buddy-surface svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.buddy-surface .pocket-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 4px;
+  margin: 0 12px 4px;
+  gap: 4px;
+  background: #f0e8d8;
+  border-radius: 14px;
+  flex-shrink: 0;
+}
+.buddy-surface .pocket-tab {
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #706b5e;
+  padding: 9px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 550;
+}
+.buddy-surface .pocket-tab:hover {
+  background: #e7ddc9;
+  color: #293e35;
+}
+.buddy-surface .pocket-tab[aria-selected='true'] {
+  background: #354c3d;
+  color: #fff9ed;
+}
+.buddy-surface .pocket-tab[aria-selected='true'] svg {
+  color: #edc18b;
+}
+.buddy-surface .pocket-body {
+  padding: 18px 16px;
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #c8b89c transparent;
+}
+.buddy-surface .pocket-body::-webkit-scrollbar {
+  width: 5px;
+}
+.buddy-surface .pocket-body::-webkit-scrollbar-thumb {
+  background: #c8b89c;
+  border-radius: 8px;
+}
+.buddy-surface .pocket-body h2 {
+  font-size: 18px;
+  letter-spacing: -0.4px;
+}
+.buddy-surface .pocket-body input {
+  user-select: text;
+  caret-color: #8c5b33;
+}
+.buddy-surface .pocket-body ::selection {
+  background: #efd5aa;
+  color: #293e35;
+}
+.buddy-surface .pocket-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #f7efdf;
+  border-radius: 0 0 22px 22px;
+  color: #706b5e;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+.buddy-surface .pocket-sound button {
+  background: #e9ddc8;
+  color: #405340;
+  border: 0;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 10px;
+  font-weight: 600;
+}
+.buddy-surface .pocket-sound button[aria-pressed='true'] {
+  background: #d8e4cf;
+}
+.buddy-surface .panel-notice {
+  margin: 8px 12px 0;
+  padding: 7px 10px;
+  font-size: 10px;
+  flex-shrink: 0;
+  max-height: 76px;
+  overflow-y: auto;
+}
+.buddy-surface .focus-description {
+  color: #706b5e;
+  font-size: 11px;
+  line-height: 1.6;
+  margin: 0;
+}
+.buddy-surface .focus-clock {
+  margin: 24px 0 4px;
+  text-align: center;
+  font:
+    500 48px/1.2 ui-rounded,
+    'SF Pro Rounded',
+    -apple-system,
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -2px;
+  color: #354c3d;
+}
+.buddy-surface .focus-phase {
+  text-align: center;
+  color: #706b5e;
+  font-size: 11px;
+  margin: 0 0 20px;
+}
+.buddy-surface .focus-track {
+  margin: 0 16px 24px;
+  height: 4px;
+  background: #e9e0ce;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.buddy-surface .focus-track > div {
+  width: 100%;
+  height: 100%;
+  background: #b98550;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 1s linear;
+}
+.buddy-surface .focus-actions {
+  display: flex;
+  gap: 8px;
+}
+.buddy-surface .focus-actions button {
+  min-height: 38px;
+  border: 1px solid #d9c9ad;
+  border-radius: 11px;
+  background: #f1e5d1;
+  color: #354c3d;
+  padding: 10px 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.buddy-surface .focus-actions .session-toggle {
+  flex: 1;
+  background: #354c3d;
+  border-color: #354c3d;
+  color: #fff9ed;
+}
+.buddy-surface .focus-actions button:hover {
+  background: #e4d3b6;
+}
+.buddy-surface .focus-actions .session-toggle:hover {
+  background: #4b644e;
+}
+.buddy-surface .focus-tip {
+  margin: 14px 0 0;
+  text-align: center;
+  font-size: 10px;
+  color: #706b5e;
+}
+.buddy-surface .items-drawer {
+  position: static;
+  width: auto;
+  height: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  border: 0;
+  background: transparent;
+  padding: 20px 0 0;
+}
+.buddy-surface .items-drawer select,
+.buddy-surface .items-drawer button {
+  min-height: 36px;
+  font-size: 11px;
+  padding: 8px;
+  border-radius: 9px;
+  border-color: #d9c9ad;
+  background: #f4ebdc;
+}
+.buddy-surface .items-drawer .progress-label {
+  font-size: 11px;
+  line-height: 1.6;
+  margin-bottom: 4px;
+  color: #706b5e;
+}
+.buddy-surface .items-drawer .play-toggle {
+  background: #e3ead9;
+  border-color: #cbd6ba;
+  color: #354c3d;
+}
+.buddy-surface .capture-intro h3 {
+  font-size: 13px;
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+.buddy-surface .section-heading {
+  margin-bottom: 14px;
+}
+.buddy-surface .section-heading h2 {
+  margin: 0;
+}
+.buddy-surface .capture-intro {
+  margin-bottom: 16px;
+}
+.buddy-surface .empty-state {
+  padding: 20px 12px;
+  border-radius: 14px;
+  border-color: #d9c9ad;
+}
+.buddy-surface .empty-mark svg {
+  margin: 0 auto;
+  width: 28px;
+  height: 28px;
+}
+.buddy-surface .clip-item {
+  border-radius: 12px;
+  padding: 12px;
+}
+.buddy-surface .agent-connections {
+  margin-top: 16px;
+}
+.buddy-surface .connection-note {
+  margin-bottom: 16px;
+}
+.buddy-surface .agent-session {
+  border-radius: 12px;
+  padding: 12px;
+}
+.pocket-toggle {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 68px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid #d7ba8c;
+  border-radius: 10px;
+  background: #fff2d7;
+  color: #4d5139;
+  font:
+    600 10px -apple-system,
+    sans-serif;
+  cursor: pointer;
+  box-shadow: 0 2px 5px #3b28171a;
+  transition:
+    transform 160ms ease,
+    background 160ms ease;
+  z-index: 3;
+}
+.pocket-toggle svg {
+  width: 14px;
+  height: 14px;
+}
+.pocket-toggle:hover {
+  background: #f8deb0;
+  transform: translateY(-2px);
+}
+.pocket-toggle:active {
+  transform: scale(0.94);
+}
+.pocket-toggle:focus-visible {
+  outline: 2px solid #6b804f;
+  outline-offset: 3px;
+}
+.companion-open > .controls,
+.companion-open > .mood-label,
+.companion-open > .session-progress,
+.companion-open > .drag-handle {
+  display: none;
+}
+.companion-open > .pocket-toggle {
+  background: #e4ead8;
+  border-color: #bbc9a4;
+}
+.companion-open.ghosted canvas {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .companion-sheet,
+  .companion-open .companion-sheet,
+  .pocket-toggle {
+    animation: none;
+    transition: none;
+  }
+}

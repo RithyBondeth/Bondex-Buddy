@@ -1,13 +1,16 @@
 use tauri::{
-    Manager,
+    Emitter, Manager,
     menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem},
-    tray::TrayIconBuilder,
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
 };
 
 use crate::shell;
 use tauri_plugin_autostart::ManagerExt;
 
 pub fn setup(app: &tauri::App) -> tauri::Result<()> {
+    let clipboard = MenuItem::with_id(app, "clipboard", "Open clipboard…", true, None::<&str>)?;
+    let agents = MenuItem::with_id(app, "agents", "AI agents…", true, None::<&str>)?;
+    let utilities_separator = PredefinedMenuItem::separator(app)?;
     let show = MenuItem::with_id(app, "show", "Show spirit", true, None::<&str>)?;
     let play = MenuItem::with_id(app, "play", "Play now · run and peek", true, None::<&str>)?;
     let rest = MenuItem::with_id(app, "rest", "Rest here", true, None::<&str>)?;
@@ -31,14 +34,41 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
     let menu = Menu::with_items(
         app,
         &[
-            &show, &hide, &play, &rest, &reset, &display, &login, &separator, &quit,
+            &clipboard,
+            &agents,
+            &utilities_separator,
+            &show,
+            &hide,
+            &play,
+            &rest,
+            &reset,
+            &display,
+            &login,
+            &separator,
+            &quit,
         ],
     )?;
     let mut tray = TrayIconBuilder::with_id("habitat")
-        .tooltip("Tiny Desk Spirit")
+        .tooltip("Ember · Clipboard and AI agents")
         .menu(&menu)
-        .show_menu_on_left_click(true)
+        .show_menu_on_left_click(false)
+        .on_tray_icon_event(|tray, event| {
+            if matches!(
+                event,
+                TrayIconEvent::Click {
+                    button: MouseButton::Left,
+                    button_state: MouseButtonState::Up,
+                    ..
+                }
+            ) {
+                crate::panel::request_open(tray.app_handle(), "clipboard");
+            }
+        })
         .on_menu_event(move |app, event| {
+            if matches!(event.id.as_ref(), "clipboard" | "agents") {
+                crate::panel::request_open(app, event.id.as_ref());
+                return;
+            }
             if event.id.as_ref() == "login" {
                 let manager = app.autolaunch();
                 let result = manager.is_enabled().and_then(|enabled| {
@@ -61,6 +91,16 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
             let Some(window) = app.get_webview_window("main") else {
                 return;
             };
+            if matches!(event.id.as_ref(), "reset" | "display") {
+                if let Err(error) = crate::panel::set_companion_open(window.clone(), false) {
+                    eprintln!("Could not collapse Ember before moving: {error}");
+                    return;
+                }
+                let _ = window.emit("buddy-tab", "close");
+            }
+            if event.id.as_ref() == "play" {
+                let _ = window.emit("buddy-tab", "close");
+            }
             let result = match event.id.as_ref() {
                 "show" => {
                     crate::roaming::set_enabled(&window, false);

@@ -5,6 +5,43 @@ import { restingPlay, type PetPlay } from '../rendering/playful';
 
 export const isDesktop = isTauri;
 
+export async function openBuddyPanel(
+  tab: 'clipboard' | 'agents' = 'clipboard',
+): Promise<void> {
+  window.dispatchEvent(new CustomEvent('buddy-open', { detail: tab }));
+}
+
+export async function setCompanionOpen(
+  open: boolean,
+): Promise<{ width: number; height: number }> {
+  if (isTauri()) return invoke('set_companion_open', { open });
+  return open
+    ? {
+        width: Math.max(220, Math.min(400, innerWidth)),
+        height: Math.max(200, Math.min(600, innerHeight)),
+      }
+    : { width: 220, height: 200 };
+}
+
+export async function observeBuddyOpen(
+  callback: (tab: string) => void,
+): Promise<() => void> {
+  const local = (event: Event) =>
+    callback((event as CustomEvent<string>).detail);
+  window.addEventListener('buddy-open', local);
+  const native = isTauri()
+    ? await listen<string>('buddy-tab', ({ payload }) => callback(payload))
+    : () => {};
+  return () => {
+    window.removeEventListener('buddy-open', local);
+    native();
+  };
+}
+
+export async function readAgentCue(): Promise<string> {
+  return isTauri() ? invoke<string>('agent_cue') : 'idle';
+}
+
 export async function beginDrag(): Promise<void> {
   if (isTauri()) await invoke('begin_drag');
 }

@@ -8,10 +8,10 @@
   ],
   "locks": {
     "package-lock.json": "63ffd21249ea268f7943effabdb15ec39c066815939531ba960240fa08251a1f",
-    "src-tauri/Cargo.lock": "471467bff04fe93ca97bbfcb01b2fd782090e1a72e15ce9a0db82a612ebf8c7d"
+    "src-tauri/Cargo.lock": "12ffbbf062a834bf50e1a6129ed00a456818195981dd739183bacf829b3be346"
   },
-  "packageCount": 278,
-  "uniqueLicenseFiles": 178,
+  "packageCount": 296,
+  "uniqueLicenseFiles": 193,
   "unresolved": [
     "cargo:block2@0.6.2",
     "cargo:dispatch2@0.3.1",
@@ -167,6 +167,34 @@
           "name": "LICENSE-MIT",
           "file": "licenses/23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3.txt",
           "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+        }
+      ],
+      "issues": []
+    },
+    {
+      "id": "cargo:arboard@3.7.0",
+      "ecosystem": "cargo",
+      "name": "arboard",
+      "version": "3.7.0",
+      "license": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/1Password/arboard",
+      "revision": "5f5c8637911ba219edee619105a19b4f74e66a9f",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "LICENSE-APACHE.txt",
+          "file": "licenses/0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594.txt",
+          "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594"
+        },
+        {
+          "name": "LICENSE-MIT.txt",
+          "file": "licenses/f35468024534e0f4f16bb94cd0e88c87fbd1314f919c2645a07d350fb77b40c0.txt",
+          "sha256": "f35468024534e0f4f16bb94cd0e88c87fbd1314f919c2645a07d350fb77b40c0"
         }
       ],
       "issues": []
@@ -487,6 +515,67 @@
       "issues": []
     },
     {
+      "id": "cargo:bytemuck@1.25.2",
+      "ecosystem": "cargo",
+      "name": "bytemuck",
+      "version": "1.25.2",
+      "license": "Zlib OR Apache-2.0 OR MIT",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/Lokathor/bytemuck",
+      "revision": "f363643e951a7ac9e4b9921de982f2b0918902e3",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "LICENSE-APACHE",
+          "file": "licenses/e3ba223bb1423f0aad8c3dfce0fe3148db48926d41e6fbc3afbbf5ff9e1c89cb.txt",
+          "sha256": "e3ba223bb1423f0aad8c3dfce0fe3148db48926d41e6fbc3afbbf5ff9e1c89cb"
+        },
+        {
+          "name": "LICENSE-MIT",
+          "file": "licenses/9df9ba60a11af705f2e451b53762686e615d86f76b169cf075c3237730dbd7e2.txt",
+          "sha256": "9df9ba60a11af705f2e451b53762686e615d86f76b169cf075c3237730dbd7e2"
+        },
+        {
+          "name": "LICENSE-ZLIB",
+          "file": "licenses/84b34dd7608f7fb9b17bd588a6bf392bf7de504e2716f024a77d89f1b145a151.txt",
+          "sha256": "84b34dd7608f7fb9b17bd588a6bf392bf7de504e2716f024a77d89f1b145a151"
+        }
+      ],
+      "issues": []
+    },
+    {
+      "id": "cargo:byteorder-lite@0.1.0",
+      "ecosystem": "cargo",
+      "name": "byteorder-lite",
+      "version": "0.1.0",
+      "license": "Unlicense OR MIT",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/image-rs/byteorder-lite",
+      "revision": "7d44da06a48fe10d7e23efd9a932d18a7a2def63",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "LICENSE-MIT",
+          "file": "licenses/0f96a83840e146e43c0ec96a22ec1f392e0680e6c1226e6f3ba87e0740af850f.txt",
+          "sha256": "0f96a83840e146e43c0ec96a22ec1f392e0680e6c1226e6f3ba87e0740af850f"
+        },
+        {
+          "name": "UNLICENSE",
+          "file": "licenses/7e12e5df4bae12cb21581ba157ced20e1986a0508dd10d0e8a4ab9a4cf94e85c.txt",
+          "sha256": "7e12e5df4bae12cb21581ba157ced20e1986a0508dd10d0e8a4ab9a4cf94e85c"
+        }
+      ],
+      "issues": []
+    },
+    {
       "id": "cargo:byteorder@1.5.0",
       "ecosystem": "cargo",
       "name": "byteorder",
@@ -764,6 +853,28 @@
           "name": "LICENSE.txt",
           "file": "licenses/946c9835d8034d24404f8cfec5f4654cee5dad17e944afc3d06d742cf2882831.txt",
           "sha256": "946c9835d8034d24404f8cfec5f4654cee5dad17e944afc3d06d742cf2882831"
+        }
+      ],
+      "issues": []
+    },
+    {
+      "id": "cargo:clipboard-win@5.4.3",
+      "ecosystem": "cargo",
+      "name": "clipboard-win",
+      "version": "5.4.3",
+      "license": "BSL-1.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/DoumanAsh/clipboard-win",
+      "revision": "ed27008ae5d1f10cfbb266de039f0fb35fd05a56",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "upstream/clipboard-win-5.4.3.txt",
+          "file": "licenses/c9bff75738922193e67fa726fa225535870d2aa1059f91452c411736284ad566.txt",
+          "sha256": "c9bff75738922193e67fa726fa225535870d2aa1059f91452c411736284ad566",
+          "upstream": "https://raw.githubusercontent.com/DoumanAsh/clipboard-win/ed27008ae5d1f10cfbb266de039f0fb35fd05a56/LICENSE"
         }
       ],
       "issues": []
@@ -1366,7 +1477,8 @@
       "revision": "00511bdc252f491a72ac89f6d6a2463406266fb2",
       "targets": [
         "aarch64-apple-darwin",
-        "x86_64-apple-darwin"
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc"
       ],
       "files": [
         {
@@ -1716,6 +1828,27 @@
       "issues": []
     },
     {
+      "id": "cargo:error-code@3.4.0",
+      "ecosystem": "cargo",
+      "name": "error-code",
+      "version": "3.4.0",
+      "license": "BSL-1.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/DoumanAsh/error-code",
+      "revision": "e4615e514db3ff64f5f1b328b4865b20a3dcdbc3",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "LICENSE",
+          "file": "licenses/c9bff75738922193e67fa726fa225535870d2aa1059f91452c411736284ad566.txt",
+          "sha256": "c9bff75738922193e67fa726fa225535870d2aa1059f91452c411736284ad566"
+        }
+      ],
+      "issues": []
+    },
+    {
       "id": "cargo:fastrand@2.5.0",
       "ecosystem": "cargo",
       "name": "fastrand",
@@ -1739,6 +1872,29 @@
           "name": "LICENSE-MIT",
           "file": "licenses/23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3.txt",
           "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+        }
+      ],
+      "issues": []
+    },
+    {
+      "id": "cargo:fax@0.2.7",
+      "ecosystem": "cargo",
+      "name": "fax",
+      "version": "0.2.7",
+      "license": "MIT",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/pdf-rs/fax",
+      "revision": "ac2a4b2237d98830ea1fd37c7d280eec0e87c1d8",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "LICENSE",
+          "file": "licenses/7101390b4c8edd752f4c0de47f35d61b44d9cf0ee8dd032115e25644e277cfff.txt",
+          "sha256": "7101390b4c8edd752f4c0de47f35d61b44d9cf0ee8dd032115e25644e277cfff"
         }
       ],
       "issues": []
@@ -2067,6 +2223,34 @@
           "name": "LICENSE-MIT",
           "file": "licenses/6485b8ed310d3f0340bf1ad1f47645069ce4069dcc6bb46c7d5c6faf41de1fdb.txt",
           "sha256": "6485b8ed310d3f0340bf1ad1f47645069ce4069dcc6bb46c7d5c6faf41de1fdb"
+        }
+      ],
+      "issues": []
+    },
+    {
+      "id": "cargo:half@2.7.1",
+      "ecosystem": "cargo",
+      "name": "half",
+      "version": "2.7.1",
+      "license": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/VoidStarKat/half-rs",
+      "revision": "8cc891f3e4aad956eca7fa79b1f42f87ecd141ae",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "LICENSE-APACHE",
+          "file": "licenses/a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9.txt",
+          "sha256": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9"
+        },
+        {
+          "name": "LICENSE-MIT",
+          "file": "licenses/508a77d2e7b51d98adeed32648ad124b7b30241a8e70b2e72c99f92d8e5874d1.txt",
+          "sha256": "508a77d2e7b51d98adeed32648ad124b7b30241a8e70b2e72c99f92d8e5874d1"
         }
       ],
       "issues": []
@@ -2553,6 +2737,34 @@
           "name": "LICENSE-MIT",
           "file": "licenses/8b43ce8accd61e9d370b5ca9e9c4f953279b5c239926c62315b40e24df51b726.txt",
           "sha256": "8b43ce8accd61e9d370b5ca9e9c4f953279b5c239926c62315b40e24df51b726"
+        }
+      ],
+      "issues": []
+    },
+    {
+      "id": "cargo:image@0.25.10",
+      "ecosystem": "cargo",
+      "name": "image",
+      "version": "0.25.10",
+      "license": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/image-rs/image",
+      "revision": "76e57184f22772dad1138e96954e57945406b15e",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "LICENSE-APACHE",
+          "file": "licenses/0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594.txt",
+          "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594"
+        },
+        {
+          "name": "LICENSE-MIT",
+          "file": "licenses/c77a4cf9da729987d0fe7ccd811e3bd27393914ddf3d23467c18cc22954513b3.txt",
+          "sha256": "c77a4cf9da729987d0fe7ccd811e3bd27393914ddf3d23467c18cc22954513b3"
         }
       ],
       "issues": []
@@ -3167,6 +3379,34 @@
           "name": "LICENSE",
           "file": "licenses/07919255c7e04793d8ea760d6c2ce32d19f9ff02bdbdde3ce90b1e1880929a9b.txt",
           "sha256": "07919255c7e04793d8ea760d6c2ce32d19f9ff02bdbdde3ce90b1e1880929a9b"
+        }
+      ],
+      "issues": []
+    },
+    {
+      "id": "cargo:moxcms@0.8.1",
+      "ecosystem": "cargo",
+      "name": "moxcms",
+      "version": "0.8.1",
+      "license": "BSD-3-Clause OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/awxkee/moxcms.git",
+      "revision": "c4affa196727d17f21a7f6f148a558867decb470",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "LICENSE-APACHE.md",
+          "file": "licenses/90bf2d659c43045111b65c733ab2a6d4cbcb422a098368c8c58a9ba3db4ed0c5.txt",
+          "sha256": "90bf2d659c43045111b65c733ab2a6d4cbcb422a098368c8c58a9ba3db4ed0c5"
+        },
+        {
+          "name": "LICENSE.md",
+          "file": "licenses/2aa92cada6431e75615e3fe6cb1a9082c98f777d48ae1c087c0da0e37f7b8bff.txt",
+          "sha256": "2aa92cada6431e75615e3fe6cb1a9082c98f777d48ae1c087c0da0e37f7b8bff"
         }
       ],
       "issues": []
@@ -3971,6 +4211,62 @@
           "name": "LICENSE-MIT",
           "file": "licenses/23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3.txt",
           "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+        }
+      ],
+      "issues": []
+    },
+    {
+      "id": "cargo:pxfm@0.1.30",
+      "ecosystem": "cargo",
+      "name": "pxfm",
+      "version": "0.1.30",
+      "license": "BSD-3-Clause OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/awxkee/pxfm",
+      "revision": "acf7acd00cfc845307eda7b7b2de19e42303de82",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "LICENSE-APACHE.md",
+          "file": "licenses/90bf2d659c43045111b65c733ab2a6d4cbcb422a098368c8c58a9ba3db4ed0c5.txt",
+          "sha256": "90bf2d659c43045111b65c733ab2a6d4cbcb422a098368c8c58a9ba3db4ed0c5"
+        },
+        {
+          "name": "LICENSE.md",
+          "file": "licenses/2aa92cada6431e75615e3fe6cb1a9082c98f777d48ae1c087c0da0e37f7b8bff.txt",
+          "sha256": "2aa92cada6431e75615e3fe6cb1a9082c98f777d48ae1c087c0da0e37f7b8bff"
+        }
+      ],
+      "issues": []
+    },
+    {
+      "id": "cargo:quick-error@2.0.1",
+      "ecosystem": "cargo",
+      "name": "quick-error",
+      "version": "2.0.1",
+      "license": "MIT/Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "http://github.com/tailhook/quick-error",
+      "revision": "25ab982bb0c43130ae48485151f4a232eeab7d0c",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "LICENSE-APACHE",
+          "file": "licenses/c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08.txt",
+          "sha256": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08"
+        },
+        {
+          "name": "LICENSE-MIT",
+          "file": "licenses/058f01fe181608d027fcde7e528fc03ea3cf90f30903c407644b0a9bbc54f500.txt",
+          "sha256": "058f01fe181608d027fcde7e528fc03ea3cf90f30903c407644b0a9bbc54f500"
         }
       ],
       "issues": []
@@ -5432,6 +5728,39 @@
       "issues": []
     },
     {
+      "id": "cargo:tauri-plugin-clipboard-manager@2.5.0",
+      "ecosystem": "cargo",
+      "name": "tauri-plugin-clipboard-manager",
+      "version": "2.5.0",
+      "license": "Apache-2.0 OR MIT",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/tauri-apps/plugins-workspace",
+      "revision": "44293a5722efcaf27060504e63b17aeba721b40f",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "LICENSE.spdx",
+          "file": "licenses/eb8a6c84630461b352badcab1dbe5d0168c56d377358b2b8c86b51003272d5ef.txt",
+          "sha256": "eb8a6c84630461b352badcab1dbe5d0168c56d377358b2b8c86b51003272d5ef"
+        },
+        {
+          "name": "LICENSE_APACHE-2.0",
+          "file": "licenses/0cec06e0e55fbc3dc5cee4fca9b607f66cb8f4e4dbcf3b3c013594dd156732e9.txt",
+          "sha256": "0cec06e0e55fbc3dc5cee4fca9b607f66cb8f4e4dbcf3b3c013594dd156732e9"
+        },
+        {
+          "name": "LICENSE_MIT",
+          "file": "licenses/89ff9689dcf9dd53968785d05a26f7898bb169dbfcada8d032b3e68cf0d55607.txt",
+          "sha256": "89ff9689dcf9dd53968785d05a26f7898bb169dbfcada8d032b3e68cf0d55607"
+        }
+      ],
+      "issues": []
+    },
+    {
       "id": "cargo:tauri-plugin-single-instance@2.5.5",
       "ecosystem": "cargo",
       "name": "tauri-plugin-single-instance",
@@ -5709,6 +6038,29 @@
           "name": "LICENSE-MIT",
           "file": "licenses/23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3.txt",
           "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+        }
+      ],
+      "issues": []
+    },
+    {
+      "id": "cargo:tiff@0.11.3",
+      "ecosystem": "cargo",
+      "name": "tiff",
+      "version": "0.11.3",
+      "license": "MIT",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/image-rs/image-tiff",
+      "revision": "e41159ce058bf193718b017599e2d7d53e9ccc92",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "LICENSE",
+          "file": "licenses/20c097d0de27e2adc179140a3d542091951a030699c7e1c78655f2a2d08d4e3e.txt",
+          "sha256": "20c097d0de27e2adc179140a3d542091951a030699c7e1c78655f2a2d08d4e3e"
         }
       ],
       "issues": []
@@ -6586,6 +6938,34 @@
       "issues": []
     },
     {
+      "id": "cargo:weezl@0.1.12",
+      "ecosystem": "cargo",
+      "name": "weezl",
+      "version": "0.1.12",
+      "license": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/image-rs/weezl",
+      "revision": "c75ea1f6d935cc56bad8674396b7cb0dd7275f99",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "LICENSE-APACHE",
+          "file": "licenses/769f80b5bcb42ed0af4e4d2fd74e1ac9bf843cb80c5a29219d1ef3544428a6bb.txt",
+          "sha256": "769f80b5bcb42ed0af4e4d2fd74e1ac9bf843cb80c5a29219d1ef3544428a6bb"
+        },
+        {
+          "name": "LICENSE-MIT",
+          "file": "licenses/573f5227db835cd30bbdd3aed3f82615f80119a4d5c82b4daf642dbfe2b6afde.txt",
+          "sha256": "573f5227db835cd30bbdd3aed3f82615f80119a4d5c82b4daf642dbfe2b6afde"
+        }
+      ],
+      "issues": []
+    },
+    {
       "id": "cargo:winapi-util@0.1.11",
       "ecosystem": "cargo",
       "name": "winapi-util",
@@ -7160,6 +7540,72 @@
       "issues": []
     },
     {
+      "id": "cargo:zerocopy-derive@0.8.63",
+      "ecosystem": "cargo",
+      "name": "zerocopy-derive",
+      "version": "0.8.63",
+      "license": "BSD-2-Clause OR Apache-2.0 OR MIT",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/google/zerocopy",
+      "revision": "c55af491426ef53f35fb8c6e83f220fa07712e66",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "LICENSE-APACHE",
+          "file": "licenses/9d185ac6703c4b0453974c0d85e9eee43e6941009296bb1f5eb0b54e2329e9f3.txt",
+          "sha256": "9d185ac6703c4b0453974c0d85e9eee43e6941009296bb1f5eb0b54e2329e9f3"
+        },
+        {
+          "name": "LICENSE-BSD",
+          "file": "licenses/83c1763356e822adde0a2cae748d938a73fdc263849ccff6b27776dff213bd32.txt",
+          "sha256": "83c1763356e822adde0a2cae748d938a73fdc263849ccff6b27776dff213bd32"
+        },
+        {
+          "name": "LICENSE-MIT",
+          "file": "licenses/1a2f5c12ddc934d58956aa5dbdd3255fe55fd957633ab7d0d39e4f0daa73f7df.txt",
+          "sha256": "1a2f5c12ddc934d58956aa5dbdd3255fe55fd957633ab7d0d39e4f0daa73f7df"
+        }
+      ],
+      "issues": []
+    },
+    {
+      "id": "cargo:zerocopy@0.8.63",
+      "ecosystem": "cargo",
+      "name": "zerocopy",
+      "version": "0.8.63",
+      "license": "BSD-2-Clause OR Apache-2.0 OR MIT",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/google/zerocopy",
+      "revision": "c55af491426ef53f35fb8c6e83f220fa07712e66",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "LICENSE-APACHE",
+          "file": "licenses/9d185ac6703c4b0453974c0d85e9eee43e6941009296bb1f5eb0b54e2329e9f3.txt",
+          "sha256": "9d185ac6703c4b0453974c0d85e9eee43e6941009296bb1f5eb0b54e2329e9f3"
+        },
+        {
+          "name": "LICENSE-BSD",
+          "file": "licenses/83c1763356e822adde0a2cae748d938a73fdc263849ccff6b27776dff213bd32.txt",
+          "sha256": "83c1763356e822adde0a2cae748d938a73fdc263849ccff6b27776dff213bd32"
+        },
+        {
+          "name": "LICENSE-MIT",
+          "file": "licenses/1a2f5c12ddc934d58956aa5dbdd3255fe55fd957633ab7d0d39e4f0daa73f7df.txt",
+          "sha256": "1a2f5c12ddc934d58956aa5dbdd3255fe55fd957633ab7d0d39e4f0daa73f7df"
+        }
+      ],
+      "issues": []
+    },
+    {
       "id": "cargo:zerofrom-derive@0.1.8",
       "ecosystem": "cargo",
       "name": "zerofrom-derive",
@@ -7316,6 +7762,72 @@
           "name": "LICENSE-MIT",
           "file": "licenses/23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3.txt",
           "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+        }
+      ],
+      "issues": []
+    },
+    {
+      "id": "cargo:zune-core@0.5.3",
+      "ecosystem": "cargo",
+      "name": "zune-core",
+      "version": "0.5.3",
+      "license": "MIT OR Apache-2.0 OR Zlib",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/etemesi254/zune-image",
+      "revision": "de5dfc800cfa063116eb695edb6ccd01cb96ea7a",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "LICENSE-APACHE",
+          "file": "licenses/c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4.txt",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+        },
+        {
+          "name": "LICENSE-MIT",
+          "file": "licenses/d30047bca3b516639339a3c279bb84c3483124fb5a9dafe3c75056a85090e745.txt",
+          "sha256": "d30047bca3b516639339a3c279bb84c3483124fb5a9dafe3c75056a85090e745"
+        },
+        {
+          "name": "LICENSE-ZLIB",
+          "file": "licenses/d201d14804d3bcd3b944147173175e4abfbd838b7c8069b6bd3452496bf13e6c.txt",
+          "sha256": "d201d14804d3bcd3b944147173175e4abfbd838b7c8069b6bd3452496bf13e6c"
+        }
+      ],
+      "issues": []
+    },
+    {
+      "id": "cargo:zune-jpeg@0.5.15",
+      "ecosystem": "cargo",
+      "name": "zune-jpeg",
+      "version": "0.5.15",
+      "license": "MIT OR Apache-2.0 OR Zlib",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/etemesi254/zune-image/tree/dev/crates/zune-jpeg",
+      "revision": "31d81fed7551c8ccea456d9d8e2b1fd8bebb6995",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "LICENSE-APACHE",
+          "file": "licenses/c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4.txt",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+        },
+        {
+          "name": "LICENSE-MIT",
+          "file": "licenses/d30047bca3b516639339a3c279bb84c3483124fb5a9dafe3c75056a85090e745.txt",
+          "sha256": "d30047bca3b516639339a3c279bb84c3483124fb5a9dafe3c75056a85090e745"
+        },
+        {
+          "name": "LICENSE-ZLIB",
+          "file": "licenses/d201d14804d3bcd3b944147173175e4abfbd838b7c8069b6bd3452496bf13e6c.txt",
+          "sha256": "d201d14804d3bcd3b944147173175e4abfbd838b7c8069b6bd3452496bf13e6c"
         }
       ],
       "issues": []

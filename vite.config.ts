@@ -13,6 +13,7 @@ export default defineConfig({
     rolldownOptions: {
       input: {
         main: 'index.html',
+        buddy: 'buddy.html',
         nativeCheck: 'native-check.html',
         motionReview: 'motion-review.html',
       },

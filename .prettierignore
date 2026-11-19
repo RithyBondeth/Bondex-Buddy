@@ -10,3 +10,4 @@ package-lock.json
 *.icns
 third-party/generated
 third-party/upstream
+.impeccable/
