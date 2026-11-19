@@ -3,57 +3,141 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Ember fox motion review</title>
+    <title>Ember’s little world · Bondex Buddy</title>
   </head>
   <body>
     <main>
+      <nav class="topbar" aria-label="Preview navigation">
+        <a class="brand" href="/">
+          <span class="brand-mark" aria-hidden="true">✦</span> Bondex Buddy
+          <span class="brand-tag">PET STUDIO</span></a
+        >
+        <a class="text-link" href="/"
+          >Open desktop preview <span aria-hidden="true">↗</span></a
+        >
+      </nav>
       <header>
-        <p class="eyebrow">Tiny Desk Spirit · artwork review</p>
-        <h1>A little life on the shelf.</h1>
+        <p class="eyebrow">
+          <span class="live-dot" aria-hidden="true"></span> A little life on
+          your desktop
+        </p>
+        <h1>Small paws. <em>Big personality.</em></h1>
         <p>
-          Five pixel motion studies. Preview cosmetics freely; saved progress
-          stays untouched.
+          A curious glance. A sleepy blink. A happy little hop.<br />Spend a
+          moment with a more expressive Ember.
         </p>
       </header>
-      <section class="controls" aria-label="Motion review controls">
-        <button id="play" type="button">Pause motion</button>
-        <button id="restart" type="button">Restart motions</button>
-        <label><input id="reduced" type="checkbox" /> Reduced motion</label>
-        <label
-          >Outfit
-          <select id="outfit">
-            <option value="none">None</option>
-            <option value="beanie">Beanie</option>
-            <option value="scarf">Scarf</option>
-          </select></label
-        >
-        <label
-          >Decor
-          <select id="decor">
-            <option value="none">None</option>
-            <option value="plant">Plant</option>
-            <option value="lantern">Lantern</option>
-          </select></label
-        >
-        <label><input id="night" type="checkbox" /> Evening tint</label>
-        <label class="scrubber"
-          >Preview time
-          <input
-            id="time"
-            type="range"
-            min="0"
-            max="5200"
-            step="20"
-            value="0"
-          /><output id="elapsed">0 ms</output></label
-        >
+      <section class="studio" aria-label="Interactive pet preview">
+        <div class="featured-stage">
+          <div class="stage-top">
+            <span>EMBER’S LITTLE WORLD</span
+            ><span id="featured-mood">Feeling curious</span>
+          </div>
+          <div class="pixel-stars" aria-hidden="true"></div>
+          <button
+            id="greet"
+            class="featured-pet"
+            type="button"
+            aria-label="Greet Ember and replay the happy hops"
+          >
+            <canvas
+              id="featured"
+              width="110"
+              height="100"
+              aria-hidden="true"
+            ></canvas>
+          </button>
+          <div class="preview-dock" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <p class="stage-hint">
+            Move closer. Say hello. <span aria-hidden="true">♡</span>
+          </p>
+        </div>
+        <aside class="customize" aria-label="Customize the preview">
+          <p class="eyebrow">Meet your desk companion</p>
+          <h2>A fox with a little<br />mind of its own.</h2>
+          <p class="intro">
+            Ember blinks, fidgets, and looks your way. Click the fox for a tiny
+            celebration.
+          </p>
+          <div class="appearance-fields">
+            <label for="outfit">A little personality</label>
+            <select id="outfit">
+              <option value="none">Just Ember</option>
+              <option value="beanie">Cozy beanie</option>
+              <option value="scarf">Autumn scarf</option>
+            </select>
+            <label for="decor">Something for the shelf</label>
+            <select id="decor">
+              <option value="none">Keep it simple</option>
+              <option value="plant">A little greenery</option>
+              <option value="lantern">A warm lantern</option>
+            </select>
+          </div>
+          <label class="check-label"
+            ><input id="night" type="checkbox" /> Warm evening light</label
+          >
+          <label class="check-label"
+            ><input id="reduced" type="checkbox" /> Reduced motion</label
+          >
+          <button id="hello" class="primary" type="button">
+            Say hello to Ember <span aria-hidden="true">♡</span>
+          </button>
+          <button
+            id="play-demo"
+            class="secondary"
+            type="button"
+            aria-pressed="false"
+          >
+            Watch Ember play <span aria-hidden="true">↔</span>
+          </button>
+          <p class="preview-note">
+            A place to play. Your saved progress stays untouched.
+          </p>
+        </aside>
       </section>
-      <p id="checks" role="status">Checking renderer…</p>
-      <section id="scenes" aria-label="Five animated fox moods"></section>
-      <p class="note">
-        Held integer-pixel poses, no smoothing. Happy plays once per greeting;
-        restart to replay it. Final motion and cosmetic approval remain open.
-      </p>
+      <section aria-labelledby="moods-title" class="mood-section">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Every mood has a moment</p>
+            <h2 id="moods-title">The many sides of Ember.</h2>
+          </div>
+          <span class="section-note">Choose a mood to take a closer look</span>
+        </div>
+        <div
+          id="scenes"
+          class="scenes"
+          aria-label="Five animated fox moods"
+        ></div>
+      </section>
+      <details class="motion-details">
+        <summary>Explore the motion timeline</summary>
+        <section class="controls" aria-label="Motion review controls">
+          <button id="play" type="button">Pause motion</button>
+          <button id="restart" type="button">Restart motions</button>
+          <button type="button" data-play-cue="800">Preview run</button>
+          <button type="button" data-play-cue="2800">Preview pounce</button>
+          <button type="button" data-play-cue="6800">Preview hiding</button>
+          <button type="button" data-play-cue="7900">Preview peek</button>
+          <label class="scrubber"
+            >Preview time
+            <input
+              id="time"
+              type="range"
+              min="0"
+              max="14000"
+              step="10"
+              value="0"
+            /><output id="elapsed">0 ms</output></label
+          >
+        </section>
+        <p id="checks" role="status">Checking renderer…</p>
+      </details>
+      <footer>
+        <span>Little companion. Quiet company.</span
+        ><span>Made of pixels, full of personality.</span>
+      </footer>
     </main>
     <script type="module" src="/src/testing/motion-review.ts"></script>
   </body>

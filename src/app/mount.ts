@@ -7,7 +7,11 @@ import { Ambience } from '../audio/ambience';
 import { AnimationClock } from '../rendering/animation-clock';
 import {
   observeActivity,
+  observePlay,
+  setPlayContext,
+  setPlayfulRoaming,
   observeHover,
+  observeFocus,
   observeVisibility,
   isDesktop,
   revealHabitat,
@@ -21,6 +25,7 @@ import {
   updateHitMask,
 } from '../platform/desktop';
 import { createHabitatRenderer } from '../rendering/habitat';
+import { restingPlay } from '../rendering/playful';
 
 export async function mountApp(root: HTMLElement): Promise<() => void> {
   const store = await openProgressStore();
@@ -47,6 +52,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   controls.setAttribute('aria-label', 'Focus session');
   const toggle = document.createElement('button');
   toggle.type = 'button';
+  toggle.className = 'session-toggle';
   const reset = document.createElement('button');
   reset.type = 'button';
   reset.textContent = 'Reset';
@@ -61,12 +67,14 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   controls.append(toggle, reset, sound);
   const items = document.createElement('button');
   items.type = 'button';
-  items.textContent = 'Items';
+  items.textContent = 'Style';
   items.setAttribute('aria-expanded', 'false');
   items.setAttribute('aria-label', 'Open decor and lighting');
   controls.append(items);
   const drawer = document.createElement('div');
   drawer.className = 'items-drawer';
+  drawer.id = 'habitat-style';
+  items.setAttribute('aria-controls', drawer.id);
   drawer.hidden = true;
   drawer.setAttribute('role', 'group');
   drawer.setAttribute('aria-label', 'Decor and lighting');
@@ -115,7 +123,14 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     'Fade and pass clicks through the fox during work. Controls remain usable.';
   ghost.disabled = !isDesktop();
   if (!isDesktop()) ghost.title = 'Ghost Mode is available in the desktop app.';
-  drawer.append(outfit, ghost);
+  const playToggle = document.createElement('button');
+  playToggle.type = 'button';
+  playToggle.className = 'play-toggle';
+  playToggle.textContent = 'Playful roaming on';
+  playToggle.disabled = !isDesktop();
+  playToggle.title =
+    'Run, pounce, and peek behind the Dock. Pause by approaching Ember.';
+  drawer.append(outfit, ghost, playToggle);
   const refreshItems = () => {
     progressLabel.textContent = saveProblem
       ? 'Progress stays in memory for now'
@@ -149,6 +164,11 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   refreshItems();
   const moodLabel = document.createElement('p');
   moodLabel.className = 'mood-label';
+  const sessionProgress = document.createElement('div');
+  sessionProgress.className = 'session-progress';
+  sessionProgress.setAttribute('aria-hidden', 'true');
+  const progressFill = document.createElement('div');
+  sessionProgress.append(progressFill);
   const announcement = document.createElement('span');
   announcement.className = 'sr-only';
   announcement.setAttribute('role', 'status');
@@ -160,12 +180,33 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     'Move habitat: drag shelf or use arrow keys',
   );
   handle.title = 'Drag the shelf to move. Arrow keys move by 24 pixels.';
-  habitat.append(pet, handle, controls, drawer, moodLabel, announcement);
+  habitat.append(
+    pet,
+    handle,
+    controls,
+    drawer,
+    moodLabel,
+    sessionProgress,
+    announcement,
+  );
   root.replaceChildren(habitat);
 
   const renderer = await createHabitatRenderer(canvas);
+  pet.addEventListener('pointermove', (event) => {
+    const bounds = pet.getBoundingClientRect();
+    renderer.setAttention(
+      ((event.clientX - bounds.left) / bounds.width - 0.5) * 2,
+    );
+  });
+  pet.addEventListener('pointerleave', () => renderer.setAttention(null));
+  let play = restingPlay();
+  let playStartedAt = performance.now();
+  let playReceivedAt = performance.now();
+  let quietPlay = true;
+  let lastPlayContext = '';
   let disposed = false;
   let hovering = false;
+  let windowFocused = false;
   let visible = false;
   let drawerOpen = false;
   let drawerVisible = false;
@@ -177,6 +218,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   let completed = 0;
   let habitatVisible = false;
   let lastAnnouncement = '';
+  let greetingEnd: ReturnType<typeof setTimeout> | undefined;
   // Serialize native updates so older masks or hover commands cannot overtake new ones.
   let updates = Promise.resolve();
   const enqueue = (operation: () => Promise<void>) => {
@@ -192,7 +234,9 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   };
   const updateControls = () => {
     const next =
-      hovering || (document.hasFocus() && habitat.matches(':focus-within'));
+      hovering ||
+      ((isDesktop() ? windowFocused : document.hasFocus()) &&
+        habitat.matches(':focus-within'));
     if (next === visible) return;
     visible = next;
     habitat.classList.toggle('show-controls', visible);
@@ -232,12 +276,24 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     const date = new Date(now);
     const snapshot = engine.read(now, date.getHours() * 60 + date.getMinutes());
     const working = snapshot.mood === 'Working';
+    quietPlay =
+      snapshot.mood === 'Happy' ||
+      (snapshot.timer?.phase === 'Focus' &&
+        snapshot.timer.status === 'running');
+    const playContext = `${quietPlay}:${motion.matches}`;
+    if (lastPlayContext !== playContext) {
+      lastPlayContext = playContext;
+      enqueue(() => setPlayContext(quietPlay, motion.matches));
+    }
     if (wasWorking !== working) {
       wasWorking = working;
       enqueue(() => setWorking(working));
     }
     let mask: number[] | undefined;
-    const appearanceKey = JSON.stringify(appearance());
+    const appearanceKey = JSON.stringify({
+      ...appearance(),
+      play: { ...play, elapsedMs: 0 },
+    });
     if (lastMood !== snapshot.mood || lastAppearance !== appearanceKey) {
       if (lastMood !== snapshot.mood) moodStartedAt = performance.now();
       lastAppearance = appearanceKey;
@@ -275,11 +331,27 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       ? `${timer.phase} ${timer.status}`
       : 'Start a 25-minute focus session';
     reset.disabled = !timer;
-    moodLabel.textContent = `${snapshot.mood}${timer?.status === 'paused' ? ' · paused' : ''}`;
+    habitat.dataset.mood = snapshot.mood;
+    habitat.dataset.session = timer?.status ?? 'idle';
+    sessionProgress.hidden = !timer;
+    const duration = timer?.phase === 'Break' ? 5 * 60_000 : FOCUS_MS;
+    progressFill.style.width = `${Math.max(0, Math.min(100, (1 - (timer?.remainingMs ?? duration) / duration) * 100))}%`;
+    toggle.setAttribute('aria-pressed', String(timer?.status === 'running'));
+    const playLabels = {
+      rest: 'Taking a breather',
+      walk: 'Sneaking closer',
+      run: 'Feeling speedy',
+      pounce: 'Feeling playful',
+      hide: 'Hide and seek',
+      peek: 'Peekaboo',
+    };
+    moodLabel.textContent = play.roaming
+      ? playLabels[play.action]
+      : `${snapshot.mood}${timer?.status === 'paused' ? ' · paused' : ''}`;
     moodLabel.title = snapshot.activityAvailable
       ? 'System idle time is available; no input content is collected.'
       : 'System activity unavailable. Manual focus sessions still work.';
-    const message = `${snapshot.mood}. ${timer ? `${timer.phase} ${timer.status}.` : 'No focus session running.'}`;
+    const message = `${play.roaming ? 'Ember is playing' : snapshot.mood}. ${timer ? `${timer.phase} ${timer.status}.` : 'No focus session running.'}`;
     if (message !== lastAnnouncement) {
       announcement.textContent = message;
       lastAnnouncement = message;
@@ -289,12 +361,45 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   const appearance = () => {
     const hour = new Date().getHours();
     return {
+      play: {
+        ...play,
+        elapsedMs: Math.max(0, performance.now() - playStartedAt),
+        gaitMs:
+          play.gaitMs === undefined
+            ? undefined
+            : play.gaitMs +
+              (performance.now() - playReceivedAt) * (play.gaitRate ?? 0),
+      },
       outfit: progress.outfit,
       decor: progress.decor,
       night: progress.lighting === 'auto' && (hour >= 18 || hour < 6),
     };
   };
+  const unsubscribePlay = await observePlay((snapshot) => {
+    play = snapshot;
+    playReceivedAt = performance.now();
+    playStartedAt = playReceivedAt - snapshot.elapsedMs;
+    habitat.classList.toggle('free-roam', snapshot.roaming);
+    playToggle.textContent = snapshot.enabled
+      ? 'Roaming on · rest here'
+      : 'Play now · run and peek';
+    playToggle.setAttribute('aria-pressed', String(snapshot.enabled));
+  });
+  playToggle.addEventListener('click', () => {
+    const enabled = !play.enabled;
+    enqueue(() => setPlayfulRoaming(enabled));
+    if (enabled) {
+      drawerOpen = false;
+      syncDrawer();
+      playToggle.blur();
+    }
+  });
+  const unsubscribeFocus = await observeFocus((focused) => {
+    windowFocused = focused;
+    updateControls();
+  });
   const unsubscribeHover = await observeHover((inside) => {
+    if (!inside) renderer.setAttention(null);
     hovering = inside;
     updateControls();
   });
@@ -305,6 +410,8 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     await setGhostMode(progress.ghost);
     await revealHabitat(render(true)!);
   } catch (error) {
+    unsubscribePlay();
+    unsubscribeFocus();
     unsubscribeHover();
     unsubscribeGhost();
     throw error;
@@ -325,7 +432,10 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       enqueue(() => updateHitMask(mask));
     }
   });
-  const syncMotion = () => animation.setState(habitatVisible, motion.matches);
+  const syncMotion = () => {
+    animation.setState(habitatVisible, motion.matches);
+    enqueue(() => setPlayContext(quietPlay, motion.matches));
+  };
   motion.addEventListener('change', syncMotion);
   const unsubscribeVisibility = await observeVisibility((visible) => {
     habitatVisible = visible;
@@ -333,8 +443,12 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     syncMotion();
   });
   pet.addEventListener('click', () => {
-    if (engine.interact(Date.now())) moodStartedAt = performance.now();
-    audio.chime();
+    if (engine.interact(Date.now())) {
+      moodStartedAt = performance.now();
+      clearTimeout(greetingEnd);
+      greetingEnd = setTimeout(render, 2000);
+      audio.chime();
+    }
     render();
   });
   toggle.addEventListener('click', () => {
@@ -350,7 +464,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     syncDrawer();
   });
   habitat.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
+    if (event.key === 'Escape' && drawerOpen) {
       drawerOpen = false;
       syncDrawer();
       items.focus();
@@ -446,6 +560,9 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   const dispose = () => {
     disposed = true;
     clearInterval(interval);
+    clearTimeout(greetingEnd);
+    unsubscribePlay();
+    unsubscribeFocus();
     unsubscribeHover();
     unsubscribeGhost();
     unsubscribeActivity();

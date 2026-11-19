@@ -29,6 +29,8 @@ pub struct ShellState {
 
 /// Restore the existing habitat without recreating its WebView.
 pub fn show_existing(window: &WebviewWindow) -> tauri::Result<()> {
+    window.state::<crate::roaming::PlayState>().restart_route();
+    crate::placement::keep_visible(window)?;
     window.unminimize()?;
     window.show()
 }
@@ -111,6 +113,7 @@ pub fn dock(window: &WebviewWindow, monitor: &tauri::Monitor) -> tauri::Result<(
 }
 
 pub fn reset_position(window: &WebviewWindow) -> tauri::Result<()> {
+    crate::roaming::set_enabled(window, false);
     window
         .state::<ShellState>()
         .manual_placement
@@ -122,6 +125,7 @@ pub fn reset_position(window: &WebviewWindow) -> tauri::Result<()> {
 }
 
 pub fn next_display(window: &WebviewWindow) -> tauri::Result<()> {
+    crate::roaming::set_enabled(window, false);
     window
         .state::<ShellState>()
         .manual_placement
@@ -182,6 +186,14 @@ pub fn set_controls_visible(
 }
 
 #[tauri::command]
+pub fn shell_focused(window: WebviewWindow) -> Result<bool, String> {
+    if window.label() != "main" {
+        return Err("Invalid habitat window".into());
+    }
+    window.is_focused().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub fn shell_visibility(window: WebviewWindow) -> Result<bool, String> {
     window.is_visible().map_err(|e| e.to_string())
 }
@@ -207,6 +219,7 @@ pub fn show_shell_error(
 /// Cursor coordinates are used transiently for hit testing and never recorded.
 pub fn start_hit_testing(window: WebviewWindow) {
     thread::spawn(move || {
+        let mut roamer = crate::roaming::Roamer::default();
         let mut ignoring = None;
         let mut hovered = false;
         let mut was_visible = false;
@@ -219,6 +232,7 @@ pub fn start_hit_testing(window: WebviewWindow) {
                 let _ = window.emit("habitat-visibility", visible);
             }
             if !visible {
+                let _ = roamer.tick(&window, false, false, false);
                 window
                     .state::<ShellState>()
                     .ghosted
@@ -237,6 +251,7 @@ pub fn start_hit_testing(window: WebviewWindow) {
             }
             let state = window.state::<ShellState>();
             if crate::placement::finish_drag(&window) {
+                let _ = roamer.tick(&window, false, true, true);
                 if window.set_ignore_cursor_events(false).is_ok() {
                     ignoring = Some(false);
                     state.ignored.store(false, Ordering::Relaxed);
@@ -293,19 +308,41 @@ pub fn start_hit_testing(window: WebviewWindow) {
                     state.ignored.store(should_ignore, Ordering::Relaxed);
                 }
             }
+            if let Err(error) = roamer.tick(
+                &window,
+                hovered
+                    || (state.controls_visible.load(Ordering::Relaxed)
+                        && window.is_focused().unwrap_or(false)),
+                false,
+                true,
+            ) {
+                eprintln!("Could not update playful roaming: {error}");
+                crate::roaming::set_enabled(&window, false);
+            }
             // Re-dock if the current display's work area changes (e.g. Dock moves).
-            if ticks % 50 == 0 {
+            if ticks % 50 == 0 && !crate::roaming::active(&window) {
                 let result = if state.manual_placement.load(Ordering::Relaxed) {
                     crate::placement::keep_visible(&window)
                 } else {
-                    reset_position(&window)
+                    window.current_monitor().and_then(|monitor| {
+                        if let Some(monitor) = monitor {
+                            dock(&window, &monitor)
+                        } else {
+                            Ok(())
+                        }
+                    })
                 };
                 if let Err(error) = result {
                     eprintln!("Could not update habitat placement: {error}");
                 }
             }
             ticks = (ticks + 1) % 50;
-            thread::sleep(Duration::from_millis(40));
+            // Use finer native position steps during a run, without increasing idle polling.
+            thread::sleep(Duration::from_millis(if crate::roaming::active(&window) {
+                16
+            } else {
+                33
+            }));
         }
     });
 }

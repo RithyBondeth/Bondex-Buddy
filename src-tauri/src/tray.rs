@@ -9,6 +9,8 @@ use tauri_plugin_autostart::ManagerExt;
 
 pub fn setup(app: &tauri::App) -> tauri::Result<()> {
     let show = MenuItem::with_id(app, "show", "Show spirit", true, None::<&str>)?;
+    let play = MenuItem::with_id(app, "play", "Play now · run and peek", true, None::<&str>)?;
+    let rest = MenuItem::with_id(app, "rest", "Rest here", true, None::<&str>)?;
     let hide = MenuItem::with_id(app, "hide", "Hide spirit", true, None::<&str>)?;
     let reset = MenuItem::with_id(app, "reset", "Reset to bottom right", true, None::<&str>)?;
     let display = MenuItem::with_id(app, "display", "Move to next display", true, None::<&str>)?;
@@ -28,7 +30,9 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
     )?;
     let menu = Menu::with_items(
         app,
-        &[&show, &hide, &reset, &display, &login, &separator, &quit],
+        &[
+            &show, &hide, &play, &rest, &reset, &display, &login, &separator, &quit,
+        ],
     )?;
     let mut tray = TrayIconBuilder::with_id("habitat")
         .tooltip("Tiny Desk Spirit")
@@ -58,8 +62,19 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
                 return;
             };
             let result = match event.id.as_ref() {
-                "show" => shell::show_existing(&window),
+                "show" => {
+                    crate::roaming::set_enabled(&window, false);
+                    shell::show_existing(&window)
+                }
                 "hide" => window.hide(),
+                "play" => {
+                    crate::roaming::set_enabled(&window, true);
+                    window.show()
+                }
+                "rest" => {
+                    crate::roaming::set_enabled(&window, false);
+                    crate::placement::keep_visible(&window)
+                }
                 "reset" => shell::reset_position(&window),
                 "display" => shell::next_display(&window),
                 _ => Ok(()),

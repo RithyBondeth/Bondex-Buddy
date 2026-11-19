@@ -2,6 +2,11 @@ import './motion-review.css';
 import { AnimationClock } from '../rendering/animation-clock';
 import { createHabitatRenderer } from '../rendering/habitat';
 import { MOTION, poseAt } from '../rendering/motion';
+import {
+  restingPlay,
+  samplePlayDemo,
+  PLAY_DEMO_MS,
+} from '../rendering/playful';
 import type { Mood } from '../engine/spirit';
 import type { Decor, Outfit } from '../engine/progress';
 
@@ -17,6 +22,24 @@ const night = input<HTMLInputElement>('night');
 const time = input<HTMLInputElement>('time');
 const elapsed = input<HTMLOutputElement>('elapsed');
 const checks = input<HTMLElement>('checks');
+const featured = input<HTMLCanvasElement>('featured');
+const featuredMood = input<HTMLElement>('featured-mood');
+const greet = input<HTMLButtonElement>('greet');
+const playDemo = input<HTMLButtonElement>('play-demo');
+const descriptions: Record<Mood, string> = {
+  Idle: 'A curious glance, a lazy tail swish.',
+  Working: 'Quiet company while you focus.',
+  Sleeping: 'Soft breaths. Sweet little dreams.',
+  TeaBreak: 'A warm cup and a moment to pause.',
+  Happy: 'Two happy hops, just for you.',
+};
+const labels: Record<Mood, string> = {
+  Idle: 'Feeling curious',
+  Working: 'In the flow',
+  Sleeping: 'Dreaming away',
+  TeaBreak: 'Taking it slow',
+  Happy: 'Happy to see you',
+};
 const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
 reduced.checked = motionPreference.matches;
 const scratch = document.createElement('canvas');
@@ -26,6 +49,7 @@ scratch.height = 100;
 async function start(): Promise<void> {
   const renderer = await createHabitatRenderer(scratch);
   const context = scratch.getContext('2d')!;
+  const featuredRenderer = await createHabitatRenderer(featured);
   // This review-only readback verifies rendered pixels; production drawing has no per-frame readback.
   let assertions = 0;
   const check = (condition: boolean) => {
@@ -65,6 +89,40 @@ async function start(): Promise<void> {
       }
     }
   }
+  // Exercise airborne silhouettes and natural gestures, including their wardrobe layers.
+  for (const mood of moods) {
+    for (let ms = 0; ms < 12000; ms += 100)
+      verifyMask(renderer.draw(mood, ms), false);
+    for (const selectedOutfit of ['beanie', 'scarf'] as Outfit[])
+      for (const ms of [120, 200, 425, 650, 1000, 1190])
+        verifyMask(
+          renderer.draw(mood, ms, false, {
+            outfit: selectedOutfit,
+            decor: 'plant',
+            night: true,
+          }),
+          false,
+        );
+  }
+  for (const facing of [-1, 1] as const)
+    for (const selectedOutfit of ['none', 'beanie', 'scarf'] as Outfit[])
+      for (const action of ['walk', 'run', 'pounce', 'hide', 'peek'] as const)
+        for (let ms = 0; ms < 1500; ms += 55) {
+          const mask = renderer.draw('Idle', ms, false, {
+            decor: 'lantern',
+            outfit: selectedOutfit,
+            night: false,
+            play: {
+              ...restingPlay(),
+              roaming: true,
+              action,
+              facing,
+              elapsedMs: ms,
+            },
+          });
+          verifyMask(mask, true);
+          check(mask.slice(110 * 97).every((pixel) => pixel === 0));
+        }
   checks.textContent = `Renderer checks: ${assertions} passed · masks match solid pixels · cached poses reuse masks · reduced motion stays neutral`;
   const scenes = moods.map((mood) => {
     const figure = document.createElement('figure');
@@ -75,15 +133,37 @@ async function start(): Promise<void> {
     canvas.height = 100;
     canvas.setAttribute('aria-label', `${mood} fox animation`);
     const caption = document.createElement('figcaption');
-    const title = document.createElement('h2');
-    title.textContent = mood;
+    caption.textContent = descriptions[mood];
+    const title = document.createElement('span');
+    title.className = 'mood-name';
+    title.textContent = mood === 'TeaBreak' ? 'Tea break' : mood;
+    const choice = document.createElement('button');
+    choice.type = 'button';
+    choice.className = 'mood-choice';
+    choice.setAttribute('aria-label', `Preview ${title.textContent}`);
+    choice.setAttribute('aria-pressed', String(mood === 'Idle'));
     const output = document.createElement('output');
-    caption.append(title, output);
+    output.hidden = true;
     stage.append(canvas);
-    figure.append(stage, caption);
+    choice.append(stage, title);
+    choice.addEventListener('click', () => {
+      clearTimeout(greetingEnd);
+      demoPlaying = false;
+      playDemo.setAttribute('aria-pressed', 'false');
+      playDemo.textContent = 'Watch Ember play ↔';
+      selectedMood = mood;
+      featuredStarted = current();
+      sync();
+    });
+    figure.append(choice, caption);
     input('scenes').append(figure);
-    return { mood, output, context: canvas.getContext('2d')! };
+    return { mood, choice, output, context: canvas.getContext('2d')! };
   });
+  let selectedMood: Mood = 'Idle';
+  let demoPlaying = false;
+  let demoStarted = 0;
+  let featuredStarted = 0;
+  let greetingEnd: ReturnType<typeof setTimeout> | undefined;
   let playing = true;
   let offset = 0;
   let startedAt = performance.now();
@@ -100,8 +180,46 @@ async function start(): Promise<void> {
       scene.context.drawImage(scratch, 0, 0);
       scene.output.textContent = poseAt(scene.mood, ms, reduced.checked);
     }
+    const span = Math.max(
+      24,
+      Math.min(110, (greet.parentElement!.clientWidth - 180) / 2),
+    );
+    const demo = samplePlayDemo(ms - demoStarted, span);
+    demo.play.roaming = demoPlaying;
+    const activeDemo = demoPlaying && !reduced.checked;
+    greet.parentElement!.classList.toggle('dock-demo', activeDemo);
+    greet.style.transform = activeDemo
+      ? `translate(${Math.round(demo.x / 3) * 3}px,${Math.round(demo.y / 3) * 3}px)`
+      : '';
+    featuredRenderer.draw(
+      selectedMood,
+      Math.max(0, ms - featuredStarted),
+      reduced.checked,
+      {
+        outfit: outfit.value as Outfit,
+        decor: decor.value as Decor,
+        night: night.checked,
+        play: demo.play,
+      },
+    );
+    const actionLabels = {
+      rest: 'Taking a breather',
+      walk: 'Sneaking closer',
+      run: 'A little burst of joy',
+      pounce: 'Ready, set… pounce!',
+      hide: 'Where did Ember go?',
+      peek: 'Peekaboo!',
+    };
+    featuredMood.textContent = demoPlaying
+      ? actionLabels[demo.play.action]
+      : labels[selectedMood];
+    for (const scene of scenes)
+      scene.choice.setAttribute(
+        'aria-pressed',
+        String(scene.mood === selectedMood),
+      );
     elapsed.textContent = `${Math.floor(ms)} ms`;
-    time.value = String(Math.min(5200, ms));
+    time.value = String(Math.min(PLAY_DEMO_MS, ms));
   };
   const clock = new AnimationClock(() => draw(current()));
   const sync = () => {
@@ -116,21 +234,92 @@ async function start(): Promise<void> {
     sync();
   });
   restart.addEventListener('click', () => {
+    demoStarted = 0;
+    featuredStarted = 0;
     offset = 0;
     startedAt = performance.now();
     sync();
   });
   time.addEventListener('input', () => {
+    demoStarted = 0;
+    clearTimeout(greetingEnd);
     playing = false;
     offset = Number(time.value);
+    featuredStarted = 0;
     sync();
   });
   for (const control of [reduced, outfit, decor, night])
     control.addEventListener('change', sync);
-  document.addEventListener('visibilitychange', sync);
-  window.addEventListener('beforeunload', () => clock.dispose(), {
-    once: true,
+  const hello = () => {
+    demoPlaying = false;
+    playDemo.setAttribute('aria-pressed', 'false');
+    playDemo.textContent = 'Watch Ember play ↔';
+    clearTimeout(greetingEnd);
+    selectedMood = 'Happy';
+    offset = current();
+    startedAt = performance.now();
+    featuredStarted = offset;
+    playing = true;
+    sync();
+    greetingEnd = setTimeout(() => {
+      selectedMood = 'Idle';
+      featuredStarted = current();
+      sync();
+    }, 2000);
+  };
+  playDemo.addEventListener('click', () => {
+    clearTimeout(greetingEnd);
+    demoPlaying = !demoPlaying;
+    playDemo.setAttribute('aria-pressed', String(demoPlaying));
+    playDemo.textContent = demoPlaying
+      ? 'Let Ember rest'
+      : 'Watch Ember play ↔';
+    selectedMood = 'Idle';
+    offset = current();
+    startedAt = performance.now();
+    demoStarted = offset;
+    playing = true;
+    sync();
   });
+  document
+    .querySelectorAll<HTMLButtonElement>('[data-play-cue]')
+    .forEach((button) => {
+      button.addEventListener('click', () => {
+        clearTimeout(greetingEnd);
+        demoPlaying = true;
+        demoStarted = 0;
+        selectedMood = 'Idle';
+        playDemo.setAttribute('aria-pressed', 'true');
+        playDemo.textContent = 'Let Ember rest';
+        offset = Number(button.dataset.playCue);
+        playing = false;
+        sync();
+      });
+    });
+  greet.addEventListener('click', hello);
+  input('hello').addEventListener('click', hello);
+  greet.addEventListener('pointermove', (event) => {
+    const bounds = greet.getBoundingClientRect();
+    featuredRenderer.setAttention(
+      ((event.clientX - bounds.left) / bounds.width - 0.5) * 2,
+    );
+  });
+  greet.addEventListener('pointerleave', () =>
+    featuredRenderer.setAttention(null),
+  );
+  motionPreference.addEventListener('change', (event) => {
+    reduced.checked = event.matches;
+    sync();
+  });
+  document.addEventListener('visibilitychange', sync);
+  window.addEventListener(
+    'beforeunload',
+    () => {
+      clearTimeout(greetingEnd);
+      clock.dispose();
+    },
+    { once: true },
+  );
   sync();
 }
 void start().catch((error: unknown) => {
