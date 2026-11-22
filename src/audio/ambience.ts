@@ -20,7 +20,7 @@ export class Ambience {
       await this.context?.suspend();
       return false;
     }
-    // Called directly from a button gesture to respect browser autoplay rules.
+    // Only an explicit Settings action enables playback.
     const context = (this.context ??= this.createContext());
     try {
       await context.resume();

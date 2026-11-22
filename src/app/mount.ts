@@ -1,7 +1,6 @@
 import { FOCUS_MS, SpiritEngine, formatCountdown } from '../engine/spirit';
 import type { Mood } from '../engine/spirit';
 import { awardCompletions, canEquip, canWear } from '../engine/progress';
-import type { Decor, Outfit } from '../engine/progress';
 import { openProgressStore } from '../platform/progress-store';
 import { Ambience } from '../audio/ambience';
 import { AnimationClock } from '../rendering/animation-clock';
@@ -15,9 +14,9 @@ import {
   observeVisibility,
   isDesktop,
   revealHabitat,
-  setControlsVisible,
-  setDrawerVisible,
+  setHabitatFocused,
   beginDrag,
+  holdPetPointer,
   nudgeHabitat,
   setGhostMode,
   setWorking,
@@ -29,7 +28,10 @@ import {
   observeBuddyOpen,
 } from '../platform/desktop';
 import { createCompanionPocket, type PocketTab } from '../buddy/companion';
-import { icon } from '../buddy/icons';
+import {
+  observeHabitatSettings,
+  publishHabitatSettings,
+} from '../platform/settings';
 import { createHabitatRenderer } from '../rendering/habitat';
 import { restingPlay } from '../rendering/playful';
 
@@ -48,13 +50,13 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   const pet = document.createElement('button');
   pet.className = 'pet';
   pet.type = 'button';
-  pet.setAttribute('aria-label', 'Ember fox · open your tools');
+  pet.setAttribute('aria-label', 'Ember fox · open your thought');
   pet.setAttribute('aria-expanded', 'false');
   pet.setAttribute('aria-controls', 'ember-pocket');
-  pet.title = 'Click Ember to open your pocket. Right-click for clipboard.';
+  pet.title = 'Click Ember to open a thought. Right-click for clipboard.';
   pet.setAttribute(
     'aria-description',
-    'Right-click or press U to open clipboard and AI agents.',
+    'Drag Ember or use the arrow keys to move. Right-click or press U for clipboard.',
   );
   pet.addEventListener('contextmenu', (event) => {
     event.preventDefault();
@@ -76,10 +78,6 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   canvas.height = 100;
   canvas.setAttribute('aria-hidden', 'true');
   pet.append(canvas);
-  const controls = document.createElement('div');
-  controls.className = 'controls';
-  controls.setAttribute('role', 'toolbar');
-  controls.setAttribute('aria-label', 'Focus session');
   const toggle = document.createElement('button');
   toggle.type = 'button';
   toggle.className = 'session-toggle';
@@ -87,118 +85,21 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   reset.type = 'button';
   reset.textContent = 'Reset';
   reset.setAttribute('aria-label', 'Reset session without completion');
-  const sound = document.createElement('button');
-  sound.type = 'button';
-  sound.textContent = 'Muted';
-  sound.setAttribute('aria-label', 'Enable rain ambience and gentle chimes');
-  sound.setAttribute('aria-pressed', 'false');
-  sound.title =
-    'Sound is off by default. Enable quiet procedural rain and chimes.';
-  controls.append(toggle, reset, sound);
-  const items = document.createElement('button');
-  items.type = 'button';
-  items.textContent = 'Style';
-  items.setAttribute('aria-expanded', 'false');
-  items.setAttribute('aria-label', 'Open decor and lighting');
-  controls.append(items);
-  const drawer = document.createElement('div');
-  drawer.className = 'items-drawer';
-  drawer.id = 'habitat-style';
-  items.setAttribute('aria-controls', drawer.id);
-  drawer.hidden = true;
-  drawer.setAttribute('role', 'group');
-  drawer.setAttribute('aria-label', 'Decor and lighting');
-  const progressLabel = document.createElement('span');
-  progressLabel.className = 'progress-label';
-  const decor = document.createElement('select');
-  decor.setAttribute('aria-label', 'Desk decor');
-  for (const [value, text] of [
-    ['none', 'Bare desk'],
-    ['plant', 'Plant · 1 focus'],
-    ['lantern', 'Lantern · 3 focus'],
-  ]) {
-    const option = document.createElement('option');
-    option.value = value;
-    option.textContent = text;
-    decor.append(option);
-  }
-  const lighting = document.createElement('select');
-  lighting.setAttribute('aria-label', 'Habitat lighting');
-  for (const [value, text] of [
-    ['auto', 'Time of day'],
-    ['day', 'Daylight'],
-  ]) {
-    const option = document.createElement('option');
-    option.value = value;
-    option.textContent = text;
-    lighting.append(option);
-  }
-  drawer.append(progressLabel, decor, lighting);
-  const outfit = document.createElement('select');
-  outfit.setAttribute('aria-label', 'Fox outfit');
-  for (const [value, text] of [
-    ['none', 'No outfit'],
-    ['beanie', 'Beanie · 2 focus'],
-    ['scarf', 'Scarf · 5 focus'],
-  ]) {
-    const option = document.createElement('option');
-    option.value = value;
-    option.textContent = text;
-    outfit.append(option);
-  }
-  const ghost = document.createElement('button');
-  ghost.type = 'button';
-  ghost.setAttribute('aria-label', 'Ghost Mode during work');
-  ghost.title =
-    'Fade and pass clicks through the fox during work. Controls remain usable.';
-  ghost.disabled = !isDesktop();
-  if (!isDesktop()) ghost.title = 'Ghost Mode is available in the desktop app.';
-  const playToggle = document.createElement('button');
-  playToggle.type = 'button';
-  playToggle.className = 'play-toggle';
-  playToggle.textContent = 'Playful roaming on';
-  playToggle.disabled = !isDesktop();
-  playToggle.title =
-    'Run, pounce, and peek behind the Dock. Pause by approaching Ember.';
-  drawer.append(outfit, ghost, playToggle);
-  const refreshItems = () => {
-    progressLabel.textContent = saveProblem
-      ? 'Progress stays in memory for now'
-      : `${progress.completedFocusSessions} completed focus sessions`;
-    progressLabel.title = saveProblem
-      ? 'Existing progress could not be read or saved. Your existing file has been preserved.'
-      : 'Unlocks are permanent. No streaks or penalties.';
-    for (const option of decor.options)
-      option.disabled = !canEquip(progress, option.value as Decor);
-    decor.value = progress.decor;
-    lighting.value = progress.lighting;
-    for (const option of outfit.options)
-      option.disabled = !canWear(progress, option.value as Outfit);
-    outfit.value = progress.outfit;
-    ghost.textContent = progress.ghost ? 'Ghost on' : 'Ghost off';
-    ghost.setAttribute('aria-pressed', String(progress.ghost));
-  };
   const persist = () => {
-    refreshItems();
+    reportSettings();
     void store
       .save(progress)
       .then(() => {
         saveProblem = false;
-        refreshItems();
+        reportSettings();
       })
       .catch(() => {
         saveProblem = true;
-        refreshItems();
+        reportSettings();
       });
   };
-  refreshItems();
   const moodLabel = document.createElement('p');
   moodLabel.className = 'mood-label';
-  const sessionProgress = document.createElement('div');
-  sessionProgress.className = 'session-progress';
-  sessionProgress.setAttribute('aria-hidden', 'true');
-  const progressFill = document.createElement('div');
-  sessionProgress.append(progressFill);
   const announcement = document.createElement('span');
   announcement.className = 'sr-only';
   announcement.setAttribute('role', 'status');
@@ -210,33 +111,16 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     'Move habitat: drag shelf or use arrow keys',
   );
   handle.title = 'Drag the shelf to move. Arrow keys move by 24 pixels.';
-  habitat.append(
-    pet,
-    handle,
-    controls,
-    drawer,
-    moodLabel,
-    sessionProgress,
-    announcement,
-  );
+  habitat.append(pet, handle, moodLabel, announcement);
   root.replaceChildren(habitat);
 
   let companionOpen = false;
   let pocketBusy = false;
-  const pocketToggle = document.createElement('button');
-  pocketToggle.type = 'button';
-  pocketToggle.className = 'pocket-toggle';
-  pocketToggle.append(icon('pocket'), document.createTextNode('Tools'));
-  pocketToggle.setAttribute('aria-label', 'Open Ember’s pocket');
-  pocketToggle.setAttribute('aria-controls', 'ember-pocket');
-  pocketToggle.setAttribute('aria-expanded', 'false');
   const pocket = createCompanionPocket(() => void changePocket(false), {
     toggle,
     reset,
-    sound,
-    drawer,
   });
-  habitat.append(pocket.sheet, pocketToggle);
+  habitat.append(pocket.sheet);
   async function changePocket(open: boolean, tab: PocketTab = 'focus') {
     if (pocketBusy) return;
     if (open && companionOpen) {
@@ -245,53 +129,65 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     }
     if (!open && !companionOpen) return;
     pocketBusy = true;
-    pocketToggle.disabled = true;
     try {
       if (!open) {
         habitat.classList.remove('companion-open');
         pocket.sheet.inert = true;
         if (!motion.matches)
-          await new Promise((resolve) => setTimeout(resolve, 220));
+          await new Promise((resolve) => setTimeout(resolve, 160));
       }
       await setCompanionOpen(open);
       document.documentElement.classList.toggle('pocket-expanded', open);
       companionOpen = open;
       habitat.classList.toggle('companion-open', open);
       pocket.setOpen(open, tab);
-      pocketToggle.setAttribute('aria-expanded', String(open));
       pet.setAttribute('aria-expanded', String(open));
-      pocketToggle.setAttribute(
-        'aria-label',
-        open ? 'Close Ember’s pocket' : 'Open Ember’s pocket',
-      );
-      syncDrawer();
       render();
     } catch (error) {
       habitat.classList.toggle('companion-open', companionOpen);
       pocket.sheet.inert = !companionOpen;
-      moodLabel.textContent = 'Pocket could not open. Try again.';
+      moodLabel.textContent = 'The thought could not open. Try again.';
       console.error('Pocket update failed:', error);
     } finally {
       pocketBusy = false;
-      pocketToggle.disabled = false;
-      if (!companionOpen) pocketToggle.focus({ preventScroll: true });
+      if (!companionOpen) pet.focus({ preventScroll: true });
     }
   }
-  pocketToggle.addEventListener(
-    'click',
-    () => void changePocket(!companionOpen),
-  );
   const unsubscribePocket = await observeBuddyOpen((tab) => {
     if (tab === 'close') {
       void changePocket(false);
       return;
     }
-    if (['focus', 'clipboard', 'agents', 'style'].includes(tab))
+    if (['focus', 'clipboard', 'agents'].includes(tab))
       void changePocket(true, tab as PocketTab);
   });
 
   const renderer = await createHabitatRenderer(canvas);
+  let press: { x: number; y: number } | undefined;
+  let dragged = false;
+  pet.addEventListener('pointerdown', (event) => {
+    dragged = false;
+    if (!isDesktop() || event.button !== 0) return;
+    press = { x: event.screenX, y: event.screenY };
+    pet.setPointerCapture(event.pointerId);
+    void holdPetPointer().catch(console.error);
+  });
+  const endPress = () => {
+    press = undefined;
+  };
+  pet.addEventListener('pointerup', endPress);
+  pet.addEventListener('pointercancel', endPress);
+  pet.addEventListener('lostpointercapture', endPress);
   pet.addEventListener('pointermove', (event) => {
+    if (
+      press &&
+      Math.hypot(event.screenX - press.x, event.screenY - press.y) >= 4
+    ) {
+      endPress();
+      dragged = true;
+      void beginDrag().catch(console.error);
+      return;
+    }
     const bounds = pet.getBoundingClientRect();
     renderer.setAttention(
       ((event.clientX - bounds.left) / bounds.width - 0.5) * 2,
@@ -306,9 +202,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   let disposed = false;
   let hovering = false;
   let windowFocused = false;
-  let visible = false;
-  let drawerOpen = false;
-  let drawerVisible = false;
+  let habitatFocused = false;
   let lastMood: Mood | undefined;
   let lastAppearance = '';
   let wasWorking: boolean | undefined;
@@ -333,44 +227,30 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
           'A desktop update failed. Quit from the tray and reopen.';
       });
   };
-  const updateControls = () => {
-    const next =
-      hovering ||
-      ((isDesktop() ? windowFocused : document.hasFocus()) &&
-        habitat.matches(':focus-within'));
-    if (next === visible) return;
-    visible = next;
-    habitat.classList.toggle('show-controls', visible);
-    if (!visible) {
-      drawerOpen = false;
-      syncDrawer();
-    }
-    enqueue(() => setControlsVisible(visible));
-  };
-  const syncDrawer = () => {
-    const next = companionOpen || (drawerOpen && visible);
-    drawer.hidden = !next;
-    habitat.classList.toggle('drawer-open', next);
-    items.setAttribute('aria-expanded', String(next));
-    if (drawerVisible !== next) {
-      drawerVisible = next;
-      enqueue(() => setDrawerVisible(next));
+  const updateAttention = () => {
+    const focused =
+      (isDesktop() ? windowFocused : document.hasFocus()) &&
+      habitat.matches(':focus-within');
+    habitat.classList.toggle('show-thought', hovering || focused);
+    if (focused !== habitatFocused) {
+      habitatFocused = focused;
+      enqueue(() => setHabitatFocused(focused));
     }
   };
   habitat.addEventListener('pointerenter', () => {
     if (isDesktop()) return;
     hovering = true;
-    updateControls();
+    updateAttention();
   });
   habitat.addEventListener('pointerleave', () => {
     if (isDesktop()) return;
     hovering = false;
-    updateControls();
+    updateAttention();
   });
-  habitat.addEventListener('focusin', updateControls);
-  habitat.addEventListener('focusout', () => queueMicrotask(updateControls));
-  window.addEventListener('focus', updateControls);
-  window.addEventListener('blur', updateControls);
+  habitat.addEventListener('focusin', updateAttention);
+  habitat.addEventListener('focusout', () => queueMicrotask(updateAttention));
+  window.addEventListener('focus', updateAttention);
+  window.addEventListener('blur', updateAttention);
 
   const render = (initial = false): number[] | undefined => {
     const now = Date.now();
@@ -434,7 +314,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
         ? 'Resume'
         : 'Pause'
       : 'Start';
-    toggle.textContent = `${label} ${formatCountdown(timer?.remainingMs ?? FOCUS_MS)}`;
+    toggle.textContent = label;
     toggle.setAttribute(
       'aria-label',
       `${label} ${timer?.phase.toLowerCase() ?? 'focus'} session`,
@@ -444,10 +324,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       : 'Start a 25-minute focus session';
     reset.disabled = !timer;
     habitat.dataset.mood = snapshot.mood;
-    habitat.dataset.session = timer?.status ?? 'idle';
-    sessionProgress.hidden = !timer;
     const duration = timer?.phase === 'Break' ? 5 * 60_000 : FOCUS_MS;
-    progressFill.style.transform = `scaleX(${Math.max(0, Math.min(1, 1 - (timer?.remainingMs ?? duration) / duration))})`;
     pocket.update(
       formatCountdown(timer?.remainingMs ?? FOCUS_MS),
       timer
@@ -503,34 +380,32 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       night: progress.lighting === 'auto' && (hour >= 18 || hour < 6),
     };
   };
+  const reportSettings = (error: string | null = null) => {
+    const snapshot = {
+      progress,
+      saveProblem,
+      roaming: play.enabled,
+      sound: audio.enabled,
+      error,
+    };
+    enqueue(() => publishHabitatSettings(snapshot));
+  };
   const unsubscribePlay = await observePlay((snapshot) => {
+    const changed = play.enabled !== snapshot.enabled;
     play = snapshot;
     playReceivedAt = performance.now();
     playStartedAt = playReceivedAt - snapshot.elapsedMs;
     habitat.classList.toggle('free-roam', snapshot.roaming);
-    playToggle.textContent = snapshot.enabled
-      ? 'Roaming on · rest here'
-      : 'Play now · run and peek';
-    playToggle.setAttribute('aria-pressed', String(snapshot.enabled));
-  });
-  playToggle.addEventListener('click', () => {
-    const enabled = !play.enabled;
-    enqueue(() => setPlayfulRoaming(enabled));
-    if (enabled) {
-      drawerOpen = false;
-      syncDrawer();
-      playToggle.blur();
-      if (companionOpen) void changePocket(false);
-    }
+    if (changed) reportSettings();
   });
   const unsubscribeFocus = await observeFocus((focused) => {
     windowFocused = focused;
-    updateControls();
+    updateAttention();
   });
   const unsubscribeHover = await observeHover((inside) => {
     if (!inside) renderer.setAttention(null);
     hovering = inside;
-    updateControls();
+    updateAttention();
   });
   const unsubscribeGhost = await observeGhost((ghost) =>
     habitat.classList.toggle('ghosted', ghost),
@@ -571,7 +446,8 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     audio.setVisible(visible);
     syncMotion();
   });
-  pet.addEventListener('click', () => {
+  pet.addEventListener('click', (event) => {
+    if (dragged && event.detail > 0) return;
     if (engine.interact(Date.now())) {
       moodStartedAt = performance.now();
       clearTimeout(greetingEnd);
@@ -589,16 +465,6 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     engine.resetTimer(Date.now());
     render();
   });
-  items.addEventListener('click', () => {
-    void changePocket(true, 'style');
-  });
-  habitat.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && drawerOpen) {
-      drawerOpen = false;
-      syncDrawer();
-      items.focus();
-    }
-  });
   const redrawAppearance = () => {
     const mask = renderer.draw(
       lastMood ?? 'Idle',
@@ -609,37 +475,12 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     lastMask = mask;
     enqueue(() => updateHitMask(mask));
   };
-  decor.addEventListener('change', () => {
-    const choice = decor.value as Decor;
-    if (!canEquip(progress, choice)) {
-      refreshItems();
-      return;
-    }
-    progress = { ...progress, decor: choice };
-    persist();
-    redrawAppearance();
-  });
-  outfit.addEventListener('change', () => {
-    const choice = outfit.value as Outfit;
-    if (!canWear(progress, choice)) {
-      refreshItems();
-      return;
-    }
-    progress = { ...progress, outfit: choice };
-    persist();
-    redrawAppearance();
-  });
-  ghost.addEventListener('click', () => {
-    progress = { ...progress, ghost: !progress.ghost };
-    persist();
-    enqueue(() => setGhostMode(progress.ghost));
-  });
   handle.addEventListener('pointerdown', (event) => {
     if (event.button !== 0 || !isDesktop()) return;
     event.preventDefault();
     void beginDrag().catch(console.error);
   });
-  handle.addEventListener('keydown', (event) => {
+  const moveWithArrows = (event: KeyboardEvent) => {
     const delta: Record<string, [number, number]> = {
       ArrowLeft: [-24, 0],
       ArrowRight: [24, 0],
@@ -650,41 +491,58 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       event.preventDefault();
       void nudgeHabitat(...delta[event.key]).catch(console.error);
     }
-  });
-  lighting.addEventListener('change', () => {
-    progress = {
-      ...progress,
-      lighting: lighting.value === 'day' ? 'day' : 'auto',
-    };
-    persist();
-    redrawAppearance();
-  });
-  sound.addEventListener('click', () => {
-    sound.disabled = true;
-    void audio
-      .setEnabled(!audio.enabled)
-      .then((enabled) => {
-        sound.textContent = enabled ? 'Sound' : 'Muted';
-        sound.title = enabled
-          ? 'Mute rain ambience and chimes.'
-          : 'Enable quiet procedural rain and chimes.';
-        sound.setAttribute('aria-pressed', String(enabled));
-        sound.setAttribute(
-          'aria-label',
-          enabled
-            ? 'Mute ambience and chimes'
-            : 'Enable rain ambience and gentle chimes',
-        );
+  };
+  pet.addEventListener('keydown', moveWithArrows);
+  handle.addEventListener('keydown', moveWithArrows);
+  let settingsUpdates = Promise.resolve();
+  const unsubscribeSettings = await observeHabitatSettings((change) => {
+    settingsUpdates = settingsUpdates
+      .then(async () => {
+        if (disposed) return;
+        switch (change.setting) {
+          case 'sound':
+            await audio.setEnabled(change.value);
+            break;
+          case 'roaming':
+            await setPlayfulRoaming(change.value);
+            play = { ...play, enabled: change.value };
+            break;
+          case 'ghost':
+            await setGhostMode(change.value);
+            progress = { ...progress, ghost: change.value };
+            persist();
+            return;
+          case 'decor':
+            if (!canEquip(progress, change.value))
+              throw new Error(
+                'Complete more focus sessions to unlock this decor.',
+              );
+            progress = { ...progress, decor: change.value };
+            persist();
+            redrawAppearance();
+            return;
+          case 'outfit':
+            if (!canWear(progress, change.value))
+              throw new Error(
+                'Complete more focus sessions to unlock this outfit.',
+              );
+            progress = { ...progress, outfit: change.value };
+            persist();
+            redrawAppearance();
+            return;
+          case 'lighting':
+            progress = { ...progress, lighting: change.value };
+            persist();
+            redrawAppearance();
+            return;
+        }
+        reportSettings();
       })
-      .catch(() => {
-        sound.textContent = 'Retry';
-        sound.title = 'Audio could not start. Click to try again.';
-        sound.setAttribute('aria-pressed', 'false');
-      })
-      .finally(() => {
-        sound.disabled = false;
-      });
+      .catch((error: unknown) =>
+        reportSettings(error instanceof Error ? error.message : String(error)),
+      );
   });
+  reportSettings();
   const interval = setInterval(render, 1000);
   const updateAgentCue = async () => {
     if (disposed || cueReadPending) return;
@@ -719,6 +577,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     clearTimeout(greetingEnd);
     unsubscribePlay();
     unsubscribePocket();
+    unsubscribeSettings();
     pocket.dispose();
     unsubscribeFocus();
     unsubscribeHover();
@@ -728,8 +587,8 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     motion.removeEventListener('change', syncMotion);
     animation.dispose();
     audio.dispose();
-    window.removeEventListener('focus', updateControls);
-    window.removeEventListener('blur', updateControls);
+    window.removeEventListener('focus', updateAttention);
+    window.removeEventListener('blur', updateAttention);
     window.removeEventListener('beforeunload', dispose);
   };
   window.addEventListener('beforeunload', dispose);

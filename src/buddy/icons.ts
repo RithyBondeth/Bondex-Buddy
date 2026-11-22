@@ -1,23 +1,27 @@
 const paths: Record<string, string> = {
-  focus: '<circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2M9 2h6"/>',
+  focus:
+    'M6 1h4v2H6zM5 4h6v1h2v2h1v5h-1v2h-2v1H5v-1H3v-2H2V7h1V5h2zm0 2v2H4v3h1v2h6v-2h1V8h-1V6zM7 7h2v3h2v2H7z',
   clipboard:
-    '<rect x="5" y="4" width="14" height="17" rx="3"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 11h6m-6 4h4"/>',
+    'M5 1h6v2h3v12H2V3h3zm0 4H4v8h8V5h-1v1H5zm2-2v1h2V3zM6 8h4v1H6zm0 2h3v1H6z',
   agents:
-    '<rect x="4" y="7" width="16" height="13" rx="4"/><path d="M12 3v4M8 12h.01M16 12h.01M9 16h6"/>',
-  style: '<path d="m8 4 4 3 4-3 5 5-4 3v8H7v-8L3 9Z"/>',
-  close: '<path d="m7 7 10 10M17 7 7 17"/>',
-  pocket: '<path d="M5 6h14v8a7 7 0 0 1-14 0Z"/><path d="m5 10 7 4 7-4"/>',
+    'M7 1h2v4h4v2h2v6h-2v2H3v-2H1V7h2V5h4zM3 8v4h2v1h6v-1h2V8h-2V7H5v1zm2 1h2v2H5zm4 0h2v2H9z',
+  style: 'M4 2h2v2h4V2h2v2h2v2h2v3h-4v6H4V9H0V6h2V4h2zm0 4v1h2v6h4V7h2V6z',
+  close:
+    'M3 3h2v2h2v2h2V5h2V3h2v2h-2v2H9v2h2v2h2v2h-2v-2H9V9H7v2H5v2H3v-2h2V9h2V7H5V5H3z',
+  pocket:
+    'M1 2h14v9h-2v2h-2v2H5v-2H3v-2H1zm2 2v2h2v2h2v1h2V8h2V6h2V4zm10 4h-2v2H9v1H7v-1H5V8H3v2h2v2h2v1h2v-1h2v-2h2z',
+  heart: 'M0 4h2V2h4v2h4V2h4v2h2v4h-2v2h-2v2h-2v2H6v-2H4v-2H2V8H0z',
 };
 
 export function icon(name: string): SVGSVGElement {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('viewBox', '0 0 24 24');
-  svg.setAttribute('fill', 'none');
-  svg.setAttribute('stroke', 'currentColor');
-  svg.setAttribute('stroke-width', '1.7');
-  svg.setAttribute('stroke-linecap', 'round');
-  svg.setAttribute('stroke-linejoin', 'round');
+  svg.setAttribute('viewBox', '0 0 16 16');
+  svg.setAttribute('fill', 'currentColor');
+  svg.setAttribute('shape-rendering', 'crispEdges');
   svg.setAttribute('aria-hidden', 'true');
-  svg.innerHTML = paths[name] ?? paths.pocket;
+  const path = document.createElementNS(svg.namespaceURI, 'path');
+  path.setAttribute('d', paths[name] ?? paths.pocket);
+  path.setAttribute('fill-rule', 'evenodd');
+  svg.append(path);
   return svg;
 }

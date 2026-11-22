@@ -17,15 +17,11 @@ export function readClipboard(): Promise<ClipboardSnapshot> {
 }
 
 export async function editClipboard(
-  action: 'enable' | 'pause' | 'pin' | 'remove' | 'clear',
+  action: 'pin' | 'remove' | 'clear',
   id?: number,
 ): Promise<ClipboardSnapshot> {
   if (native) return invoke('clipboard_edit', { action, id });
   switch (action) {
-    case 'enable':
-    case 'pause':
-      preview.enabled = action === 'enable';
-      break;
     case 'clear':
       preview.entries = [];
       break;

@@ -7,11 +7,11 @@
     "x86_64-pc-windows-msvc"
   ],
   "locks": {
-    "package-lock.json": "63ffd21249ea268f7943effabdb15ec39c066815939531ba960240fa08251a1f",
+    "package-lock.json": "ab16895a3eb2a4e9926a8a98bd97de6be40af149d9edfcbd942bb0f221571910",
     "src-tauri/Cargo.lock": "12ffbbf062a834bf50e1a6129ed00a456818195981dd739183bacf829b3be346"
   },
-  "packageCount": 296,
-  "uniqueLicenseFiles": 193,
+  "packageCount": 297,
+  "uniqueLicenseFiles": 194,
   "unresolved": [
     "cargo:block2@0.6.2",
     "cargo:dispatch2@0.3.1",
@@ -7828,6 +7828,29 @@
           "name": "LICENSE-ZLIB",
           "file": "licenses/d201d14804d3bcd3b944147173175e4abfbd838b7c8069b6bd3452496bf13e6c.txt",
           "sha256": "d201d14804d3bcd3b944147173175e4abfbd838b7c8069b6bd3452496bf13e6c"
+        }
+      ],
+      "issues": []
+    },
+    {
+      "id": "npm:@fontsource-variable/pixelify-sans@5.3.0",
+      "ecosystem": "npm",
+      "name": "@fontsource-variable/pixelify-sans",
+      "version": "5.3.0",
+      "usage": "Runtime dependency",
+      "license": "OFL-1.1",
+      "source": "https://registry.npmjs.org/@fontsource-variable/pixelify-sans/-/pixelify-sans-5.3.0.tgz",
+      "repository": "git+https://github.com/fontsource/font-files.git",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "LICENSE",
+          "file": "licenses/8ed5cd9e189e30dfdb0df2d5c2771556b50e9d502d899221328c3245caf8423c.txt",
+          "sha256": "8ed5cd9e189e30dfdb0df2d5c2771556b50e9d502d899221328c3245caf8423c"
         }
       ],
       "issues": []

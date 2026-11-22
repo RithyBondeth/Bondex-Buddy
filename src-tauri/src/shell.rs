@@ -18,14 +18,14 @@ const LOGICAL_HEIGHT: f64 = 200.0;
 pub struct ShellState {
     pub manual_placement: AtomicBool,
     pub dragging: AtomicBool,
+    pub pet_pressed: AtomicBool,
     pub ignored: AtomicBool,
     pub ghosted: AtomicBool,
     pub tools_open: AtomicBool,
     ghost_enabled: AtomicBool,
     working: AtomicBool,
     mask: Mutex<Vec<u8>>,
-    controls_visible: AtomicBool,
-    drawer_visible: AtomicBool,
+    habitat_focused: AtomicBool,
 }
 
 /// Restore the existing habitat without recreating its WebView.
@@ -53,13 +53,6 @@ fn logical_point(x: f64, y: f64, scale: f64) -> Option<(f64, f64)> {
     ((0.0..LOGICAL_WIDTH).contains(&x) && (0.0..LOGICAL_HEIGHT).contains(&y)).then_some((x, y))
 }
 
-fn hits_controls(x: f64, y: f64, scale: f64, visible: bool) -> bool {
-    // Must match the opaque .controls rectangle in base.css (no rounded corners).
-    visible
-        && logical_point(x, y, scale)
-            .is_some_and(|(x, y)| (6.0..214.0).contains(&x) && (10.0..42.0).contains(&y))
-}
-
 fn pet_local(x: f64, y: f64, scale: f64, width: f64, height: f64, open: bool) -> (f64, f64) {
     if open {
         (
@@ -72,24 +65,16 @@ fn pet_local(x: f64, y: f64, scale: f64, width: f64, height: f64, open: bool) ->
 }
 
 fn hits_pocket(x: f64, y: f64, width: f64, height: f64, open: bool) -> bool {
-    // The opaque sheet, including its small speech-bubble tail. Transparent gaps pass through.
-    open && ((x >= 12.0 && x < width - 12.0 && y >= 12.0 && y < height - 130.0)
-        || (y >= height - 130.0
-            && y < height - 118.0
-            && (x - (width - 96.0)).abs() < height - 118.0 - y))
-}
-
-#[tauri::command]
-pub fn set_drawer_visible(
-    window: WebviewWindow,
-    state: tauri::State<'_, ShellState>,
-    visible: bool,
-) -> Result<(), String> {
-    if window.label() != "main" {
-        return Err("Invalid habitat window".into());
+    // Match the bubble in companion.css. Its trailing dots are decorative.
+    let right = width - 10.0;
+    let bottom = height - 76.0;
+    if !open || !(10.0..right).contains(&x) || !(10.0..bottom).contains(&y) {
+        return false;
     }
-    state.drawer_visible.store(visible, Ordering::Relaxed);
-    Ok(())
+    let radius = 10.0;
+    let dx = x - x.clamp(10.0 + radius, right - radius);
+    let dy = y - y.clamp(10.0 + radius, bottom - radius);
+    dx * dx + dy * dy < radius * radius
 }
 
 /// Convert desktop physical coordinates into the fixed-resolution Canvas mask.
@@ -193,15 +178,15 @@ pub fn update_shell_mask(
 }
 
 #[tauri::command]
-pub fn set_controls_visible(
+pub fn set_habitat_focused(
     window: WebviewWindow,
     state: tauri::State<'_, ShellState>,
-    visible: bool,
+    focused: bool,
 ) -> Result<(), String> {
     if window.label() != "main" {
         return Err("Invalid habitat window".into());
     }
-    state.controls_visible.store(visible, Ordering::Relaxed);
+    state.habitat_focused.store(focused, Ordering::Relaxed);
     Ok(())
 }
 
@@ -227,8 +212,7 @@ pub fn show_shell_error(
         return Err("Invalid habitat window".into());
     }
     state.mask.lock().map_err(|e| e.to_string())?.clear();
-    state.controls_visible.store(false, Ordering::Relaxed);
-    state.drawer_visible.store(false, Ordering::Relaxed);
+    state.habitat_focused.store(false, Ordering::Relaxed);
     window
         .set_ignore_cursor_events(false)
         .map_err(|e| e.to_string())?;
@@ -312,17 +296,6 @@ pub fn start_hit_testing(window: WebviewWindow) {
                             && state.ghost_enabled.load(Ordering::Relaxed)
                             && state.working.load(Ordering::Relaxed)
                             && inside))
-                        || (!tools_open
-                            && state.drawer_visible.load(Ordering::Relaxed)
-                            && logical_point(pet_x, pet_y, scale).is_some_and(|(x, y)| {
-                                (6.0..214.0).contains(&x) && (46.0..146.0).contains(&y)
-                            }))
-                        || hits_controls(
-                            pet_x,
-                            pet_y,
-                            scale,
-                            !tools_open && state.controls_visible.load(Ordering::Relaxed),
-                        )
                         || hits_pocket(
                             x / scale,
                             y / scale,
@@ -330,9 +303,6 @@ pub fn start_hit_testing(window: WebviewWindow) {
                             size.height as f64 / scale,
                             tools_open,
                         )
-                        || logical_point(pet_x, pet_y, scale).is_some_and(|(x, y)| {
-                            (140.0..208.0).contains(&x) && (160.0..188.0).contains(&y)
-                        })
                 });
                 let ghost = !tools_open
                     && state.ghost_enabled.load(Ordering::Relaxed)
@@ -343,7 +313,13 @@ pub fn start_hit_testing(window: WebviewWindow) {
                     state.ghosted.store(ghost, Ordering::Relaxed);
                     let _ = window.emit("habitat-ghost", ghost);
                 }
-                let should_ignore = !hit;
+                // Keep delivering pointer events until the click or drag is resolved.
+                let pet_pressed = state.pet_pressed.load(Ordering::Relaxed);
+                let held = pet_pressed && crate::placement::mouse_down();
+                if pet_pressed && !held {
+                    state.pet_pressed.store(false, Ordering::Relaxed);
+                }
+                let should_ignore = !hit && !held;
                 if Some(should_ignore) != ignoring
                     && window.set_ignore_cursor_events(should_ignore).is_ok()
                 {
@@ -354,7 +330,7 @@ pub fn start_hit_testing(window: WebviewWindow) {
             if let Err(error) = roamer.tick(
                 &window,
                 hovered
-                    || (state.controls_visible.load(Ordering::Relaxed)
+                    || (state.habitat_focused.load(Ordering::Relaxed)
                         && window.is_focused().unwrap_or(false)),
                 false,
                 true,
@@ -407,20 +383,11 @@ mod tests {
             pet_local(110.0, 100.0, 1.0, 220.0, 200.0, false),
             (110.0, 100.0)
         );
-        assert!(hits_pocket(30.0, 40.0, 400.0, 660.0, true));
-        assert!(!hits_pocket(5.0, 40.0, 400.0, 660.0, true));
-        assert!(!hits_pocket(30.0, 560.0, 400.0, 660.0, true));
-        assert!(!hits_pocket(30.0, 40.0, 400.0, 660.0, false));
-    }
-
-    #[test]
-    fn hidden_controls_pass_through_and_visible_controls_use_scaled_bounds() {
-        assert!(!hits_controls(10.0, 20.0, 1.0, false));
-        assert!(hits_controls(10.0, 20.0, 1.0, true));
-        assert!(hits_controls(20.0, 40.0, 2.0, true));
-        assert!(!hits_controls(214.0, 20.0, 1.0, true));
-        assert!(!hits_controls(100.0, 42.0, 1.0, true));
-        assert!(!hits_controls(5.0, 20.0, 1.0, true));
+        assert!(hits_pocket(30.0, 179.0, 264.0, 256.0, true));
+        assert!(!hits_pocket(10.0, 10.0, 264.0, 256.0, true));
+        assert!(!hits_pocket(5.0, 40.0, 264.0, 256.0, true));
+        assert!(!hits_pocket(158.0, 184.0, 264.0, 256.0, true));
+        assert!(!hits_pocket(30.0, 40.0, 264.0, 256.0, false));
     }
 
     #[test]

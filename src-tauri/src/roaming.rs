@@ -443,6 +443,7 @@ impl Roamer {
         let allowed = enabled
             && !state.reduced.load(Ordering::Relaxed)
             && !state.quiet.load(Ordering::Relaxed)
+            && !crate::settings::is_focused(window.app_handle())
             && !crate::native_check::enabled();
         if !visible || dragging {
             self.position = None;

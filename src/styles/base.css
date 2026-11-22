@@ -1,13 +1,7 @@
 :root {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  color-scheme: light;
   background: transparent;
   font-synthesis: none;
-  --ink: #243d35;
-  --surface: #fff8eb;
-  --muted: #655d50;
-  --accent: #f1c682;
-  --line: #d3c5ac;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -32,8 +26,8 @@ html.browser-preview,
 html.browser-preview.pocket-expanded,
 .browser-preview.pocket-expanded body,
 .browser-preview.pocket-expanded #app {
-  width: min(400px, 100vw);
-  height: min(600px, 100vh);
+  width: min(264px, 100vw);
+  height: min(256px, 100vh);
 }
 
 .habitat {
@@ -50,13 +44,24 @@ html.browser-preview.pocket-expanded,
   display: block;
   width: 220px;
   height: 200px;
-  cursor: pointer;
+  cursor: grab;
   -webkit-tap-highlight-color: transparent;
 }
 
-.pet:focus-visible {
-  outline: 2px dashed var(--accent);
-  outline-offset: -4px;
+.pet:active {
+  cursor: grabbing;
+}
+
+.pet:focus-visible::after {
+  content: '';
+  position: absolute;
+  right: 81px;
+  bottom: 7px;
+  width: 58px;
+  height: 58px;
+  border-radius: 8px;
+  outline: 2px dashed var(--peach);
+  pointer-events: none;
 }
 
 canvas {
@@ -67,88 +72,17 @@ canvas {
   transition: opacity 240ms ease;
 }
 
-/* The opaque outer bounds match hits_controls() in Rust. */
-.controls {
-  position: absolute;
-  left: 6px;
-  top: 10px;
-  box-sizing: border-box;
-  width: 208px;
-  height: 32px;
-  padding: 3px;
-  display: flex;
-  gap: 2px;
-  background: var(--ink);
-  border: 1px solid #456052;
-  visibility: hidden;
-  opacity: 0;
-  transition:
-    opacity 180ms ease,
-    visibility 180ms;
-}
-
-.controls button {
-  min-width: 0;
-  flex: 1;
-  border: 0;
-  border-radius: 3px;
-  background: transparent;
-  color: var(--surface);
-  font:
-    500 10px / 1 -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    sans-serif;
-  font-variant-numeric: tabular-nums;
-  cursor: pointer;
-  white-space: nowrap;
-  padding: 0 3px;
-  transition:
-    background 160ms ease,
-    color 160ms ease;
-}
-
-.controls .session-toggle {
-  flex: 2.6;
-  background: var(--accent);
-  color: var(--ink);
-  font-weight: 650;
-}
-.controls button:hover {
-  background: #40594d;
-}
-.controls .session-toggle:hover {
-  background: #fbdca4;
-}
-.controls button:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
-.controls .session-toggle:focus-visible {
-  outline-color: var(--ink);
-}
-.controls button:disabled {
-  color: #aeb8ad;
-  cursor: default;
-}
-.controls button[aria-pressed='true']:not(.session-toggle) {
-  background: #40594d;
-}
-.show-controls .controls {
-  visibility: visible;
-  opacity: 1;
-}
-
 .mood-label {
   position: absolute;
-  top: 48px;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: 76px;
+  right: 110px;
+  transform: translateX(50%);
   margin: 0;
   padding: 4px 9px;
-  border-radius: 4px;
-  color: var(--surface);
-  background: var(--ink);
+  border-radius: var(--pixel-radius);
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
   font-size: 10px;
   font-weight: 500;
   letter-spacing: 0.02em;
@@ -160,23 +94,7 @@ canvas {
     opacity 180ms ease,
     visibility 180ms;
 }
-.mood-label::before {
-  content: '';
-  display: inline-block;
-  width: 5px;
-  height: 5px;
-  margin-right: 5px;
-  border-radius: 50%;
-  background: #b6cb9e;
-  vertical-align: 1px;
-}
-[data-mood='Happy'] .mood-label::before {
-  background: var(--accent);
-}
-[data-mood='Sleeping'] .mood-label::before {
-  background: #a9bac9;
-}
-.show-controls .mood-label {
+.show-thought .mood-label {
   visibility: visible;
   opacity: 1;
 }
@@ -188,93 +106,12 @@ canvas {
   background: #6b4529;
 }
 
-/* The drawer keeps the native hit rectangle x=6..214, y=46..146. */
-.items-drawer {
-  position: absolute;
-  box-sizing: border-box;
-  left: 6px;
-  top: 46px;
-  width: 208px;
-  height: 100px;
-  padding: 5px;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 3px;
-  z-index: 1;
-}
-.items-drawer[hidden] {
-  display: none;
-}
-.items-drawer select,
-.items-drawer button {
-  box-sizing: border-box;
-  min-width: 0;
-  width: 100%;
-  font:
-    10px -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    sans-serif;
-  color: var(--ink);
-  background: #f4ecdc;
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  padding: 3px;
-}
-.items-drawer button {
-  cursor: pointer;
-}
-.items-drawer button:disabled {
-  color: var(--muted);
-  cursor: default;
-}
-.items-drawer :focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 1px;
-}
-.progress-label {
-  grid-column: 1 / -1;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--ink);
-}
-.drawer-open .mood-label {
-  visibility: hidden;
-  opacity: 0;
-}
-
-.session-progress {
-  position: absolute;
-  left: 12px;
-  bottom: 10px;
-  width: 196px;
-  height: 2px;
-  pointer-events: none;
-  background: #50382d;
-}
-.session-progress[hidden] {
-  display: none;
-}
-.session-progress > div {
-  width: 100%;
-  height: 100%;
-  background: var(--accent);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 1s linear;
-}
-[data-session='paused'] .session-progress > div {
-  background: #a9bac9;
-}
-
 .drag-handle {
   all: unset;
   position: absolute;
-  left: 10px;
+  right: 42px;
   bottom: 0;
-  width: 200px;
+  width: 136px;
   height: 12px;
   cursor: grab;
 }
@@ -282,7 +119,7 @@ canvas {
   cursor: grabbing;
 }
 .drag-handle:focus-visible {
-  outline: 1px dashed var(--surface);
+  outline: 1px dashed var(--accent);
   outline-offset: -2px;
 }
 .ghosted canvas {
@@ -317,15 +154,8 @@ canvas {
   }
 }
 
-.items-drawer .play-toggle {
-  grid-column: 1 / -1;
-  font-weight: 600;
-}
-.free-roam .session-progress {
-  display: none;
-}
 .free-roam .drag-handle {
-  left: 68px;
+  right: 68px;
   bottom: 12px;
   width: 84px;
   height: 8px;

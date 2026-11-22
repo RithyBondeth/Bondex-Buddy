@@ -6,9 +6,9 @@ The activity observer reads elapsed system idle time every five seconds. It does
 
 Local `progress.json` in the operating system's application-data directory contains completed focus-session totals, equipped decor/outfits, lighting preference, and Ghost Mode preference. It contains no activity history, input content, or focus timestamps. Browser previews use separate localStorage. Sound starts muted on each launch.
 
-Launch at login is an explicit tray-menu option in release builds. It uses the OS startup mechanism through Tauri's autostart plugin, and is never automatically enabled. Debug builds disable the option so a development executable is not accidentally registered.
+Launch at login is an explicit option in menu bar or tray Settings in release builds. It uses the OS startup mechanism through Tauri's autostart plugin, and is never automatically enabled. Debug builds disable the option so a development executable is not accidentally registered.
 
-Audio is generated locally. No microphone permission or recordings are used. To remove local progress, quit the app and remove its `progress.json`; this resets rewards and preferences. OS login registration can be disabled through the tray option before removing the app.
+Audio is generated locally. No microphone permission or recordings are used. To remove local progress, quit the app and remove its `progress.json`; this resets rewards and preferences. OS login registration can be disabled in Settings before removing the app.
 
 The optional debug `native-test` feature creates an owned acceptance-test surface. It displays a transient click counter and coordinates for clicks on that surface, plus current window geometry and hit-test flags. These diagnostics are not saved or sent anywhere. The feature is inactive in normal builds and release builds, including release builds compiled with the feature enabled. It never enables OS login registration.
 
