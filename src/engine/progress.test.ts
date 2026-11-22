@@ -6,6 +6,7 @@ import {
   freshProgress,
 } from './progress';
 import { SpiritEngine, FOCUS_MS } from './spirit';
+import { creditTask, dueReminders } from './tasks';
 import { openProgressStore } from '../platform/progress-store';
 
 it('unlocks permanent decor from completed focus sessions only', () => {
@@ -45,7 +46,42 @@ it('round-trips progress, equipment, and preferences and strips unrelated fields
     completedFocusSessions: 3,
     decor: 'lantern',
     lighting: 'day',
+    tasks: [],
   });
+});
+it('loads old saves without tasks and preserves saved tasks and earned sessions', () => {
+  expect(
+    decodeProgress(
+      '{"version":2,"outfit":"none","ghost":false,"completedFocusSessions":1,"decor":"plant","lighting":"day"}',
+    ).tasks,
+  ).toEqual([]);
+  const first = {
+    id: '1'.repeat(24),
+    title: 'Review',
+    done: false,
+    sessions: 2,
+    remindAt: 10,
+  };
+  const second = {
+    id: '2'.repeat(24),
+    title: 'Write',
+    done: true,
+    sessions: 0,
+    remindAt: null,
+  };
+  const progress = {
+    ...freshProgress(),
+    tasks: creditTask([first, second], first.id, 1),
+  };
+  expect(decodeProgress(JSON.stringify(progress)).tasks).toEqual([
+    { ...first, sessions: 3 },
+    second,
+  ]);
+  expect(dueReminders(progress.tasks, 9)).toEqual([]);
+  expect(dueReminders(progress.tasks, 10)).toEqual([{ ...first, sessions: 3 }]);
+  expect(() =>
+    decodeProgress(JSON.stringify({ ...progress, tasks: [first, first] })),
+  ).toThrow();
 });
 it('rejects corrupt/future data and clears locked equipment without losing progress', () => {
   expect(() => decodeProgress('{')).toThrow();

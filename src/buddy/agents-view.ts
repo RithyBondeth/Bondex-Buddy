@@ -1,4 +1,5 @@
-import { button, element, emptyState } from './dom';
+import { button, element, emptyState, type Announce } from './dom';
+import { handoffsView } from './handoffs-view';
 import { agentMascot } from './mascots';
 import {
   agentNames,
@@ -232,7 +233,10 @@ function agentUsagePanel() {
   };
 }
 
-export function agentsView() {
+export function agentsView(
+  announce: Announce,
+  dismiss?: (item: AgentSession) => void,
+) {
   const section = element('section', 'agents-view');
   section.id = 'agents-panel';
   section.setAttribute('role', 'tabpanel');
@@ -247,6 +251,12 @@ export function agentsView() {
   const sessions = element('div', 'agent-sessions');
   const usage = agentUsagePanel();
   usage.panel.hidden = true;
+  const handoffs = handoffsView(announce, dismiss);
+  const handoffButton = button('Handoffs', 'handoff-indicator');
+  handoffButton.hidden = true;
+  const back = button('‹ Current work', 'agent-usage-toggle');
+  back.hidden = true;
+  heading.append(back);
   const connectedEmpty = emptyState(
     'No active projects',
     'Start a request in a connected agent to see it here.',
@@ -259,23 +269,50 @@ export function agentsView() {
     'Agent activity is unavailable',
     'Ember will check again in a moment.',
   );
-  section.append(heading, sessions, usage.panel);
+  section.append(heading, handoffButton, sessions, usage.panel, handoffs.panel);
 
   const cards = new Map<string, ReturnType<typeof sessionCard>>();
   let snapshot: AgentSnapshot | null | undefined;
+  let mode: 'work' | 'usage' | 'handoffs' = 'work';
+  function show(next: typeof mode) {
+    mode = next;
+    usage.panel.hidden = mode !== 'usage';
+    handoffs.panel.hidden = mode !== 'handoffs';
+    sessions.hidden = mode !== 'work';
+    counts.hidden = mode !== 'work';
+    toggle.hidden = mode === 'handoffs';
+    back.hidden = mode !== 'handoffs';
+    title.textContent =
+      mode === 'usage'
+        ? 'Agent usage'
+        : mode === 'handoffs'
+          ? 'Handoffs'
+          : 'Current work';
+    toggle.setAttribute('aria-pressed', String(mode === 'usage'));
+    const items = snapshot?.handoffs ?? [];
+    handoffButton.hidden = mode !== 'work' || items.length === 0;
+    handoffButton.textContent = `Handoffs · ${items.length}`;
+    if (mode === 'usage' && snapshot) usage.render(snapshot);
+    if (mode === 'handoffs') handoffs.render(items);
+  }
 
-  toggle.addEventListener('click', () => {
-    const showUsage = usage.panel.hidden;
-    usage.panel.hidden = !showUsage;
-    sessions.hidden = showUsage;
-    counts.hidden = showUsage;
-    title.textContent = showUsage ? 'Agent usage' : 'Current work';
-    toggle.setAttribute('aria-pressed', String(showUsage));
-    if (snapshot && showUsage) usage.render(snapshot);
+  toggle.addEventListener('click', () =>
+    show(mode === 'usage' ? 'work' : 'usage'),
+  );
+  handoffButton.addEventListener('click', () => {
+    show('handoffs');
+    back.focus({ preventScroll: true });
+  });
+  back.addEventListener('click', () => {
+    show('work');
+    (handoffButton.hidden ? toggle : handoffButton).focus({
+      preventScroll: true,
+    });
   });
 
   function render(next: AgentSnapshot | null | undefined) {
     snapshot = next;
+    show(mode);
     toggle.disabled = !next;
     if (next === undefined) return;
     if (next === null) {
@@ -330,5 +367,12 @@ export function agentsView() {
     }
   }
 
-  return { section, render };
+  return {
+    section,
+    render,
+    showHandoffs() {
+      show('handoffs');
+      back.focus({ preventScroll: true });
+    },
+  };
 }

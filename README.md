@@ -30,6 +30,12 @@ For the Canvas preview in a browser, run `npm run dev`. Open `/motion-review.htm
 
 Click Ember or press **Enter** while Ember has keyboard focus to open the thought bubble. The **Focus** tab holds the timer and reset control. Completing a focus session starts a five-minute break, then Ember returns to idle. Reset cancels the current session without recording a completion. Drag Ember or use the arrow keys to move the pet. Browser previews support the timer without simulating OS activity.
 
+Open **Tasks** in the Focus tab to add a to-do. Choose **Focus** beside it to start a 25-minute session and see the task next to the timer. Ember counts completed focus sessions per task. Check off work when it’s done, and open **Completed** to restore or remove it. Tasks are saved on this device.
+
+- Choose **Task** beside a clip to turn its text into a to-do.
+- Choose **Remind** beside a task and set a date and time. When Ember shows the reminder, click the pet to snooze it for 10 minutes or dismiss it.
+- Open **Handoffs** in Agents to see recent responses and requests for input. Use the session shortcut on the card to return to the provider.
+
 Sound starts muted on each launch. Turn it on in **Settings → Ember** for quiet rain and gentle chimes. Hidden habitats suspend audio and animation. The OS reduced-motion preference disables the animation loop and floating particles while keeping state changes and timer controls functional.
 
 ## Commands

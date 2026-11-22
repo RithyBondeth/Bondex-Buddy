@@ -14,7 +14,13 @@ The history holds up to 50 unique clips, with up to 20 pins. Repeated text updat
 
 Recent history stays in process memory and clears when the app quits. Only the capture preference and explicitly pinned snippets are saved in `clipboard.json` under Tauri’s app-data directory. Pinned text is stored as local JSON, not encrypted. Pausing stops observation and leaves existing clips available. Clipboard text is never sent to an agent or network service. Capture includes copied plain text from all apps, so pause it before copying anything you do not want in history. Password detection and per-app exclusions are not implemented.
 
-Clipboard mutations are serialized. Persistent edits save before updating in-memory state, and invalid or unsupported files are preserved with capture disabled. Atomic writes use a same-directory temporary file with owner-only permissions on Unix. The frontend can copy only an existing clip ID; it has no broad clipboard-plugin permission. Ember’s window reads clipboard history and edits existing clips. Only the Settings window can change clipboard capture and agent connections.
+Clipboard mutations are serialized. Persistent edits save before updating in-memory state, and invalid or unsupported files are preserved with capture disabled. Atomic writes use a same-directory temporary file with owner-only permissions on Unix. The frontend copies clipboard entries by their existing clip IDs. Ember’s window reads clipboard history and edits clips. Clipboard capture and agent connections are managed from Settings.
+
+## Tasks and reminders
+
+The Focus tab contains **Tasks**. Tasks are stored with local progress and can be checked off, restored, or removed from Completed. Starting Focus on a task associates that task with the timer and records a session after the focus phase finishes. The Clipboard tab offers **Task** to create a to-do from the selected clip.
+
+A reminder uses the machine’s local date and time at scheduling. Ember shows due reminders while the pet is running, including after reopening the app. Click Ember to snooze a reminder for 10 minutes or dismiss it. Completing a task clears its reminder.
 
 ## Agent activity and usage
 
@@ -31,6 +37,8 @@ Clipboard mutations are serialized. Persistent edits save before updating in-mem
 The `--buddy-agent-hook` entry point consumes bounded JSON before Tauri starts. It saves the provider, session identifier, project folder name, model identifier if available, activity, timestamps, and supported counters. Cursor uses local Agent Chat hooks. Antigravity uses the documented hooks shared by its app, CLI and IDE. Account quotas and billing require the provider’s own usage surface.
 
 **Current work** shows live and waiting sessions only. Completed or quiet sessions leave this view. A live signal goes quiet after 15 minutes without an update. **Usage** aggregates observed counters from retained sessions per provider and shows tokens for the most recent session with a token report. A record expires 24 hours after its last signal. Session details show the project, model, elapsed turn time, tool counts, and reported token totals where available.
+
+**Handoffs** shows recent responses and requests for input. Completed signals can be dismissed from the thought, and handoffs expire 15 minutes after their last signal. The Codex shortcut sends a local chat link to the desktop app. Buddy can copy CLI resume commands for Codex, Claude Code, Gemini CLI, or Antigravity and can copy the observed Cursor conversation ID. Copy actions leave the choice of when to resume with the user.
 
 The optional **Codex and Claude token usage** setting reads numeric usage fields from the current session’s transcript under that provider’s log directory. It reads up to 2 MiB from the log’s end, so large Claude logs show recent tokens. Gemini token counts come from its model hooks. Buddy never saves log paths or conversation contents. Moving Buddy requires reconnecting the provider so it can find the executable.
 

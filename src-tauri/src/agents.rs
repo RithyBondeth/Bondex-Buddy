@@ -323,6 +323,14 @@ fn clean_label(raw: &str, max: usize) -> String {
     raw.chars().filter(|c| !c.is_control()).take(max).collect()
 }
 
+fn valid_session(session: &str) -> bool {
+    !session.is_empty()
+        && session.len() <= 100
+        && session
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.'))
+}
+
 #[cfg(test)]
 fn parse_event(agent: &str, raw: &[u8], now: u64) -> Option<AgentEvent> {
     parse_signal(agent, &serde_json::from_slice(raw).ok()?, None, now)
@@ -347,12 +355,7 @@ fn parse_signal(
         "antigravity" => value["conversationId"].as_str(),
         _ => value["session_id"].as_str(),
     }?;
-    if session.is_empty()
-        || session.len() > 100
-        || !session
-            .bytes()
-            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.'))
-    {
+    if !valid_session(session) {
         return None;
     }
     let tool = value["tool_name"]
@@ -637,6 +640,7 @@ pub struct Snapshot {
     connections: Vec<Connection>,
     sessions: Vec<AgentEvent>,
     cue: Option<AgentEvent>,
+    handoffs: Vec<AgentEvent>,
     usage: Vec<ProviderUsage>,
     token_usage_enabled: bool,
 }
@@ -805,14 +809,94 @@ pub fn agent_snapshot(
         .iter()
         .map(|agent| summarize_usage(agent, &sessions))
         .collect();
+    let handoffs = recent_handoffs(&sessions, now);
     let (sessions, cue) = current_work(sessions, now);
     Ok(Snapshot {
         connections,
         sessions,
         cue,
+        handoffs,
         usage,
         token_usage_enabled,
     })
+}
+
+fn is_handoff(event: &AgentEvent, now: u64) -> bool {
+    matches!(event.status.as_str(), "needsInput" | "done")
+        && now.saturating_sub(event.updated_at) < STALE_MS
+}
+
+fn recent_handoffs(sessions: &[AgentEvent], now: u64) -> Vec<AgentEvent> {
+    let mut signals: Vec<_> = sessions
+        .iter()
+        .filter(|event| is_handoff(event, now))
+        .collect();
+    signals.sort_by_key(|event| event.status == "done");
+    signals.into_iter().take(12).cloned().collect()
+}
+
+#[tauri::command]
+pub fn agent_handoff(
+    window: WebviewWindow,
+    state: tauri::State<'_, crate::clipboard::ClipboardState>,
+    agent: String,
+    session: String,
+) -> Result<&'static str, String> {
+    crate::panel::require_panel(&window)?;
+    let valid_id = valid_session(&session)
+        && session
+            .as_bytes()
+            .first()
+            .is_some_and(u8::is_ascii_alphanumeric);
+    if !AGENTS.contains(&agent.as_str()) || !valid_id {
+        return Err("Invalid agent session".into());
+    }
+    let (_, settings) = read_config(&config_path(&agent)?)?;
+    if !installed(&settings, &agent, &hook_command(&agent)?) {
+        return Err("Connect the agent in Settings first.".into());
+    }
+    let raw = bounded_read(&data_dir()?.join(format!("{agent}-{session}.json")))
+        .map_err(|_| "This handoff has expired.")?;
+    let record: AgentEvent = serde_json::from_slice(&raw).map_err(|_| "Invalid agent signal")?;
+    if record.agent != agent || record.session != session || !is_handoff(&record, now_ms()) {
+        return Err("This handoff has changed. Check the agent again.".into());
+    }
+    if agent == "codex" && open_codex_session(&session) {
+        return Ok("opened");
+    }
+    let command = match agent.as_str() {
+        "codex" => "codex resume",
+        "claude" => "claude --resume",
+        "gemini" => "gemini --resume",
+        "antigravity" => "agy --conversation",
+        _ => {
+            crate::clipboard::copy_handoff(&window, &state, session)?;
+            return Ok("copiedSession");
+        }
+    };
+    crate::clipboard::copy_handoff(&window, &state, format!("{command} {session}"))?;
+    Ok("copiedCommand")
+}
+
+fn open_codex_session(session: &str) -> bool {
+    let url = format!("codex://threads/{session}");
+    #[cfg(target_os = "macos")]
+    let status = std::process::Command::new("/usr/bin/open")
+        .arg(&url)
+        .status();
+    #[cfg(target_os = "windows")]
+    let status = std::process::Command::new(
+        std::env::var_os("SystemRoot")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| PathBuf::from(r"C:\Windows"))
+            .join("System32")
+            .join("rundll32.exe"),
+    )
+    .args(["url.dll,FileProtocolHandler", &url])
+    .status();
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    let status: std::io::Result<std::process::ExitStatus> = Err(std::io::Error::other(url));
+    status.is_ok_and(|exit| exit.success())
 }
 
 fn current_work(mut sessions: Vec<AgentEvent>, now: u64) -> (Vec<AgentEvent>, Option<AgentEvent>) {
@@ -921,6 +1005,30 @@ fn cue_priority(event: &AgentEvent, now: u64) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn handoffs_keep_fresh_responses_and_prioritize_agent_questions() {
+        let event = |name, at| {
+            let raw = serde_json::to_vec(&json!({
+                "hook_event_name": name,
+                "session_id": "sample",
+                "cwd": "/workspace/project",
+            }))
+            .unwrap();
+            parse_event("codex", &raw, at).unwrap()
+        };
+        let now = STALE_MS + 10;
+        let events = [
+            event("Stop", now),
+            event("UserPromptSubmit", now - 1),
+            event("PermissionRequest", now - 2),
+            event("Stop", 1),
+        ];
+        let handoffs = recent_handoffs(&events, now);
+        assert_eq!(handoffs.len(), 2);
+        assert_eq!(handoffs[0].status, "needsInput");
+        assert_eq!(handoffs[1].status, "done");
+    }
 
     #[test]
     fn new_integrations_preserve_existing_hooks_and_use_provider_formats() {

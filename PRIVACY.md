@@ -4,7 +4,7 @@ The current application has no accounts, analytics, telemetry, cloud saves, or a
 
 The activity observer reads elapsed system idle time every five seconds. It does not read key contents, record typing, inspect app names, or capture screens. Cursor position is used transiently for hit testing and Ghost Mode. The left mouse-button state is checked while dragging to detect release. These values are not logged or stored.
 
-Local `progress.json` in the operating system's application-data directory contains completed focus-session totals, equipped decor/outfits, lighting preference, and Ghost Mode preference. It contains no activity history, input content, or focus timestamps. Browser previews use separate localStorage. Sound starts muted on each launch.
+Local `progress.json` in the operating system's application-data directory contains completed focus-session totals, equipped decor and outfits, lighting and Ghost Mode preferences, and tasks you add. Saved tasks include their titles, completion state, focus-session counts, and any scheduled reminder. Choosing **Task** on a clipboard entry saves up to 120 characters of that entry as a task title. System activity history and focus start and end times stay out of the file. Browser previews use separate localStorage. Sound starts muted on each launch.
 
 Launch at login is an explicit option in menu bar or tray Settings in release builds. It uses the OS startup mechanism through Tauri's autostart plugin, and is never automatically enabled. Debug builds disable the option so a development executable is not accidentally registered.
 

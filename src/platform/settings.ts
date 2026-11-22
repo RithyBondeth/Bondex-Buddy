@@ -3,7 +3,7 @@ import { listen } from '@tauri-apps/api/event';
 import type { Progress } from '../engine/progress';
 
 export interface HabitatSettings {
-  progress: Progress;
+  progress: Omit<Progress, 'tasks'>;
   saveProblem: boolean;
   roaming: boolean;
   sound: boolean;

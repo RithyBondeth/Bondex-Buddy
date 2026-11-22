@@ -197,6 +197,14 @@
   font-size: 11px;
   overflow-wrap: anywhere;
 }
+.buddy-surface .focus-phase.is-task {
+  color: var(--peach);
+  font-weight: 600;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
 .buddy-surface .focus-track {
   margin: 9px 0 11px;
   height: 4px;
@@ -239,6 +247,12 @@
 .buddy-surface .focus-actions .session-toggle:hover {
   background: #fff;
 }
+.buddy-surface .focus-actions .focus-tasks-button {
+  color: var(--peach);
+}
+.buddy-surface .focus-tasks-button.has-reminder {
+  border-color: #986f54;
+}
 .buddy-surface .focus-actions button:hover {
   border-color: var(--accent);
 }
@@ -248,6 +262,164 @@
 }
 .companion-open .pocket-body > [role='tabpanel']:not([hidden]) {
   animation: pane-enter 260ms var(--ease-out) both;
+}
+.companion-open .focus-timer:not([hidden]),
+.companion-open .pocket-tasks:not([hidden]) {
+  animation: pane-enter 240ms var(--ease-out) both;
+}
+.buddy-surface .task-heading,
+.buddy-surface .task-form,
+.buddy-surface .task-notice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.buddy-surface .task-heading,
+.buddy-surface .task-form {
+  margin-bottom: 6px;
+}
+.buddy-surface .task-count {
+  color: var(--muted);
+  font-size: 10px;
+  margin-right: auto;
+}
+.buddy-surface .task-button,
+.buddy-surface .task-input {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #1c1b1a;
+  color: var(--ink);
+  min-height: 24px;
+  padding: 3px 6px;
+  font-size: 10px;
+}
+.buddy-surface .task-button {
+  flex: none;
+}
+.buddy-surface .task-button:hover:not(:disabled) {
+  border-color: #906f57;
+  color: var(--peach);
+}
+.buddy-surface .task-input {
+  min-width: 0;
+  flex: 1;
+  font-size: 11px;
+  background: var(--surface);
+}
+.buddy-surface .task-form button,
+.buddy-surface .task-focus-button {
+  color: var(--peach);
+}
+.buddy-surface .task-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.buddy-surface .task-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 3px 4px;
+  border: 1px solid #ffffff13;
+  border-radius: 7px;
+  background: #151413;
+}
+.buddy-surface .task-row.is-current {
+  border-color: #906f57;
+}
+.buddy-surface .task-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  flex: 1;
+  cursor: pointer;
+}
+.buddy-surface .task-label input {
+  flex: none;
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  accent-color: var(--peach);
+}
+.buddy-surface .task-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+}
+.buddy-surface .task-copy small,
+.buddy-surface .task-copy time,
+.buddy-surface .task-empty,
+.buddy-surface .task-completed,
+.buddy-surface .task-notice {
+  color: var(--muted);
+  font-size: 10px;
+}
+.buddy-surface .task-row.is-completed .task-title {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+.buddy-surface .task-completed {
+  margin-top: 6px;
+}
+.buddy-surface .task-completed summary {
+  cursor: pointer;
+  padding-block: 3px;
+}
+.buddy-surface .task-empty,
+.buddy-surface .task-notice p {
+  margin: 4px 0;
+}
+.buddy-surface .task-notice {
+  justify-content: space-between;
+  margin-bottom: 5px;
+  color: var(--peach);
+}
+.buddy-surface .task-row-actions {
+  display: flex;
+  flex: none;
+  gap: 3px;
+}
+.buddy-surface .due-reminders {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+.buddy-surface .task-reminder,
+.buddy-surface .reminder-editor {
+  min-width: 0;
+  padding: 6px;
+  border: 1px solid #674b39;
+  border-radius: 7px;
+  background: #211912;
+}
+.buddy-surface .reminder-editor {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+.buddy-surface .reminder-caption {
+  color: var(--peach);
+  font-size: 10px;
+}
+.buddy-surface .reminder-task-title {
+  margin: 2px 0 4px;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+}
+.buddy-surface .reminder-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.buddy-surface .clip-task-button {
+  color: var(--peach);
 }
 .companion-sheet .clipboard-tools,
 .companion-sheet .section-heading {

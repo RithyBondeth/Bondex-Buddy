@@ -2,17 +2,22 @@ import { clipboardView } from './clipboard-view';
 import { agentsView } from './agents-view';
 import { button, element, errorMessage } from './dom';
 import { icon } from './icons';
-import type { AgentSnapshot } from './model';
+import type { AgentSession, AgentSnapshot } from './model';
+import type { FocusTask } from '../engine/tasks';
+import { tasksView, type TaskControls } from './tasks-view';
 import './panel.css';
 import './companion.css';
 
 export type PocketTab = 'focus' | 'clipboard' | 'agents';
+export type PocketView = 'reminder' | 'handoffs';
 
 export function createCompanionPocket(
   close: () => void,
   controls: {
     toggle: HTMLButtonElement;
     reset: HTMLButtonElement;
+    tasks: TaskControls;
+    dismissHandoff(item: AgentSession): void;
   },
 ) {
   const sheet = element('section', 'buddy-surface companion-sheet');
@@ -39,12 +44,13 @@ export function createCompanionPocket(
     notice.classList.toggle('is-error', error);
     notice.hidden = false;
   };
-  const clipboard = clipboardView(announce);
-  const agents = agentsView();
+  const clipboard = clipboardView(announce, (text) => tasks.addFromText(text));
+  const agents = agentsView(announce, controls.dismissHandoff);
   const focus = element('section', 'pocket-focus');
   focus.id = 'focus-panel';
   focus.setAttribute('role', 'tabpanel');
   focus.setAttribute('aria-labelledby', 'focus-tab');
+  const timerView = element('div', 'focus-timer');
   const clock = element('div', 'focus-clock', '25:00');
   const phase = element('p', 'focus-phase', 'Ready when you are');
   const readout = element('div', 'focus-readout');
@@ -54,7 +60,12 @@ export function createCompanionPocket(
   track.setAttribute('aria-hidden', 'true');
   track.append(fill);
   const focusActions = element('div', 'focus-actions');
-  focus.append(readout, track, focusActions);
+  const tasksButton = button('Tasks', 'focus-tasks-button');
+  tasksButton.setAttribute('aria-controls', 'pocket-tasks');
+  tasksButton.addEventListener('click', () => showTasks(true));
+  const tasks = tasksView(controls.tasks, () => showTasks(false));
+  timerView.append(readout, track, focusActions);
+  focus.append(timerView, tasks.section);
   const body = element('div', 'pocket-body');
   const sections = {
     focus,
@@ -64,13 +75,21 @@ export function createCompanionPocket(
   body.append(...Object.values(sections));
   sheet.append(bar, body);
   body.prepend(notice);
-  focusActions.append(controls.toggle, controls.reset);
+  focusActions.append(controls.toggle, controls.reset, tasksButton);
   const buttons = new Map<PocketTab, HTMLButtonElement>();
   let active: PocketTab = 'focus';
   let opened = false;
   let loading = false;
   let disposed = false;
   let agentSnapshot: AgentSnapshot | null | undefined;
+
+  function showTasks(show: boolean, showDue = false) {
+    timerView.hidden = show;
+    tasks.section.hidden = !show;
+    body.scrollTop = 0;
+    if (show) tasks.focus(showDue);
+    else tasksButton.focus({ preventScroll: true });
+  }
 
   const select = (tab: PocketTab) => {
     const changed = active !== tab;
@@ -162,15 +181,16 @@ export function createCompanionPocket(
   select('focus');
   return {
     sheet,
-    select,
-    setOpen(value: boolean, tab: PocketTab = active) {
+    setOpen(value: boolean, tab: PocketTab = active, view?: PocketView) {
       opened = value;
       sheet.inert = !value;
       if (value) {
         select(tab);
         requestAnimationFrame(() => {
-          if (opened && !disposed)
-            buttons.get(tab)?.focus({ preventScroll: true });
+          if (!opened || disposed) return;
+          if (view === 'reminder') showTasks(true, true);
+          else if (view === 'handoffs') agents.showHandoffs();
+          else buttons.get(tab)?.focus({ preventScroll: true });
         });
       }
     },
@@ -179,18 +199,36 @@ export function createCompanionPocket(
       status: string,
       progress: number,
       state: 'ready' | 'paused' | 'running',
+      task: FocusTask | undefined,
     ) {
       clock.textContent = time;
-      phase.textContent = status;
+      phase.textContent = task?.title ?? status;
+      phase.title = task ? `${status} · ${task.title}` : '';
+      phase.classList.toggle('is-task', !!task);
       focus.dataset.state = state;
       fill.style.transform = `scaleX(${progress})`;
+    },
+    setTasks(
+      items: FocusTask[],
+      active: string | null,
+      ready: boolean,
+      locked: boolean,
+      due: FocusTask[],
+    ) {
+      tasks.update(items, active, ready, locked, due);
+      tasksButton.classList.toggle('has-reminder', due.length > 0);
     },
     setAgents(snapshot: AgentSnapshot | null) {
       agentSnapshot = snapshot;
       const live = snapshot?.sessions.some(
         ({ status }) => status === 'working' || status === 'needsInput',
       );
-      buttons.get('agents')?.classList.toggle('has-activity', Boolean(live));
+      buttons
+        .get('agents')
+        ?.classList.toggle(
+          'has-activity',
+          Boolean(live || snapshot?.handoffs?.length),
+        );
       if (opened && active === 'agents') agents.render(snapshot);
     },
     dispose() {

@@ -322,12 +322,25 @@ pub fn clipboard_copy(
         .find(|e| e.id == id)
         .ok_or("Clip no longer exists")?
         .text;
-    window
-        .app_handle()
-        .clipboard()
-        .write_text(text.clone())
+    let text = text.clone();
+    copy_from_buddy(window.app_handle(), &mut vault, text)
+}
+
+pub(crate) fn copy_handoff(
+    window: &WebviewWindow,
+    state: &ClipboardState,
+    text: String,
+) -> Result<(), String> {
+    let mut vault = state.0.lock().map_err(|e| e.to_string())?;
+    copy_from_buddy(window.app_handle(), &mut vault, text)
+}
+
+fn copy_from_buddy(app: &tauri::AppHandle, vault: &mut Vault, text: String) -> Result<(), String> {
+    let fingerprint = fingerprint(&text);
+    app.clipboard()
+        .write_text(text)
         .map_err(|_| "Could not copy. Try again.".to_string())?;
-    vault.last_seen = Some(fingerprint(text));
+    vault.last_seen = Some(fingerprint);
     vault.seeded = true;
     Ok(())
 }

@@ -1,6 +1,7 @@
 import { FOCUS_MS, SpiritEngine, formatCountdown } from '../engine/spirit';
 import type { Mood } from '../engine/spirit';
 import { awardCompletions, canEquip, canWear } from '../engine/progress';
+import { creditTask, dueReminders, type FocusTask } from '../engine/tasks';
 import { openProgressStore } from '../platform/progress-store';
 import { Ambience } from '../audio/ambience';
 import { AnimationClock } from '../rendering/animation-clock';
@@ -27,9 +28,13 @@ import {
   setCompanionOpen,
   observeBuddyOpen,
 } from '../platform/desktop';
-import { createCompanionPocket, type PocketTab } from '../buddy/companion';
+import {
+  createCompanionPocket,
+  type PocketTab,
+  type PocketView,
+} from '../buddy/companion';
 import { readAgents } from '../buddy/api';
-import type { AgentSession } from '../buddy/model';
+import type { AgentSession, AgentSnapshot } from '../buddy/model';
 import { createPetAgentThought } from '../buddy/pet-agent';
 import {
   observeHabitatSettings,
@@ -88,18 +93,16 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   reset.type = 'button';
   reset.textContent = 'Reset';
   reset.setAttribute('aria-label', 'Reset session without completion');
-  const persist = () => {
+  const persist = async () => {
     reportSettings();
-    void store
-      .save(progress)
-      .then(() => {
-        saveProblem = false;
-        reportSettings();
-      })
-      .catch(() => {
-        saveProblem = true;
-        reportSettings();
-      });
+    try {
+      await store.save(progress);
+      saveProblem = false;
+    } catch {
+      saveProblem = true;
+    }
+    reportSettings();
+    return !saveProblem;
   };
   const moodLabel = document.createElement('p');
   moodLabel.className = 'mood-label';
@@ -127,15 +130,52 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
 
   let companionOpen = false;
   let pocketBusy = false;
+  let focusTask: string | null = null;
+  let nextReminder: FocusTask | undefined;
+  let soundedReminder = '';
+  let latestSnapshot: AgentSnapshot | null = null;
+  let handoff: AgentSession | undefined;
+  const dismissedHandoffs = new Set<string>();
+  const handoffKey = (item: AgentSession) =>
+    `${item.agent}:${item.session}:${item.updatedAt}`;
   const pocket = createCompanionPocket(() => void changePocket(false), {
     toggle,
     reset,
+    tasks: {
+      save(items: FocusTask[]) {
+        progress = { ...progress, tasks: items };
+        render();
+        return persist();
+      },
+      start(id: string) {
+        const now = Date.now();
+        render();
+        if (
+          engine.read(now).timer ||
+          !progress.tasks.some((task) => task.id === id && !task.done)
+        )
+          return false;
+        focusTask = id;
+        engine.toggleTimer(now);
+        render();
+        return true;
+      },
+    },
+    dismissHandoff(item) {
+      dismissedHandoffs.add(handoffKey(item));
+      showAgentSignals(latestSnapshot);
+      render();
+    },
   });
   habitat.append(pocket.sheet);
-  async function changePocket(open: boolean, tab: PocketTab = 'focus') {
+  async function changePocket(
+    open: boolean,
+    tab: PocketTab = 'focus',
+    view?: PocketView,
+  ) {
     if (pocketBusy) return;
     if (open && companionOpen) {
-      pocket.select(tab);
+      pocket.setOpen(true, tab, view);
       return;
     }
     if (!open && !companionOpen) return;
@@ -154,7 +194,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       document.documentElement.classList.toggle('pocket-expanded', open);
       companionOpen = open;
       habitat.classList.toggle('companion-open', open);
-      pocket.setOpen(open, tab);
+      pocket.setOpen(open, tab, view);
       pet.setAttribute('aria-expanded', String(open));
       render();
     } catch (error) {
@@ -173,7 +213,11 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       return;
     }
     if (['focus', 'clipboard', 'agents'].includes(tab))
-      void changePocket(true, tab as PocketTab);
+      void changePocket(
+        true,
+        tab as PocketTab,
+        tab === 'focus' && nextReminder ? 'reminder' : undefined,
+      );
   });
 
   const renderer = await createHabitatRenderer(canvas);
@@ -272,9 +316,11 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     const now = Date.now();
     const date = new Date(now);
     const snapshot = engine.read(now, date.getHours() * 60 + date.getMinutes());
+    const due = dueReminders(progress.tasks, now);
     const working = snapshot.mood === 'Working';
     quietPlay =
       companionOpen ||
+      due.length > 0 ||
       agentCue === 'needsInput' ||
       agentCue === 'working' ||
       snapshot.mood === 'Happy' ||
@@ -317,14 +363,17 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     }
     if (snapshot.completedFocusSessions > completed) {
       audio.chime(true);
-      progress = awardCompletions(
-        progress,
-        snapshot.completedFocusSessions - completed,
-      );
-      persist();
+      const earned = snapshot.completedFocusSessions - completed;
+      progress = {
+        ...awardCompletions(progress, earned),
+        tasks: creditTask(progress.tasks, focusTask, earned),
+      };
+      void persist();
     }
     completed = snapshot.completedFocusSessions;
     const timer = snapshot.timer;
+    if (timer?.phase !== 'Focus') focusTask = null;
+    const task = progress.tasks.find((item) => item.id === focusTask);
     const label = timer
       ? timer.status === 'paused'
         ? 'Resume'
@@ -348,6 +397,27 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
         : 'Ready when you are',
       Math.max(0, Math.min(1, 1 - (timer?.remainingMs ?? duration) / duration)),
       timer?.status ?? 'ready',
+      task,
+    );
+    nextReminder = due[0];
+    const reminderSignal = nextReminder
+      ? `${nextReminder.id}:${nextReminder.remindAt}`
+      : '';
+    if (
+      habitatVisible &&
+      reminderSignal &&
+      reminderSignal !== soundedReminder
+    ) {
+      audio.chime();
+      soundedReminder = reminderSignal;
+    }
+    habitat.classList.toggle('has-task-reminder', !!nextReminder);
+    pocket.setTasks(
+      progress.tasks,
+      focusTask,
+      timer === null,
+      store.readOnly,
+      due,
     );
     toggle.setAttribute('aria-pressed', String(timer?.status === 'running'));
     const playLabels = {
@@ -358,14 +428,18 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       hide: 'Hide and seek',
       peek: 'Peekaboo',
     };
-    moodLabel.textContent = play.roaming
-      ? playLabels[play.action]
-      : `${snapshot.mood}${timer?.status === 'paused' ? ' · paused' : ''}`;
+    moodLabel.textContent = nextReminder
+      ? `Reminder · ${nextReminder.title}`
+      : play.roaming
+        ? playLabels[play.action]
+        : `${snapshot.mood}${timer?.status === 'paused' ? ' · paused' : ''}`;
     moodLabel.title = snapshot.activityAvailable
       ? 'System idle time is available; no input content is collected.'
       : 'System activity unavailable. Manual focus sessions still work.';
-    const thought =
-      agentAnnouncement || (play.roaming ? 'Ember is playing' : snapshot.mood);
+    const thought = nextReminder
+      ? `Reminder for ${nextReminder.title}`
+      : agentAnnouncement ||
+        (play.roaming ? 'Ember is playing' : snapshot.mood);
     const message = `${thought}. ${timer ? `${timer.phase} ${timer.status}.` : 'No focus session running.'}`;
     if (message !== lastAnnouncement) {
       announcement.textContent = message;
@@ -391,8 +465,17 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     };
   };
   const reportSettings = (error: string | null = null) => {
+    const { version, outfit, ghost, completedFocusSessions, decor, lighting } =
+      progress;
     const snapshot = {
-      progress,
+      progress: {
+        version,
+        outfit,
+        ghost,
+        completedFocusSessions,
+        decor,
+        lighting,
+      },
       saveProblem,
       roaming: play.enabled,
       sound: audio.enabled,
@@ -473,7 +556,13 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       agentCue === 'working' ||
       agentCue === 'needsInput' ||
       agentCue === 'error';
-    void changePocket(!companionOpen, liveAgent ? 'agents' : 'focus');
+    const view = nextReminder ? 'reminder' : handoff ? 'handoffs' : undefined;
+    const tab = nextReminder
+      ? 'focus'
+      : handoff || liveAgent
+        ? 'agents'
+        : 'focus';
+    void changePocket(!companionOpen, tab, view);
   });
   toggle.addEventListener('click', () => {
     engine.toggleTimer(Date.now());
@@ -562,6 +651,21 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   });
   reportSettings();
   const interval = setInterval(render, 1000);
+  function showAgentSignals(snapshot: AgentSnapshot | null) {
+    latestSnapshot = snapshot;
+    const signals = snapshot?.handoffs ?? [];
+    const currentKeys = new Set(signals.map(handoffKey));
+    for (const key of dismissedHandoffs)
+      if (!currentKeys.has(key)) dismissedHandoffs.delete(key);
+    const handoffs = signals.filter(
+      (item) => !dismissedHandoffs.has(handoffKey(item)),
+    );
+    handoff = handoffs[0];
+    const visible = snapshot ? { ...snapshot, handoffs } : null;
+    habitat.classList.toggle('has-agent-handoff', !!handoff);
+    agentAnnouncement = agentThought.update(visible);
+    pocket.setAgents(visible);
+  }
   const updateAgentCue = async () => {
     if (disposed || cueReadPending) return;
     cueReadPending = true;
@@ -581,16 +685,14 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       agent = snapshot.cue;
       agentCue = next;
       habitat.dataset.agent = next;
-      agentAnnouncement = agentThought.update(snapshot);
-      pocket.setAgents(snapshot);
+      showAgentSignals(snapshot);
       render();
     } catch {
       if (disposed) return;
       agent = null;
       agentCue = 'idle';
       habitat.dataset.agent = 'idle';
-      agentAnnouncement = agentThought.update(null);
-      pocket.setAgents(null);
+      showAgentSignals(null);
       render();
     } finally {
       cueReadPending = false;

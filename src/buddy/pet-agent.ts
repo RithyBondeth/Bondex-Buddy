@@ -9,6 +9,7 @@ import {
 
 export function createPetAgentThought() {
   const label = element('div', 'pet-agent');
+  label.hidden = true;
   label.setAttribute('aria-hidden', 'true');
   const copy = element('div', 'pet-agent-copy');
   const identity = element('strong');
@@ -26,10 +27,14 @@ export function createPetAgentThought() {
   let detailsKey = '';
 
   function update(snapshot: AgentSnapshot | null) {
-    const cue = snapshot?.cue;
+    const handoff = snapshot?.handoffs?.[0];
+    const cue = handoff ?? snapshot?.cue;
     const working =
       snapshot?.sessions.filter(({ status }) => status === 'working') ?? [];
-    const current = cue?.status === 'working' || cue?.status === 'needsInput';
+    const current =
+      cue?.status === 'working' ||
+      cue?.status === 'needsInput' ||
+      (cue?.status === 'done' && !!handoff);
     if (current) {
       if (label.dataset.provider !== cue.agent) {
         label.querySelector('img')?.remove();
@@ -38,6 +43,7 @@ export function createPetAgentThought() {
       }
       identity.textContent = agentStatus(cue);
       project.textContent = cue.project;
+      label.dataset.status = cue.status;
     }
     const showPair = working.length >= 2;
     label.hidden = showPair || !current;
@@ -96,7 +102,10 @@ export function createPetAgentThought() {
       details.replaceChildren(...rows);
       detailsKey = nextDetails;
     }
-    return `${working.length} agents working. ${featured.map((session) => `${agentNames[session.agent]} in ${session.project}`).join(', ')}`;
+    const announcement = `${working.length} agents working. ${featured.map((session) => `${agentNames[session.agent]} in ${session.project}`).join(', ')}`;
+    return handoff
+      ? `${agentStatus(handoff)} in ${handoff.project}. ${announcement}`
+      : announcement;
   }
 
   return { label, pair, update };

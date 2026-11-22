@@ -7,6 +7,7 @@ export interface Progress {
   completedFocusSessions: number;
   decor: Decor;
   lighting: 'auto' | 'day';
+  tasks: FocusTask[];
 }
 export const freshProgress = (): Progress => ({
   version: 2,
@@ -15,13 +16,17 @@ export const freshProgress = (): Progress => ({
   completedFocusSessions: 0,
   decor: 'none',
   lighting: 'auto',
+  tasks: [],
 });
 export const unlockAt: Record<Decor, number> = {
   none: 0,
   plant: 1,
   lantern: 3,
 };
-export function canEquip(progress: Progress, decor: Decor): boolean {
+export function canEquip(
+  progress: Pick<Progress, 'completedFocusSessions'>,
+  decor: Decor,
+): boolean {
   return progress.completedFocusSessions >= unlockAt[decor];
 }
 export const outfitUnlockAt: Record<Outfit, number> = {
@@ -29,7 +34,10 @@ export const outfitUnlockAt: Record<Outfit, number> = {
   beanie: 2,
   scarf: 5,
 };
-export function canWear(progress: Progress, outfit: Outfit): boolean {
+export function canWear(
+  progress: Pick<Progress, 'completedFocusSessions'>,
+  outfit: Outfit,
+): boolean {
   return progress.completedFocusSessions >= outfitUnlockAt[outfit];
 }
 export function decodeProgress(raw: string | null): Progress {
@@ -62,6 +70,7 @@ export function decodeProgress(raw: string | null): Progress {
     completedFocusSessions: p.completedFocusSessions as number,
     decor: p.decor as Decor,
     lighting: p.lighting as Progress['lighting'],
+    tasks: p.version === 1 ? [] : decodeTasks(p.tasks),
   };
   if (!canEquip(result, result.decor)) result.decor = 'none';
   if (!canWear(result, result.outfit)) result.outfit = 'none';
@@ -78,3 +87,4 @@ export function awardCompletions(progress: Progress, count: number): Progress {
     ),
   };
 }
+import { decodeTasks, type FocusTask } from './tasks';
