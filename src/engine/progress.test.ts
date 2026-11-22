@@ -47,6 +47,7 @@ it('round-trips progress, equipment, and preferences and strips unrelated fields
     decor: 'lantern',
     lighting: 'day',
     tasks: [],
+    waterMinutes: 0,
   });
 });
 it('loads old saves without tasks and preserves saved tasks and earned sessions', () => {

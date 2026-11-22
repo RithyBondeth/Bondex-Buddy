@@ -2,6 +2,7 @@ import { FOCUS_MS, SpiritEngine, formatCountdown } from '../engine/spirit';
 import type { Mood } from '../engine/spirit';
 import { awardCompletions, canEquip, canWear } from '../engine/progress';
 import { creditTask, dueReminders, type FocusTask } from '../engine/tasks';
+import { WaterSchedule, isWaterInterval } from '../engine/water';
 import { openProgressStore } from '../platform/progress-store';
 import { Ambience } from '../audio/ambience';
 import { AnimationClock } from '../rendering/animation-clock';
@@ -10,6 +11,8 @@ import {
   observePlay,
   setPlayContext,
   setPlayfulRoaming,
+  startWaterWalk,
+  returnWaterWalk,
   observeHover,
   observeAgentHover,
   observeFocus,
@@ -34,6 +37,7 @@ import {
   type PocketView,
 } from '../buddy/companion';
 import { readAgents } from '../buddy/api';
+import { icon } from '../buddy/icons';
 import type { AgentSession, AgentSnapshot } from '../buddy/model';
 import { createPetAgentThought } from '../buddy/pet-agent';
 import {
@@ -51,6 +55,8 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   let progress = store.data;
   let saveProblem = store.readOnly;
   const engine = new SpiritEngine(Date.now());
+  const waterSchedule = new WaterSchedule();
+  waterSchedule.configure(progress.waterMinutes, Date.now());
   const audio = new Ambience();
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
   const habitat = document.createElement('div');
@@ -106,6 +112,12 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   };
   const moodLabel = document.createElement('p');
   moodLabel.className = 'mood-label';
+  const waterCue = document.createElement('div');
+  waterCue.className = 'water-break-cue';
+  waterCue.setAttribute('aria-hidden', 'true');
+  const waterText = document.createElement('span');
+  waterText.textContent = 'Time for a water break';
+  waterCue.append(icon('water'), waterText);
   const agentThought = createPetAgentThought();
   const announcement = document.createElement('span');
   announcement.className = 'sr-only';
@@ -122,6 +134,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     pet,
     handle,
     moodLabel,
+    waterCue,
     agentThought.label,
     agentThought.pair,
     announcement,
@@ -133,6 +146,10 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   let focusTask: string | null = null;
   let nextReminder: FocusTask | undefined;
   let soundedReminder = '';
+  let showWater = false;
+  let previewingWater = false;
+  let waterLaunchPending = false;
+  let browserWaterUntil = 0;
   let latestSnapshot: AgentSnapshot | null = null;
   let handoff: AgentSession | undefined;
   const dismissedHandoffs = new Set<string>();
@@ -165,6 +182,13 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       dismissedHandoffs.add(handoffKey(item));
       showAgentSignals(latestSnapshot);
       render();
+    },
+    water(action) {
+      if (pocketBusy) return;
+      if (!previewingWater) waterSchedule.respond(action, Date.now());
+      browserWaterUntil = 0;
+      if (isDesktop()) void returnWaterWalk().catch(console.error);
+      void changePocket(false);
     },
   });
   habitat.append(pocket.sheet);
@@ -268,6 +292,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   let lastMask: number[] | undefined;
   let completed = 0;
   let habitatVisible = false;
+  let idleSeconds: number | null = null;
   let lastAnnouncement = '';
   let greetingEnd: ReturnType<typeof setTimeout> | undefined;
   let agent: AgentSession | null = null;
@@ -317,7 +342,12 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     const date = new Date(now);
     const snapshot = engine.read(now, date.getHours() * 60 + date.getMinutes());
     const due = dueReminders(progress.tasks, now);
-    const working = snapshot.mood === 'Working';
+    const waterBeat = play.water ?? (now < browserWaterUntil ? 'offer' : null);
+    showWater =
+      due.length === 0 && (waterBeat === 'walk' || waterBeat === 'offer');
+    waterCue.dataset.beat = showWater ? waterBeat! : '';
+    habitat.classList.toggle('has-water-visit', showWater);
+    const working = snapshot.mood === 'Working' && !showWater;
     quietPlay =
       companionOpen ||
       due.length > 0 ||
@@ -326,6 +356,22 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       snapshot.mood === 'Happy' ||
       (snapshot.timer?.phase === 'Focus' &&
         snapshot.timer.status === 'running');
+    if (
+      habitatVisible &&
+      !companionOpen &&
+      due.length === 0 &&
+      !waterBeat &&
+      (idleSeconds === null || idleSeconds < 300) &&
+      !(
+        snapshot.timer?.phase === 'Focus' && snapshot.timer.status === 'running'
+      ) &&
+      waterSchedule.due(now)
+    ) {
+      void beginWater(false).catch((error: unknown) => {
+        waterSchedule.respond('skip', now);
+        console.error('Water walk could not start:', error);
+      });
+    }
     const playContext = `${quietPlay}:${motion.matches}`;
     if (lastPlayContext !== playContext) {
       lastPlayContext = playContext;
@@ -419,6 +465,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       store.readOnly,
       due,
     );
+    pocket.setWaterSnooze(!previewingWater && progress.waterMinutes !== 0);
     toggle.setAttribute('aria-pressed', String(timer?.status === 'running'));
     const playLabels = {
       rest: 'Taking a breather',
@@ -438,8 +485,10 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       : 'System activity unavailable. Manual focus sessions still work.';
     const thought = nextReminder
       ? `Reminder for ${nextReminder.title}`
-      : agentAnnouncement ||
-        (play.roaming ? 'Ember is playing' : snapshot.mood);
+      : waterBeat === 'offer'
+        ? 'Time for a water break'
+        : agentAnnouncement ||
+          (play.roaming ? 'Ember is playing' : snapshot.mood);
     const message = `${thought}. ${timer ? `${timer.phase} ${timer.status}.` : 'No focus session running.'}`;
     if (message !== lastAnnouncement) {
       announcement.textContent = message;
@@ -447,6 +496,36 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     }
     return mask;
   };
+  async function beginWater(preview: boolean): Promise<boolean> {
+    const now = Date.now();
+    if (
+      waterLaunchPending ||
+      companionOpen ||
+      play.water ||
+      now < browserWaterUntil
+    )
+      return false;
+    waterLaunchPending = true;
+    const previousPreview = previewingWater;
+    previewingWater = preview;
+    try {
+      if (isDesktop()) {
+        if (!(await startWaterWalk(preview))) {
+          previewingWater = previousPreview;
+          return false;
+        }
+      } else {
+        browserWaterUntil = now + 12_000;
+      }
+      if (!preview) waterSchedule.respond('skip', now);
+      return true;
+    } catch (error) {
+      previewingWater = previousPreview;
+      throw error;
+    } finally {
+      waterLaunchPending = false;
+    }
+  }
   const appearance = () => {
     const hour = new Date().getHours();
     return {
@@ -465,8 +544,15 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     };
   };
   const reportSettings = (error: string | null = null) => {
-    const { version, outfit, ghost, completedFocusSessions, decor, lighting } =
-      progress;
+    const {
+      version,
+      outfit,
+      ghost,
+      completedFocusSessions,
+      decor,
+      lighting,
+      waterMinutes,
+    } = progress;
     const snapshot = {
       progress: {
         version,
@@ -475,6 +561,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
         completedFocusSessions,
         decor,
         lighting,
+        waterMinutes,
       },
       saveProblem,
       roaming: play.enabled,
@@ -485,10 +572,12 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   };
   const unsubscribePlay = await observePlay((snapshot) => {
     const changed = play.enabled !== snapshot.enabled;
+    const waterChanged = play.water !== snapshot.water;
     play = snapshot;
     playReceivedAt = performance.now();
     playStartedAt = playReceivedAt - snapshot.elapsedMs;
     habitat.classList.toggle('free-roam', snapshot.roaming);
+    if (waterChanged && habitatVisible) render();
     if (changed) reportSettings();
   });
   const unsubscribeFocus = await observeFocus((focused) => {
@@ -518,6 +607,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     throw error;
   }
   const unsubscribeActivity = await observeActivity((reading) => {
+    idleSeconds = reading.idleSeconds;
     engine.observeActivity(reading, Date.now());
     render();
   });
@@ -556,12 +646,19 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       agentCue === 'working' ||
       agentCue === 'needsInput' ||
       agentCue === 'error';
-    const view = nextReminder ? 'reminder' : handoff ? 'handoffs' : undefined;
-    const tab = nextReminder
-      ? 'focus'
-      : handoff || liveAgent
-        ? 'agents'
-        : 'focus';
+    const view = nextReminder
+      ? 'reminder'
+      : showWater
+        ? 'water'
+        : handoff
+          ? 'handoffs'
+          : undefined;
+    const tab =
+      nextReminder || showWater
+        ? 'focus'
+        : handoff || liveAgent
+          ? 'agents'
+          : 'focus';
     void changePocket(!companionOpen, tab, view);
   });
   toggle.addEventListener('click', () => {
@@ -607,6 +704,18 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       .then(async () => {
         if (disposed) return;
         switch (change.setting) {
+          case 'waterMinutes':
+            if (!isWaterInterval(change.value)) return;
+            progress = { ...progress, waterMinutes: change.value };
+            waterSchedule.configure(change.value, Date.now());
+            void persist();
+            return;
+          case 'waterPreview':
+            if (!(await beginWater(true)))
+              throw new Error(
+                'Close Ember’s thought and try the water preview again.',
+              );
+            break;
           case 'sound':
             await audio.setEnabled(change.value);
             break;

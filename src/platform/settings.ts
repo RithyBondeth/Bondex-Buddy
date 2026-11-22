@@ -10,9 +10,13 @@ export interface HabitatSettings {
   error: string | null;
 }
 
-type Preferences = Pick<Progress, 'decor' | 'outfit' | 'lighting' | 'ghost'> & {
+type Preferences = Pick<
+  Progress,
+  'decor' | 'outfit' | 'lighting' | 'ghost' | 'waterMinutes'
+> & {
   roaming: boolean;
   sound: boolean;
+  waterPreview: true;
 };
 
 export type HabitatChange = {

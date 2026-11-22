@@ -143,6 +143,12 @@ export async function setPlayContext(
 export async function setPlayfulRoaming(enabled: boolean): Promise<void> {
   if (isTauri()) await invoke('set_playful_roaming', { enabled });
 }
+export function startWaterWalk(preview: boolean): Promise<boolean> {
+  return invoke('start_water_walk', { preview });
+}
+export function returnWaterWalk(): Promise<void> {
+  return invoke('return_water_walk');
+}
 export async function observePlay(
   callback: (play: PetPlay) => void,
 ): Promise<() => void> {

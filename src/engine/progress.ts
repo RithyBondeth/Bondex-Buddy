@@ -8,6 +8,7 @@ export interface Progress {
   decor: Decor;
   lighting: 'auto' | 'day';
   tasks: FocusTask[];
+  waterMinutes: WaterInterval;
 }
 export const freshProgress = (): Progress => ({
   version: 2,
@@ -17,6 +18,7 @@ export const freshProgress = (): Progress => ({
   decor: 'none',
   lighting: 'auto',
   tasks: [],
+  waterMinutes: 0,
 });
 export const unlockAt: Record<Decor, number> = {
   none: 0,
@@ -71,6 +73,7 @@ export function decodeProgress(raw: string | null): Progress {
     decor: p.decor as Decor,
     lighting: p.lighting as Progress['lighting'],
     tasks: p.version === 1 ? [] : decodeTasks(p.tasks),
+    waterMinutes: isWaterInterval(p.waterMinutes) ? p.waterMinutes : 0,
   };
   if (!canEquip(result, result.decor)) result.decor = 'none';
   if (!canWear(result, result.outfit)) result.outfit = 'none';
@@ -88,3 +91,4 @@ export function awardCompletions(progress: Progress, count: number): Progress {
   };
 }
 import { decodeTasks, type FocusTask } from './tasks';
+import { isWaterInterval, type WaterInterval } from './water';
