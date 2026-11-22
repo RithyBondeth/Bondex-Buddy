@@ -16,6 +16,7 @@ export interface PetPlay {
   enabled: boolean;
   gaitMs?: number;
   gaitRate?: number;
+  water?: 'walk' | 'offer' | 'return' | null;
 }
 export const restingPlay = (): PetPlay => ({
   action: 'rest',

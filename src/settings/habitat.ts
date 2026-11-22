@@ -1,7 +1,8 @@
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { element, errorMessage, type Announce } from '../buddy/dom';
+import { button, element, errorMessage, type Announce } from '../buddy/dom';
 import { canEquip, canWear, freshProgress } from '../engine/progress';
+import { WATER_INTERVALS, isWaterInterval } from '../engine/water';
 import type { HabitatChange, HabitatSettings } from '../platform/settings';
 
 export function settingRow(
@@ -71,6 +72,26 @@ export function habitatSettings(announce: Announce) {
     settingRow('Ghost Mode', ghost, 'During work, clicks pass through Ember.'),
     settingRow('Sound', sound, 'Quiet rain ambience and gentle chimes.'),
   );
+  const water = settingsGroup('Water breaks');
+  const waterMinutes = settingSelect(
+    WATER_INTERVALS.map((minutes) => [
+      String(minutes),
+      minutes ? `Every ${minutes} min` : 'Off',
+    ]),
+  );
+  const previewWater = button(
+    'Preview water walk',
+    'connect-button water-preview-button',
+  );
+  previewWater.disabled = true;
+  water.append(
+    settingRow(
+      'Reminder',
+      waterMinutes,
+      'Ember takes a short walk to remind you.',
+    ),
+    previewWater,
+  );
   const startup = settingsGroup('Startup');
   const login = settingSwitch();
   const loginRow = settingRow(
@@ -81,9 +102,18 @@ export function habitatSettings(announce: Announce) {
   const loginHint = loginRow.querySelector('small')!;
   if (!isTauri()) loginHint.textContent = 'Desktop app only.';
   startup.append(loginRow);
-  section.append(appearance, behavior, startup);
+  section.append(appearance, behavior, water, startup);
 
-  const controls = [decor, outfit, lighting, roam, ghost, sound];
+  const controls = [
+    decor,
+    outfit,
+    lighting,
+    roam,
+    ghost,
+    sound,
+    waterMinutes,
+    previewWater,
+  ];
   let latest: HabitatSettings | null = null;
   let revision = 0;
   let pending: ReturnType<typeof setTimeout> | undefined;
@@ -110,6 +140,8 @@ export function habitatSettings(announce: Announce) {
     ghost.checked = snapshot.progress.ghost;
     roam.checked = snapshot.roaming;
     sound.checked = snapshot.sound;
+    waterMinutes.value = String(snapshot.progress.waterMinutes);
+    previewWater.disabled = !isTauri();
     const count = snapshot.progress.completedFocusSessions;
     progressNote.textContent = snapshot.saveProblem
       ? 'Changes are available for this session. Your saved progress file was preserved.'
@@ -184,6 +216,13 @@ export function habitatSettings(announce: Announce) {
         value: lighting.value === 'day' ? 'day' : 'auto',
       }),
   );
+  waterMinutes.addEventListener('change', () => {
+    const value = Number(waterMinutes.value);
+    if (isWaterInterval(value)) void change({ setting: 'waterMinutes', value });
+  });
+  previewWater.addEventListener('click', () => {
+    void change({ setting: 'waterPreview', value: true });
+  });
   for (const [setting, control] of [
     ['roaming', roam],
     ['ghost', ghost],

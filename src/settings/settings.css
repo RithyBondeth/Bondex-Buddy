@@ -47,6 +47,9 @@
   margin: 0 0 4px;
   font: 600 17px/1.2 var(--pixel-font);
 }
+.water-preview-button {
+  margin: 7px 0 9px;
+}
 .setting-row {
   display: flex;
   align-items: center;

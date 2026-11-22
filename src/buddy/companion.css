@@ -421,6 +421,36 @@
 .buddy-surface .clip-task-button {
   color: var(--peach);
 }
+.buddy-surface .water-visit {
+  padding: 8px;
+  border: 1px solid #486979;
+  border-radius: 8px;
+  background: linear-gradient(125deg, #192a33, #141819 80%);
+}
+.companion-open .water-visit:not([hidden]) {
+  animation: pane-enter 240ms var(--ease-out) both;
+}
+.buddy-surface .water-visit-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #cbf0ff;
+}
+.buddy-surface .water-visit-heading svg {
+  color: #95dcf7;
+}
+.buddy-surface .water-visit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+.buddy-surface .water-visit-actions .water-drank {
+  border-color: #95dcf7;
+  background: #bceaff;
+  color: #172731;
+  font-weight: 700;
+}
 .companion-sheet .clipboard-tools,
 .companion-sheet .section-heading {
   margin-bottom: 7px;

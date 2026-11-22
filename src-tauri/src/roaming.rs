@@ -14,6 +14,8 @@ pub struct PlayState {
     quiet: AtomicBool,
     reduced: AtomicBool,
     restart: AtomicBool,
+    water_requested: AtomicBool,
+    water_return: AtomicBool,
     snapshot: Mutex<PlaySnapshot>,
 }
 impl Default for PlayState {
@@ -23,6 +25,8 @@ impl Default for PlayState {
             quiet: AtomicBool::new(true),
             reduced: AtomicBool::new(false),
             restart: AtomicBool::new(false),
+            water_requested: AtomicBool::new(false),
+            water_return: AtomicBool::new(false),
             snapshot: Mutex::new(PlaySnapshot::default()),
         }
     }
@@ -43,6 +47,7 @@ pub struct PlaySnapshot {
     pub enabled: bool,
     pub gait_ms: f64,
     pub gait_rate: f64,
+    pub water: Option<&'static str>,
 }
 impl Default for PlaySnapshot {
     fn default() -> Self {
@@ -54,6 +59,7 @@ impl Default for PlaySnapshot {
             enabled: true,
             gait_ms: 0.0,
             gait_rate: 0.0,
+            water: None,
         }
     }
 }
@@ -104,12 +110,46 @@ pub fn set_playful_roaming(window: WebviewWindow, enabled: bool) -> Result<(), S
     set_enabled(&window, enabled);
     Ok(())
 }
+
+#[tauri::command]
+pub fn start_water_walk(window: WebviewWindow, preview: bool) -> Result<bool, String> {
+    main_only(&window)?;
+    let shell = window.state::<crate::shell::ShellState>();
+    if shell.tools_open.load(Ordering::Relaxed) || shell.dragging.load(Ordering::Relaxed) {
+        return Ok(false);
+    }
+    if !window.is_visible().map_err(|error| error.to_string())? {
+        if !preview {
+            return Ok(false);
+        }
+        window
+            .unminimize()
+            .and_then(|_| window.show())
+            .map_err(|error| error.to_string())?;
+    }
+    let state = window.state::<PlayState>();
+    if state.snapshot.lock().is_ok_and(|s| s.water.is_some()) {
+        return Ok(false);
+    }
+    state.water_return.store(false, Ordering::Relaxed);
+    Ok(!state.water_requested.swap(true, Ordering::Relaxed))
+}
+
+#[tauri::command]
+pub fn return_water_walk(window: WebviewWindow) -> Result<(), String> {
+    main_only(&window)?;
+    let state = window.state::<PlayState>();
+    state.water_requested.store(false, Ordering::Relaxed);
+    state.water_return.store(true, Ordering::Relaxed);
+    Ok(())
+}
+
 pub fn active(window: &WebviewWindow) -> bool {
     window
         .state::<PlayState>()
         .snapshot
         .lock()
-        .is_ok_and(|s| s.roaming)
+        .is_ok_and(|s| s.roaming || s.water.is_some())
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -286,6 +326,107 @@ fn gait_phase(action: &str, distance: f64, duration: f64, elapsed: f64) -> (f64,
     )
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum WaterBeat {
+    Walk,
+    Offer,
+    Return,
+}
+
+impl WaterBeat {
+    fn label(self) -> &'static str {
+        match self {
+            Self::Walk => "walk",
+            Self::Offer => "offer",
+            Self::Return => "return",
+        }
+    }
+}
+
+struct WaterVisit {
+    home: Point,
+    start: Point,
+    target: Point,
+    beat: WaterBeat,
+    elapsed: f64,
+    duration: f64,
+}
+
+impl WaterVisit {
+    fn new(home: Point, bounds: Layout, reduced: bool) -> Self {
+        let span = bounds.right() - bounds.left();
+        let direction = if home.x > bounds.left() + span / 2.0 {
+            -1.0
+        } else {
+            1.0
+        };
+        let target = bounds.fit(Point {
+            x: home.x + (span * 0.62).min(520.0 * bounds.scale) * direction,
+            y: home.y,
+        });
+        let mut visit = Self {
+            home,
+            start: home,
+            target: home,
+            beat: WaterBeat::Offer,
+            elapsed: 0.0,
+            duration: 12_000.0,
+        };
+        if !reduced && home.distance(target) > bounds.scale {
+            visit.enter(WaterBeat::Walk, home, target, bounds.scale);
+        }
+        visit
+    }
+
+    fn enter(&mut self, beat: WaterBeat, from: Point, to: Point, scale: f64) {
+        self.beat = beat;
+        self.start = from;
+        self.target = to;
+        self.elapsed = 0.0;
+        self.duration = if beat == WaterBeat::Offer {
+            12_000.0
+        } else {
+            (from.distance(to) / (126.0 * scale) * 1000.0).max(550.0)
+        };
+    }
+
+    fn position(&self) -> Point {
+        self.start
+            .mix(self.target, ease(self.elapsed / self.duration))
+    }
+
+    fn advance(&mut self, elapsed: f64, return_now: bool, reduced: bool, bounds: Layout) -> bool {
+        if return_now && self.beat != WaterBeat::Return {
+            self.enter(
+                WaterBeat::Return,
+                self.position(),
+                bounds.fit(self.home),
+                bounds.scale,
+            );
+        }
+        if reduced && self.beat == WaterBeat::Walk {
+            let here = self.position();
+            self.enter(WaterBeat::Offer, here, here, bounds.scale);
+        }
+        self.elapsed += elapsed;
+        if self.elapsed < self.duration && !(reduced && self.beat == WaterBeat::Return) {
+            return true;
+        }
+        match self.beat {
+            WaterBeat::Walk => self.enter(WaterBeat::Offer, self.target, self.target, bounds.scale),
+            WaterBeat::Offer if !reduced && self.target.distance(self.home) > bounds.scale => self
+                .enter(
+                    WaterBeat::Return,
+                    self.target,
+                    bounds.fit(self.home),
+                    bounds.scale,
+                ),
+            _ => return false,
+        }
+        true
+    }
+}
+
 pub struct Roamer {
     last_tick: Instant,
     layout: Option<Layout>,
@@ -297,9 +438,10 @@ pub struct Roamer {
     duration: f64,
     cycle: u32,
     facing: i8,
-    last_action: Option<(&'static str, i8, bool, bool, u8)>,
+    last_action: Option<(u8, &'static str, i8, bool, bool)>,
     geometry_tick: u32,
     last_emit: f64,
+    water: Option<WaterVisit>,
 }
 impl Default for Roamer {
     fn default() -> Self {
@@ -317,6 +459,7 @@ impl Default for Roamer {
             last_action: None,
             geometry_tick: 0,
             last_emit: 0.0,
+            water: None,
         }
     }
 }
@@ -371,7 +514,13 @@ impl Roamer {
         roaming: bool,
         enabled: bool,
     ) {
-        let key = (action, self.facing, roaming, enabled, self.phase);
+        let phase = match self.water.as_ref().map(|visit| visit.beat) {
+            Some(WaterBeat::Walk) => 12,
+            Some(WaterBeat::Offer) => 13,
+            Some(WaterBeat::Return) => 14,
+            None => self.phase,
+        };
+        let key = (phase, action, self.facing, roaming, enabled);
         let scale = self.layout.map_or(1.0, |b| b.scale);
         let distance = self.start.distance(self.target) / scale;
         let (gait_ms, gait_rate) = gait_phase(action, distance, self.duration, self.elapsed);
@@ -383,6 +532,7 @@ impl Roamer {
             enabled,
             gait_ms,
             gait_rate,
+            water: self.water.as_ref().map(|visit| visit.beat.label()),
         };
         let state = window.state::<PlayState>();
         if let Ok(mut stored) = state.snapshot.lock() {
@@ -395,6 +545,63 @@ impl Roamer {
             self.last_action = Some(key);
             let _ = window.emit("habitat-play", snapshot);
         }
+    }
+
+    fn water_tick(
+        &mut self,
+        window: &WebviewWindow,
+        bounds: Layout,
+        dt: f64,
+        state: &PlayState,
+        enabled: bool,
+    ) -> tauri::Result<bool> {
+        if state.water_requested.swap(false, Ordering::Relaxed) && self.water.is_none() {
+            let here = window.outer_position()?;
+            let origin = bounds.fit(Point {
+                x: here.x as f64,
+                y: here.y as f64,
+            });
+            self.water = Some(WaterVisit::new(
+                origin,
+                bounds,
+                state.reduced.load(Ordering::Relaxed),
+            ));
+        }
+        let Some(visit) = &mut self.water else {
+            return Ok(false);
+        };
+        let reduced = state.reduced.load(Ordering::Relaxed);
+        let returning = state.water_return.swap(false, Ordering::Relaxed);
+        if !visit.advance(dt, returning, reduced, bounds) {
+            window.set_position(bounds.fit(visit.home).physical())?;
+            self.water = None;
+            self.position = None;
+            self.publish(window, "rest", false, enabled);
+            return Ok(true);
+        }
+        let position = bounds.fit(visit.position());
+        if self.position != Some(position) {
+            window.set_position(position.physical())?;
+            self.position = Some(position);
+        }
+        self.start = visit.start;
+        self.target = visit.target;
+        self.elapsed = visit.elapsed;
+        self.duration = visit.duration;
+        if visit.beat != WaterBeat::Offer {
+            self.facing = if visit.target.x >= visit.start.x {
+                1
+            } else {
+                -1
+            };
+        }
+        let action = if visit.beat == WaterBeat::Offer {
+            "rest"
+        } else {
+            "walk"
+        };
+        self.publish(window, action, !reduced, enabled);
+        Ok(true)
     }
     fn advance(&mut self, bounds: Layout, dt: f64) {
         self.elapsed += dt;
@@ -430,11 +637,16 @@ impl Roamer {
         self.last_tick = now;
         let state = window.state::<PlayState>();
         let enabled = state.enabled.load(Ordering::Relaxed);
-        if window
-            .state::<crate::shell::ShellState>()
-            .tools_open
-            .load(Ordering::Relaxed)
-        {
+        let shell = window.state::<crate::shell::ShellState>();
+        if !visible || dragging || shell.dragging.load(Ordering::Relaxed) {
+            self.water = None;
+            state.water_requested.store(false, Ordering::Relaxed);
+            self.position = None;
+            self.layout = None;
+            self.publish(window, "rest", false, enabled);
+            return Ok(());
+        }
+        if shell.tools_open.load(Ordering::Relaxed) {
             self.position = None;
             self.layout = None;
             self.publish(window, "rest", false, enabled);
@@ -445,12 +657,6 @@ impl Roamer {
             && !state.quiet.load(Ordering::Relaxed)
             && !crate::settings::is_focused(window.app_handle())
             && !crate::native_check::enabled();
-        if !visible || dragging {
-            self.position = None;
-            self.layout = None;
-            self.publish(window, "rest", false, enabled);
-            return Ok(());
-        }
         // Refresh work-area geometry periodically rather than on every movement step.
         let restart = state.restart.swap(false, Ordering::Relaxed);
         if self.layout.is_none() || self.geometry_tick.is_multiple_of(30) || restart {
@@ -466,6 +672,9 @@ impl Roamer {
         let Some(bounds) = self.layout else {
             return Ok(());
         };
+        if self.water_tick(window, bounds, dt, &state, enabled)? {
+            return Ok(());
+        }
         if !allowed {
             if self.position.take().is_some() || restart {
                 let p = window.outer_position()?;
@@ -528,6 +737,43 @@ impl Roamer {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn water_walk_stays_on_the_display_and_returns_home() {
+        let bounds = bounds(2.0, Edge::Bottom);
+        let home = Point {
+            x: bounds.right(),
+            y: bounds.floor(),
+        };
+        let mut visit = WaterVisit::new(home, bounds, false);
+        assert_eq!(visit.beat, WaterBeat::Walk);
+        assert_eq!(visit.position(), home);
+        assert!(visit.target.x < home.x);
+        assert_eq!(visit.target.y, home.y);
+        assert_eq!(bounds.fit(visit.target), visit.target);
+        assert!(visit.advance(visit.duration, false, false, bounds));
+        assert_eq!(visit.beat, WaterBeat::Offer);
+        assert!(visit.advance(visit.duration, false, false, bounds));
+        assert_eq!(visit.beat, WaterBeat::Return);
+        assert!(!visit.advance(visit.duration, false, false, bounds));
+        assert_eq!(visit.position(), home);
+    }
+
+    #[test]
+    fn water_offer_can_stay_still_or_end_an_active_walk_early() {
+        let bounds = bounds(1.0, Edge::Left);
+        let home = bounds.dock();
+        let mut still = WaterVisit::new(home, bounds, true);
+        assert_eq!(still.beat, WaterBeat::Offer);
+        assert_eq!(still.position(), home);
+        assert!(!still.advance(still.duration, false, true, bounds));
+        let mut moving = WaterVisit::new(home, bounds, false);
+        assert!(moving.advance(moving.duration / 2.0, false, false, bounds));
+        assert_ne!(moving.position(), home);
+        assert!(moving.advance(1.0, true, false, bounds));
+        assert_eq!(moving.beat, WaterBeat::Return);
+        assert_eq!(moving.target, home);
+    }
     #[test]
     fn relaunch_restarts_the_route_without_changing_play_or_motion_preferences() {
         let state = PlayState::default();

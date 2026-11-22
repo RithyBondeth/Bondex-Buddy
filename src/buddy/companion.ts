@@ -4,12 +4,13 @@ import { button, element, errorMessage } from './dom';
 import { icon } from './icons';
 import type { AgentSession, AgentSnapshot } from './model';
 import type { FocusTask } from '../engine/tasks';
+import type { WaterAction } from '../engine/water';
 import { tasksView, type TaskControls } from './tasks-view';
 import './panel.css';
 import './companion.css';
 
 export type PocketTab = 'focus' | 'clipboard' | 'agents';
-export type PocketView = 'reminder' | 'handoffs';
+export type PocketView = 'reminder' | 'handoffs' | 'water';
 
 export function createCompanionPocket(
   close: () => void,
@@ -18,6 +19,7 @@ export function createCompanionPocket(
     reset: HTMLButtonElement;
     tasks: TaskControls;
     dismissHandoff(item: AgentSession): void;
+    water(action: WaterAction): void;
   },
 ) {
   const sheet = element('section', 'buddy-surface companion-sheet');
@@ -64,8 +66,24 @@ export function createCompanionPocket(
   tasksButton.setAttribute('aria-controls', 'pocket-tasks');
   tasksButton.addEventListener('click', () => showTasks(true));
   const tasks = tasksView(controls.tasks, () => showTasks(false));
+  const water = element('div', 'water-visit');
+  water.hidden = true;
+  const waterHeading = element('div', 'water-visit-heading');
+  waterHeading.append(
+    icon('water'),
+    element('h2', '', 'Time for a water break'),
+  );
+  const waterActions = element('div', 'water-visit-actions');
+  const drank = button('Drank water', 'task-button water-drank');
+  const snooze = button('Snooze 10m', 'task-button');
+  const skip = button('Skip', 'task-button');
+  drank.addEventListener('click', () => controls.water('drank'));
+  snooze.addEventListener('click', () => controls.water('snooze'));
+  skip.addEventListener('click', () => controls.water('skip'));
+  waterActions.append(drank, snooze, skip);
+  water.append(waterHeading, waterActions);
   timerView.append(readout, track, focusActions);
-  focus.append(timerView, tasks.section);
+  focus.append(timerView, tasks.section, water);
   const body = element('div', 'pocket-body');
   const sections = {
     focus,
@@ -84,11 +102,20 @@ export function createCompanionPocket(
   let agentSnapshot: AgentSnapshot | null | undefined;
 
   function showTasks(show: boolean, showDue = false) {
+    water.hidden = true;
     timerView.hidden = show;
     tasks.section.hidden = !show;
     body.scrollTop = 0;
     if (show) tasks.focus(showDue);
     else tasksButton.focus({ preventScroll: true });
+  }
+
+  function showWater() {
+    timerView.hidden = true;
+    tasks.section.hidden = true;
+    water.hidden = false;
+    body.scrollTop = 0;
+    drank.focus({ preventScroll: true });
   }
 
   const select = (tab: PocketTab) => {
@@ -184,15 +211,23 @@ export function createCompanionPocket(
     setOpen(value: boolean, tab: PocketTab = active, view?: PocketView) {
       opened = value;
       sheet.inert = !value;
+      if (!value && !water.hidden) {
+        water.hidden = true;
+        timerView.hidden = false;
+      }
       if (value) {
         select(tab);
         requestAnimationFrame(() => {
           if (!opened || disposed) return;
           if (view === 'reminder') showTasks(true, true);
           else if (view === 'handoffs') agents.showHandoffs();
+          else if (view === 'water') showWater();
           else buttons.get(tab)?.focus({ preventScroll: true });
         });
       }
+    },
+    setWaterSnooze(enabled: boolean) {
+      snooze.hidden = !enabled;
     },
     update(
       time: string,

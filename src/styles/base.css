@@ -270,6 +270,76 @@ canvas {
   background: #211912;
   color: var(--peach);
 }
+.water-break-cue {
+  position: absolute;
+  right: 110px;
+  bottom: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  max-width: 192px;
+  padding: 4px 7px;
+  border: 1px solid #486979;
+  border-radius: 8px;
+  background: #15222a;
+  box-shadow: 0 4px 14px #0005;
+  color: #cbf0ff;
+  font-size: 10px;
+  font-weight: 650;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate(50%, 4px) scale(0.97);
+  transform-origin: bottom center;
+  transition:
+    transform 280ms var(--ease-out),
+    opacity 220ms var(--ease-out),
+    visibility 0s 280ms;
+}
+.water-break-cue svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: #95dcf7;
+}
+.water-break-cue[data-beat='walk'] span {
+  display: none;
+}
+.water-break-cue[data-beat='walk'] svg {
+  animation: water-bob 760ms ease-in-out infinite;
+}
+.water-break-cue[data-beat='offer'] svg {
+  animation: water-bob 1.55s ease-in-out 2;
+}
+.water-break-cue[data-beat='offer']::after {
+  content: '';
+  position: absolute;
+  right: calc(50% - 3px);
+  bottom: -8px;
+  width: 4px;
+  height: 4px;
+  border: 1px solid #486979;
+  border-radius: 2px;
+  background: #15222a;
+}
+@keyframes water-bob {
+  50% {
+    transform: translateY(-2px);
+  }
+}
+.has-water-visit:not(.companion-open) .water-break-cue {
+  visibility: visible;
+  opacity: 1;
+  transform: translate(50%, 0) scale(1);
+  transition-delay: 0s;
+}
+.has-water-visit .mood-label,
+.has-water-visit .pet-agent,
+.has-water-visit .pet-agent-pair {
+  display: none;
+}
 
 .drag-handle {
   all: unset;

@@ -63,6 +63,8 @@ pub fn run() {
             roaming::play_snapshot,
             roaming::set_play_context,
             roaming::set_playful_roaming,
+            roaming::start_water_walk,
+            roaming::return_water_walk,
             shell::show_shell,
             shell::show_shell_error,
             shell::update_shell_mask,

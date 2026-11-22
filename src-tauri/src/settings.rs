@@ -35,6 +35,8 @@ pub enum HabitatChange {
     Ghost(bool),
     Roaming(bool),
     Sound(bool),
+    WaterMinutes(u8),
+    WaterPreview(bool),
 }
 
 #[derive(Clone, Deserialize, Serialize)]
