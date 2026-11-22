@@ -34,12 +34,14 @@
 .settings-pane {
   display: grid;
   gap: 12px;
+  animation: pane-enter 300ms var(--ease-out) both;
 }
 .settings-group {
   padding: 12px 14px 2px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface);
+  border-radius: 10px;
+  background: linear-gradient(#131313, var(--surface) 65%);
+  box-shadow: inset 0 1px #ffffff0b;
 }
 .settings-group h2 {
   margin: 0 0 4px;
@@ -92,27 +94,33 @@
   margin: 0;
   flex: none;
   border: 1px solid var(--line);
-  border-radius: 4px;
+  border-radius: 999px;
   background: var(--paper);
   display: grid;
   place-items: center start;
   padding: 3px;
   cursor: pointer;
+  transition:
+    background 220ms var(--ease-out),
+    border-color 220ms var(--ease-out);
 }
 .setting-switch::after {
   content: '';
   width: 11px;
   height: 11px;
-  border-radius: 2px;
+  border-radius: 50%;
   background: var(--muted);
+  transition:
+    transform 240ms var(--ease-out),
+    background 220ms var(--ease-out);
 }
 #settings .setting-switch:checked {
   border-color: var(--peach);
   background: var(--raised);
-  justify-items: end;
 }
 .setting-switch:checked::after {
   background: var(--peach);
+  transform: translateX(12px);
 }
 #settings .setting-switch:disabled {
   opacity: 0.55;
@@ -129,4 +137,14 @@
 }
 #settings .agent-connection .connect-button {
   min-width: 78px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-pane {
+    animation: none;
+  }
+  #settings .setting-switch,
+  .setting-switch::after {
+    transition: none;
+  }
 }

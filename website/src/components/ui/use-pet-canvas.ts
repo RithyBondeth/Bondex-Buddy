@@ -58,9 +58,12 @@ export function usePetCanvas({
       if (!active() || !paint) return;
       if (lastTime !== null) elapsed += Math.max(0, time - lastTime);
       lastTime = time;
-      if (time - lastDraw >= 1000 / 24) {
+      const interval = 1000 / 30;
+      if (time - lastDraw >= interval) {
         draw(time);
-        lastDraw = time;
+        lastDraw = Number.isFinite(lastDraw)
+          ? time - ((time - lastDraw) % interval)
+          : time;
       }
       frame = requestAnimationFrame(tick);
     };

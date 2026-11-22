@@ -16,25 +16,26 @@ Recent history stays in process memory and clears when the app quits. Only the c
 
 Clipboard mutations are serialized. Persistent edits save before updating in-memory state, and invalid or unsupported files are preserved with capture disabled. Atomic writes use a same-directory temporary file with owner-only permissions on Unix. The frontend can copy only an existing clip ID; it has no broad clipboard-plugin permission. Ember’s window reads clipboard history and edits existing clips. Only the Settings window can change clipboard capture and agent connections.
 
-## Codex and Claude Code
+## Agent activity and usage
 
-Both integrations use the agents’ lifecycle command hooks. **Connect** appends Buddy’s entries while preserving other settings and existing hooks, including Bondex Notch hooks. It first saves an owner-only backup beside the settings file and rejects malformed JSON or unsupported hook shapes. It also detects a settings edit between its read and write. **Disconnect** removes Buddy’s entries. Neither action changes approval policies or trusts hooks on the user’s behalf.
+**Connect** adds a local observer to the provider’s user-level hooks. Buddy saves an owner-only backup of an existing settings file and preserves other hooks, including Bondex Notch hooks. **Disconnect** removes Buddy’s entries. Restart a provider after connecting and, for Codex, review the hooks in `/hooks` or Settings → Hooks.
 
-Configuration locations:
+| Agent       | Settings                                                                     | Usage available in Buddy                                              |
+| ----------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Codex       | `$CODEX_HOME/hooks.json` or `~/.codex/hooks.json`                            | Observed requests and tool calls. Optional session token counts.      |
+| Claude Code | `$CLAUDE_CONFIG_DIR/settings.json` or `~/.claude/settings.json`              | Observed requests and tool calls. Optional session token counts.      |
+| Gemini CLI  | `~/.gemini/settings.json` under the home set by `GEMINI_CLI_HOME` if present | Observed requests, tool calls, model invocations and reported tokens. |
+| Antigravity | `~/.gemini/config/hooks.json`                                                | Observed model invocations and tool calls.                            |
+| Cursor      | `~/.cursor/hooks.json`                                                       | Observed requests, tool results, failures and reported thinking time. |
 
-| Agent       | Settings                                                                | Events                                                                                                                  |
-| ----------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Codex       | `$CODEX_HOME/hooks.json`, otherwise `~/.codex/hooks.json`               | SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, PermissionRequest, Stop, SessionEnd, Interrupt                 |
-| Claude Code | `$CLAUDE_CONFIG_DIR/settings.json`, otherwise `~/.claude/settings.json` | SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, PermissionRequest, Notification, Stop, StopFailure, SessionEnd |
+The `--buddy-agent-hook` entry point consumes bounded JSON before Tauri starts. It saves the provider, session identifier, project folder name, model identifier if available, activity, timestamps, and supported counters. Cursor uses local Agent Chat hooks. Antigravity uses the documented hooks shared by its app, CLI and IDE. Account quotas and billing require the provider’s own usage surface.
 
-After connecting, restart the agent. Codex requires review of the new hook definitions in `/hooks` or **Settings → Hooks**. A configuration marked “Hooks installed” does not establish that the agent has trusted it or sent an event. If hooks have been disabled by agent settings or managed policy, enable them in that agent before expecting signals. Start a new request to verify that a session appears. Moving the Buddy executable requires reconnecting it so the hook path is updated. Windows Codex hooks assume its default PowerShell environment; Claude Code selects PowerShell explicitly on Windows. Alternate Windows shells need separate acceptance.
+**Current work** shows live and waiting sessions only. Completed or quiet sessions leave this view. A live signal goes quiet after 15 minutes without an update. **Usage** aggregates observed counters from retained sessions per provider and shows tokens for the most recent session with a token report. A record expires 24 hours after its last signal. Session details show the project, model, elapsed turn time, tool counts, and reported token totals where available.
 
-The app’s `--buddy-agent-hook codex|claude` entry point runs before Tauri or single-instance startup. It consumes bounded JSON from stdin, writes a small status file, emits no output or decisions, and exits successfully even when an event cannot be recorded. It never launches the pet window. Hook timeout is two seconds. Claude hooks explicitly continue on failure.
+The optional **Codex and Claude token usage** setting reads numeric usage fields from the current session’s transcript under that provider’s log directory. It reads up to 2 MiB from the log’s end, so large Claude logs show recent tokens. Gemini token counts come from its model hooks. Buddy never saves log paths or conversation contents. Moving Buddy requires reconnecting the provider so it can find the executable.
 
-Status is recorded per agent and session, with a project basename, a short activity label, and a timestamp. Prompts, transcripts, tool arguments, output, and full working-directory paths are discarded. Working and waiting sessions become **Signal quiet** after 15 minutes without an event, rather than claiming completion. Up to 40 sessions appear in the panel; records expire after 24 hours. Disconnected integrations do not contribute status to the panel or Ember’s cues. Completion means the response is ready, not that a build, task, or test succeeded.
+Ember animates the mascots of agents that are working. When two agents work at the same time, their mascots appear side by side, with project and activity details on hover or keyboard focus. Agents shares Ember’s thought with Focus and Clipboard.
 
-Ember uses a working pose while an agent is active, rests roaming while it is working or needs input, shows a warm attention label when it needs input or reports an error, and performs a brief Happy reaction on completion outside a running focus session. Agent signals do not award focus progress or override an active focus timer.
+The browser preview at `/buddy.html` uses optional sample clips. Agent connection and local usage collection run in the desktop app.
 
-The browser preview at `/buddy.html` uses optional sample clips and cannot collect system history or install agent hooks. Native permissions and integration behavior must be checked in the desktop app.
-
-Implementation follows the [Tauri clipboard API](https://v2.tauri.app/plugin/clipboard/), [Codex hook configuration and trust](https://learn.chatgpt.com/docs/hooks), and [Claude Code hook reference](https://code.claude.com/docs/en/hooks). Installed Codex 0.169.0-alpha.11.1 and Claude Code 2.1.318 were inspected during development. Windows native acceptance remains separate from a successful macOS build.
+See the [Codex hooks](https://learn.chatgpt.com/docs/hooks), [Claude Code hooks](https://code.claude.com/docs/en/hooks), [Gemini CLI hooks](https://geminicli.com/docs/hooks/reference/), [Antigravity hooks](https://antigravity.google/docs/hooks), and [Cursor hooks](https://cursor.com/docs/hooks) for provider contracts.

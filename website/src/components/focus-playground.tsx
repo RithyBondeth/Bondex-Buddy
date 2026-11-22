@@ -2,8 +2,9 @@
 
 import { LivingPet } from '@/components/ui/living-pet';
 import { useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { motion } from 'motion/react';
 import { useCalmMotion } from '@/components/motion-preferences';
+import { easeOut } from '@/lib/motion';
 
 const modes = [
   {
@@ -88,6 +89,13 @@ export function FocusPlayground() {
                 setCompleted(false);
               }}
             >
+              {mode === i && (
+                <motion.span
+                  className="ritual-indicator"
+                  layoutId="ritual-indicator"
+                  transition={{ duration: reduce ? 0 : 0.3, ease: easeOut }}
+                />
+              )}
               {item.label}
             </button>
           ))}
@@ -135,30 +143,27 @@ export function FocusPlayground() {
         </div>
       </div>
       <div className="ritual-art">
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={current.id}
-            className="ritual-sprite"
-            initial={reduce ? false : { opacity: 0, scale: 0.85, rotate: -5 }}
-            animate={{ opacity: 1, scale: 1, rotate: 0 }}
-            exit={{ opacity: 0, scale: reduce ? 1 : 1.08 }}
-            transition={{ duration: reduce ? 0 : 0.4 }}
-          >
-            <LivingPet
-              kind="ember"
-              name="Ember"
-              onMessage={(text) => setPetMessage({ mode: current.id, text })}
-              image={current.image}
-              mood={
-                current.id === 'focus'
-                  ? 'working'
-                  : current.id === 'break'
-                    ? 'break'
-                    : 'sleeping'
-              }
-            />
-          </motion.div>
-        </AnimatePresence>
+        <motion.div
+          key={current.id}
+          className="ritual-sprite"
+          initial={reduce ? false : { opacity: 0, y: 4, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: reduce ? 0 : 0.42, ease: easeOut }}
+        >
+          <LivingPet
+            kind="ember"
+            name="Ember"
+            onMessage={(text) => setPetMessage({ mode: current.id, text })}
+            image={current.image}
+            mood={
+              current.id === 'focus'
+                ? 'working'
+                : current.id === 'break'
+                  ? 'break'
+                  : 'sleeping'
+            }
+          />
+        </motion.div>
       </div>
       <p className="browser-demo">Browser demo · progress isn’t saved</p>
     </div>

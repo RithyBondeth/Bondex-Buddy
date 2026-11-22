@@ -77,6 +77,12 @@ fn hits_pocket(x: f64, y: f64, width: f64, height: f64, open: bool) -> bool {
     dx * dx + dy * dy < radius * radius
 }
 
+fn hovers_agent_pair(x: f64, y: f64, revealed: bool) -> bool {
+    // Match the collapsed pair and its detail area in base.css. This is hover-only.
+    ((81.0..139.0).contains(&x) && (94.0..124.0).contains(&y))
+        || (revealed && (21.0..199.0).contains(&x) && (10.0..94.0).contains(&y))
+}
+
 /// Convert desktop physical coordinates into the fixed-resolution Canvas mask.
 fn hits_mask(mask: &[u8], x: f64, y: f64, scale: f64) -> bool {
     if !scale.is_finite() || scale <= 0.0 || !x.is_finite() || !y.is_finite() {
@@ -226,6 +232,7 @@ pub fn start_hit_testing(window: WebviewWindow) {
         let mut roamer = crate::roaming::Roamer::default();
         let mut ignoring = None;
         let mut hovered = false;
+        let mut agent_hovered = false;
         let mut was_visible = false;
         let mut ticks = 0;
         let mut ghosted = false;
@@ -249,6 +256,10 @@ pub fn start_hit_testing(window: WebviewWindow) {
                 if hovered {
                     hovered = false;
                     let _ = window.emit("habitat-hover", false);
+                }
+                if agent_hovered {
+                    agent_hovered = false;
+                    let _ = window.emit("habitat-agent-hover", false);
                 }
                 thread::sleep(Duration::from_millis(250));
                 continue;
@@ -289,6 +300,12 @@ pub fn start_hit_testing(window: WebviewWindow) {
                 if hovered != inside {
                     hovered = inside;
                     let _ = window.emit("habitat-hover", hovered);
+                }
+                let over_agent_pair =
+                    !tools_open && hovers_agent_pair(pet_x / scale, pet_y / scale, agent_hovered);
+                if agent_hovered != over_agent_pair {
+                    agent_hovered = over_agent_pair;
+                    let _ = window.emit("habitat-agent-hover", agent_hovered);
                 }
                 let hit = state.mask.lock().is_ok_and(|mask| {
                     (hits_mask(&mask, pet_x, pet_y, scale)
@@ -388,6 +405,16 @@ mod tests {
         assert!(!hits_pocket(5.0, 40.0, 264.0, 256.0, true));
         assert!(!hits_pocket(158.0, 184.0, 264.0, 256.0, true));
         assert!(!hits_pocket(30.0, 40.0, 264.0, 256.0, false));
+    }
+
+    #[test]
+    fn agent_pair_reveals_details_only_from_its_portraits() {
+        assert!(hovers_agent_pair(110.0, 110.0, false));
+        assert!(!hovers_agent_pair(145.0, 110.0, false));
+        assert!(!hovers_agent_pair(100.0, 60.0, false));
+        assert!(hovers_agent_pair(100.0, 60.0, true));
+        assert!(!hovers_agent_pair(10.0, 60.0, true));
+        assert!(!hovers_agent_pair(110.0, 129.0, true));
     }
 
     #[test]

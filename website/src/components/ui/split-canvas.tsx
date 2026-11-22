@@ -78,24 +78,31 @@ const FRAGMENT = /* glsl */ `
     float line = max(step(mod(px.x, cell.x), 1.0), step(mod(px.y, cell.y), 1.0));
     vec4 grid = vec4(u_gridColor, line * u_gridOpacity);
 
-    vec4 tex;
+    vec4 from;
+    vec4 to;
+    float blend = u_progress;
     if (u_reducedMotion > 0.5) {
-      tex = mix(texture2D(u_from, uv), texture2D(u_to, uv), u_progress);
+      from = texture2D(u_from, uv);
+      to = texture2D(u_to, uv);
     } else {
-      // Blinds: bottom slices go first; each collapses to reveal the next image.
+      // Feather the edge of each pixel row while preserving hard sprite pixels.
       float sliceIndex = floor(uv.y * u_numSlices);
       float delay = (sliceIndex / u_numSlices) * 0.6;
       float t = smoothstep(delay, delay + 0.4, u_progress);
-      float posInSlice = fract(uv.y * u_numSlices);
-      if (posInSlice < t) {
-        tex = texture2D(u_to, pixelate(uv));
-      } else {
-        vec2 shifted = vec2(uv.x, clamp(uv.y - t / u_numSlices, 0.0, 1.0));
-        tex = texture2D(u_from, pixelate(shifted));
-      }
+      float row = fract(uv.y * u_numSlices);
+      float edge = min(0.28, 1.75 * u_numSlices / u_resolution.y);
+      blend = u_progress <= 0.0 ? 0.0 : u_progress >= 1.0 ? 1.0 :
+        smoothstep(-edge, edge, t - row);
+      vec2 shifted = vec2(uv.x, clamp(uv.y - t / u_numSlices, 0.0, 1.0));
+      from = texture2D(u_from, pixelate(shifted));
+      to = texture2D(u_to, pixelate(uv));
     }
 
-    gl_FragColor = vec4(mix(grid.rgb, tex.rgb, tex.a), max(grid.a, tex.a));
+    float opacity = mix(from.a, to.a, blend);
+    vec3 pixels = mix(from.rgb * from.a, to.rgb * to.a, blend);
+    float alpha = opacity + grid.a * (1.0 - opacity);
+    vec3 rgb = (pixels + grid.rgb * grid.a * (1.0 - opacity)) / max(alpha, 0.0001);
+    gl_FragColor = vec4(rgb, alpha);
   }
 `;
 

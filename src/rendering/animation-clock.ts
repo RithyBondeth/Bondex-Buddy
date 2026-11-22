@@ -1,3 +1,5 @@
+const frameInterval = 1000 / 60;
+
 interface FrameDriver {
   request(callback: FrameRequestCallback): number;
   cancel(handle: number): void;
@@ -37,9 +39,11 @@ export class AnimationClock {
   private readonly frame = (time: number): void => {
     this.handle = null;
     if (this.disposed || !this.visible || this.reduced) return;
-    if (time - this.lastFrame >= 1000 / 30) {
-      // Preserve the cadence on 60/120/144 Hz displays instead of losing a beat.
-      this.lastFrame = time - ((time - this.lastFrame) % (1000 / 30));
+    const elapsed = time - this.lastFrame;
+    const steps = Math.floor((elapsed + 0.001) / frameInterval);
+    if (steps > 0) {
+      // Preserve the cadence across refresh rates and timestamp rounding.
+      this.lastFrame += frameInterval * steps;
       this.draw(time, false);
     }
     this.handle = this.driver.request(this.frame);

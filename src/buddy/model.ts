@@ -12,9 +12,39 @@ export interface ClipboardSnapshot {
   revision: number;
 }
 
-export type AgentKind = 'codex' | 'claude';
+export const agentNames = {
+  codex: 'Codex',
+  claude: 'Claude Code',
+  gemini: 'Gemini CLI',
+  antigravity: 'Antigravity',
+  cursor: 'Cursor',
+};
+
+export type AgentKind = keyof typeof agentNames;
 export type AgentStatus =
   'working' | 'needsInput' | 'done' | 'idle' | 'error' | 'stale';
+
+export interface AgentTokens {
+  input: number | null;
+  output: number | null;
+  total: number;
+}
+
+interface AgentActivity {
+  toolCalls: number;
+  toolFailures: number;
+  modelCalls: number;
+  thinkingMs: number;
+  recentTokensOnly: boolean;
+}
+
+export interface AgentUsage extends AgentActivity {
+  agent: AgentKind;
+  sessions: number;
+  requests: number;
+  latestTokens: AgentTokens | null;
+  tokenSignalAt: number | null;
+}
 
 export interface AgentSession {
   agent: AgentKind;
@@ -23,6 +53,10 @@ export interface AgentSession {
   status: AgentStatus;
   activity: string;
   updatedAt: number;
+  requests: number;
+  turnStartedAt: number | null;
+  model: string | null;
+  usage: AgentActivity & { tokens: AgentTokens | null };
 }
 
 export interface AgentSnapshot {
@@ -32,9 +66,15 @@ export interface AgentSnapshot {
     error: string | null;
   }[];
   sessions: AgentSession[];
+  cue: AgentSession | null;
+  usage: AgentUsage[];
+  tokenUsageEnabled: boolean;
 }
 
-export const agentNames = { codex: 'Codex', claude: 'Claude Code' };
+export const disconnectedAgents = (Object.keys(agentNames) as AgentKind[]).map(
+  (agent) => ({ agent, installed: false, error: null }),
+);
+
 export const statusLabels: Record<AgentStatus, string> = {
   working: 'Working',
   needsInput: 'Needs you',

@@ -2,6 +2,7 @@ import { clipboardView } from './clipboard-view';
 import { agentsView } from './agents-view';
 import { button, element, errorMessage } from './dom';
 import { icon } from './icons';
+import type { AgentSnapshot } from './model';
 import './panel.css';
 import './companion.css';
 
@@ -22,6 +23,9 @@ export function createCompanionPocket(
   const tabs = element('nav', 'pocket-tabs');
   tabs.setAttribute('role', 'tablist');
   tabs.setAttribute('aria-label', 'Ember’s tools');
+  const indicator = element('span', 'pocket-tab-indicator');
+  indicator.setAttribute('aria-hidden', 'true');
+  tabs.append(indicator);
   const closeButton = button('', 'pocket-close');
   closeButton.append(icon('close'));
   closeButton.setAttribute('aria-label', 'Close Ember’s thought');
@@ -66,7 +70,7 @@ export function createCompanionPocket(
   let opened = false;
   let loading = false;
   let disposed = false;
-  const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let agentSnapshot: AgentSnapshot | null | undefined;
 
   const select = (tab: PocketTab) => {
     const changed = active !== tab;
@@ -77,18 +81,15 @@ export function createCompanionPocket(
       control.setAttribute('aria-selected', String(name === tab));
       control.tabIndex = name === tab ? 0 : -1;
     }
+    tabs.style.setProperty(
+      '--tab-offset',
+      `${[...buttons.keys()].indexOf(tab) * 100}%`,
+    );
     if (changed) {
       notice.hidden = true;
       body.scrollTop = 0;
-      if (opened && !reduced())
-        sections[tab].animate(
-          [
-            { opacity: 0, transform: 'translateY(6px)' },
-            { opacity: 1, transform: 'translateY(0)' },
-          ],
-          { duration: 180, easing: 'cubic-bezier(.16,1,.3,1)' },
-        );
     }
+    if (tab === 'agents') agents.render(agentSnapshot);
     void refresh();
   };
   for (const [tab, label] of Object.entries({
@@ -140,11 +141,17 @@ export function createCompanionPocket(
     }
   });
   async function refresh() {
-    if (loading || !opened || disposed || document.hidden) return;
+    if (
+      loading ||
+      !opened ||
+      disposed ||
+      document.hidden ||
+      active !== 'clipboard'
+    )
+      return;
     loading = true;
     try {
-      if (active === 'clipboard') await clipboard.refresh();
-      if (active === 'agents') await agents.refresh();
+      await clipboard.refresh();
     } catch (error) {
       announce(errorMessage(error), true);
     } finally {
@@ -167,10 +174,24 @@ export function createCompanionPocket(
         });
       }
     },
-    update(time: string, status: string, progress: number) {
+    update(
+      time: string,
+      status: string,
+      progress: number,
+      state: 'ready' | 'paused' | 'running',
+    ) {
       clock.textContent = time;
       phase.textContent = status;
+      focus.dataset.state = state;
       fill.style.transform = `scaleX(${progress})`;
+    },
+    setAgents(snapshot: AgentSnapshot | null) {
+      agentSnapshot = snapshot;
+      const live = snapshot?.sessions.some(
+        ({ status }) => status === 'working' || status === 'needsInput',
+      );
+      buttons.get('agents')?.classList.toggle('has-activity', Boolean(live));
+      if (opened && active === 'agents') agents.render(snapshot);
     },
     dispose() {
       disposed = true;

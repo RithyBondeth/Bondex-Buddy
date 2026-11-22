@@ -1,5 +1,10 @@
 import { invoke, isTauri } from '@tauri-apps/api/core';
-import type { AgentKind, AgentSnapshot, ClipboardSnapshot } from './model';
+import {
+  disconnectedAgents,
+  type AgentKind,
+  type AgentSnapshot,
+  type ClipboardSnapshot,
+} from './model';
 
 const preview: ClipboardSnapshot = {
   enabled: false,
@@ -73,11 +78,11 @@ export function readAgents(): Promise<AgentSnapshot> {
   return native
     ? invoke('agent_snapshot')
     : Promise.resolve({
-        connections: [
-          { agent: 'codex', installed: false, error: null },
-          { agent: 'claude', installed: false, error: null },
-        ],
+        connections: disconnectedAgents,
         sessions: [],
+        cue: null,
+        usage: [],
+        tokenUsageEnabled: false,
       });
 }
 

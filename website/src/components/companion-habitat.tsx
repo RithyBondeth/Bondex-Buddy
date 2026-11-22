@@ -1,15 +1,22 @@
 'use client';
 
 import Image from 'next/image';
-import { useRef, useState } from 'react';
-import { AnimatePresence, motion, useIsPresent } from 'motion/react';
+import { useRef } from 'react';
+import {
+  AnimatePresence,
+  motion,
+  useIsPresent,
+  useMotionValue,
+  useTransform,
+} from 'motion/react';
 import { HabitatAmbience } from '@/components/habitat-ambience';
 import { LivingPet } from '@/components/ui/living-pet';
 import { companions } from '@/lib/companions';
+import { easeInOut } from '@/lib/motion';
 import { useCalmMotion } from '@/components/motion-preferences';
 
 export const HABITAT_SIZES =
-  '(max-width: 477px) 88vw, (max-width: 767px) 420px, (max-width: 1050px) 46vw, 460px';
+  '(max-width: 477px) 88vw, (max-width: 767px) 460px, (max-width: 1160px) 46vw, 520px';
 
 type Companion = (typeof companions)[number];
 
@@ -22,12 +29,17 @@ function HabitatLayer({
 }) {
   const present = useIsPresent();
   const layer = useRef<HTMLDivElement>(null);
-  const [offset, setOffset] = useState(0);
+  const offset = useMotionValue(0);
+  const shadowX = useTransform(
+    offset,
+    (distance) => `${(distance / 18) * 100}%`,
+  );
+  const petX = useTransform(offset, (distance) => `${(distance / 33) * 100}%`);
   const moveBy = (distance: number) => {
     const width = layer.current?.getBoundingClientRect().width;
     if (width)
-      setOffset((previous) =>
-        Math.max(-23, Math.min(23, previous + (100 * distance) / width)),
+      offset.set(
+        Math.max(-23, Math.min(23, offset.get() + (100 * distance) / width)),
       );
   };
   const reduce = useCalmMotion();
@@ -39,11 +51,16 @@ function HabitatLayer({
       aria-hidden={!present}
       inert={!present}
       style={{ zIndex: present ? 1 : 0 }}
-      initial={reduce ? false : { opacity: 0, y: 10, scale: 1.015 }}
+      initial={reduce ? false : { opacity: 0, y: 9, scale: 1.018 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: reduce ? 0 : -6, scale: reduce ? 1 : 0.985 }}
-      transition={{ duration: reduce ? 0 : 0.65, ease: [0.22, 1, 0.36, 1] }}
+      exit={{ opacity: 0, y: reduce ? 0 : -5, scale: reduce ? 1 : 0.99 }}
+      transition={{ duration: reduce ? 0 : 0.68, ease: easeInOut }}
     >
+      <div
+        className="habitat-glow"
+        style={{ backgroundColor: companion.background }}
+        aria-hidden="true"
+      />
       <Image
         className="habitat-island"
         src={companion.habitat.image}
@@ -53,15 +70,15 @@ function HabitatLayer({
         sizes={HABITAT_SIZES}
         loading="eager"
       />
-      <div
+      <motion.div
         className="habitat-ground-shadow"
         aria-hidden="true"
-        style={{ left: `${41 + offset}%` }}
+        style={{ x: shadowX }}
       />
-      <div
+      <motion.div
         className="habitat-pet"
         data-companion={companion.id}
-        style={{ left: `${31.5 + offset}%` }}
+        style={{ x: petX }}
       >
         <div className="main-pet">
           <LivingPet
@@ -73,7 +90,7 @@ function HabitatLayer({
             onMessage={(text) => onMessage(companion.id, text)}
           />
         </div>
-      </div>
+      </motion.div>
       <HabitatAmbience habitat={companion.habitat.id} active={present} />
     </motion.div>
   );
@@ -88,20 +105,13 @@ export function CompanionHabitat({
   loading: boolean;
   onMessage: (pet: string, text: string) => void;
 }) {
-  const reduce = useCalmMotion();
   return (
     <div
       className="habitat-scene"
       data-active-habitat={companion.habitat.id}
       aria-busy={loading}
     >
-      <motion.div
-        className="habitat-sky"
-        initial={false}
-        animate={{ backgroundColor: companion.background }}
-        transition={{ duration: reduce ? 0 : 0.65 }}
-        aria-hidden="true"
-      />
+      <div className="habitat-sky" aria-hidden="true" />
       <HabitatWorld companion={companion} onMessage={onMessage} />
     </div>
   );

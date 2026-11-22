@@ -35,12 +35,12 @@ See the [Next.js documentation](https://nextjs.org/docs/app/getting-started) for
 
 ## Components and design
 
-- `src/components/ui/split-canvas.tsx`: reusable client component with a Three.js shader. Each item gets a full-height section; scrolling transitions between the local transparent images with pixelated blinds.
-- `src/components/ui/grid-pulse.tsx`: supplied pointer-reactive canvas grid, with ambient color, text avoidance, offscreen suspension, and live reduced-motion support.
+- `src/components/ui/split-canvas.tsx`: reusable client component with a Three.js shader. Each item gets a full-height section; scrolling transitions between the local transparent images with feathered pixel rows.
+- `src/components/ui/grid-pulse.tsx`: pointer-reactive canvas grid with an eased multicolor spotlight, faint background pulses, text avoidance, and offscreen and reduced-motion support.
 - `src/components/companion-hero.tsx` and `companion-hero.css`: a framed pixel habitat with three selectable living companions, scene transitions, and compact selection controls. Hero styles are kept beside the component.
 - `src/components/focus-playground.tsx`: interactive focus/break/rest preview with start, pause, resume, and reset. Countdown uses a wall-clock deadline so background throttling does not lose elapsed time.
 - `src/components/motion-preferences.tsx`: shared motion preference, honoring both the OS setting and the page’s pause button.
-- `src/components/ui/living-pet.tsx`: keyboard/touch-accessible pet preview with a 24 fps capped pixel Canvas, opacity-based pointer hit testing, a delayed hover greeting, and finite head-pat reactions. Breathing and blinking stop offscreen, in hidden tabs, or when motion is paused/reduced. The original PNG remains the loading/error/JavaScript-disabled fallback.
+- `src/components/ui/living-pet.tsx`: keyboard/touch-accessible pet preview with a 30 fps capped pixel Canvas, opacity-based pointer hit testing, a delayed hover greeting, and finite head-pat reactions. Breathing and blinking stop offscreen, in hidden tabs, or when motion is paused/reduced. The original PNG remains the loading/error/JavaScript-disabled fallback.
 - `src/lib/pet-animation.ts`: pure breathing, blink, and personality reaction timelines, covered by `npm test`.
 - `src/lib/pet-renderer.ts`: render-time eye layers and integer pixel row bands, preserving source artwork. These are website motion studies, not new desktop sprite sheets.
 - `src/components/ui/reveal.tsx`: section entrances using Motion, with static content preserved for JavaScript-disabled browsers.
@@ -63,4 +63,4 @@ The three decorative habitats are `public/habitat/pixel-garden.png`, `pixel-moon
 
 Ambient life is drawn by `src/components/habitat-ambience.tsx`: three fluttering butterflies for Ember, slowly twinkling stars and drifting fireflies for Moon, and six falling leaves for Moss. The decorative Canvas ignores pointer input, is hidden from assistive technology, is capped at 24 fps, and suspends offscreen, in hidden tabs, on outgoing scenes, and when motion is paused or reduced. Pausing preserves the ambient pose.
 
-Hover no longer moves the island or snaps the pet upward. Only opaque pet pixels count as pointer hits, greetings wait for a short dwell, and mouse focus does not leave the hover state stuck on. Keyboard and touch head pats still work. Hero grid lighting no longer follows the cursor; buttons use stable color feedback instead of jumping.
+Hover no longer moves the island or snaps the pet upward. Only opaque pet pixels count as pointer hits, greetings wait for a short dwell, and mouse focus does not leave the hover state stuck on. Keyboard and touch head pats still work. The grid in the hero and download sections follows the cursor with eased lighting and fades out on pointer exit.

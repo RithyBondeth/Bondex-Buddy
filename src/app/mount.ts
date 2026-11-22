@@ -10,6 +10,7 @@ import {
   setPlayContext,
   setPlayfulRoaming,
   observeHover,
+  observeAgentHover,
   observeFocus,
   observeVisibility,
   isDesktop,
@@ -23,11 +24,13 @@ import {
   observeGhost,
   updateHitMask,
   openBuddyPanel,
-  readAgentCue,
   setCompanionOpen,
   observeBuddyOpen,
 } from '../platform/desktop';
 import { createCompanionPocket, type PocketTab } from '../buddy/companion';
+import { readAgents } from '../buddy/api';
+import type { AgentSession } from '../buddy/model';
+import { createPetAgentThought } from '../buddy/pet-agent';
 import {
   observeHabitatSettings,
   publishHabitatSettings,
@@ -100,6 +103,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   };
   const moodLabel = document.createElement('p');
   moodLabel.className = 'mood-label';
+  const agentThought = createPetAgentThought();
   const announcement = document.createElement('span');
   announcement.className = 'sr-only';
   announcement.setAttribute('role', 'status');
@@ -111,7 +115,14 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     'Move habitat: drag shelf or use arrow keys',
   );
   handle.title = 'Drag the shelf to move. Arrow keys move by 24 pixels.';
-  habitat.append(pet, handle, moodLabel, announcement);
+  habitat.append(
+    pet,
+    handle,
+    moodLabel,
+    agentThought.label,
+    agentThought.pair,
+    announcement,
+  );
   root.replaceChildren(habitat);
 
   let companionOpen = false;
@@ -133,8 +144,11 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       if (!open) {
         habitat.classList.remove('companion-open');
         pocket.sheet.inert = true;
-        if (!motion.matches)
-          await new Promise((resolve) => setTimeout(resolve, 160));
+        if (!motion.matches) {
+          // Keep the native window expanded until the thought has faded out.
+          const effects = pocket.sheet.getAnimations();
+          await Promise.allSettled(effects.map((effect) => effect.finished));
+        }
       }
       await setCompanionOpen(open);
       document.documentElement.classList.toggle('pocket-expanded', open);
@@ -212,7 +226,9 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   let habitatVisible = false;
   let lastAnnouncement = '';
   let greetingEnd: ReturnType<typeof setTimeout> | undefined;
-  let agentCue = 'idle';
+  let agent: AgentSession | null = null;
+  let agentCue: AgentSession['status'] = 'idle';
+  let agentAnnouncement = '';
   let cueReadPending = false;
   // Serialize native updates so older masks or hover commands cannot overtake new ones.
   let updates = Promise.resolve();
@@ -331,6 +347,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
         ? `${timer.phase === 'Break' ? 'A well-earned break' : 'Focus time'}${timer.status === 'paused' ? ' · paused' : ''}`
         : 'Ready when you are',
       Math.max(0, Math.min(1, 1 - (timer?.remainingMs ?? duration) / duration)),
+      timer?.status ?? 'ready',
     );
     toggle.setAttribute('aria-pressed', String(timer?.status === 'running'));
     const playLabels = {
@@ -341,22 +358,15 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       hide: 'Hide and seek',
       peek: 'Peekaboo',
     };
-    const cueLabels: Record<string, string> = {
-      working: 'An agent is working',
-      needsInput: 'An agent needs you · right-click',
-      done: 'An agent is ready',
-      error: 'An agent needs attention',
-    };
-    moodLabel.textContent =
-      agentCue !== 'idle' && cueLabels[agentCue]
-        ? cueLabels[agentCue]
-        : play.roaming
-          ? playLabels[play.action]
-          : `${snapshot.mood}${timer?.status === 'paused' ? ' · paused' : ''}`;
+    moodLabel.textContent = play.roaming
+      ? playLabels[play.action]
+      : `${snapshot.mood}${timer?.status === 'paused' ? ' · paused' : ''}`;
     moodLabel.title = snapshot.activityAvailable
       ? 'System idle time is available; no input content is collected.'
       : 'System activity unavailable. Manual focus sessions still work.';
-    const message = `${cueLabels[agentCue] ?? (play.roaming ? 'Ember is playing' : snapshot.mood)}. ${timer ? `${timer.phase} ${timer.status}.` : 'No focus session running.'}`;
+    const thought =
+      agentAnnouncement || (play.roaming ? 'Ember is playing' : snapshot.mood);
+    const message = `${thought}. ${timer ? `${timer.phase} ${timer.status}.` : 'No focus session running.'}`;
     if (message !== lastAnnouncement) {
       announcement.textContent = message;
       lastAnnouncement = message;
@@ -407,6 +417,9 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     hovering = inside;
     updateAttention();
   });
+  const unsubscribeAgentHover = await observeAgentHover((inside) =>
+    agentThought.pair.classList.toggle('is-hovered', inside),
+  );
   const unsubscribeGhost = await observeGhost((ghost) =>
     habitat.classList.toggle('ghosted', ghost),
   );
@@ -417,6 +430,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     unsubscribePlay();
     unsubscribeFocus();
     unsubscribeHover();
+    unsubscribeAgentHover();
     unsubscribeGhost();
     throw error;
   }
@@ -455,7 +469,11 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       audio.chime();
     }
     render();
-    void changePocket(!companionOpen);
+    const liveAgent =
+      agentCue === 'working' ||
+      agentCue === 'needsInput' ||
+      agentCue === 'error';
+    void changePocket(!companionOpen, liveAgent ? 'agents' : 'focus');
   });
   toggle.addEventListener('click', () => {
     engine.toggleTimer(Date.now());
@@ -548,22 +566,32 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     if (disposed || cueReadPending) return;
     cueReadPending = true;
     try {
-      const next = await readAgentCue();
+      const snapshot = await readAgents();
       if (disposed) return;
+      const next = snapshot.cue?.status ?? 'idle';
       if (
         next === 'done' &&
-        agentCue !== 'done' &&
+        (agentCue !== 'done' || snapshot.cue?.session !== agent?.session) &&
         engine.interact(Date.now())
       ) {
         moodStartedAt = performance.now();
         clearTimeout(greetingEnd);
         greetingEnd = setTimeout(render, 2000);
       }
+      agent = snapshot.cue;
       agentCue = next;
       habitat.dataset.agent = next;
+      agentAnnouncement = agentThought.update(snapshot);
+      pocket.setAgents(snapshot);
       render();
     } catch {
+      if (disposed) return;
+      agent = null;
       agentCue = 'idle';
+      habitat.dataset.agent = 'idle';
+      agentAnnouncement = agentThought.update(null);
+      pocket.setAgents(null);
+      render();
     } finally {
       cueReadPending = false;
     }
@@ -581,6 +609,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     pocket.dispose();
     unsubscribeFocus();
     unsubscribeHover();
+    unsubscribeAgentHover();
     unsubscribeGhost();
     unsubscribeActivity();
     unsubscribeVisibility();

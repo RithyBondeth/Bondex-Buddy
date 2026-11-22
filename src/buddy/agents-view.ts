@@ -1,77 +1,334 @@
-import { readAgents } from './api';
-import { element, emptyState } from './dom';
+import { button, element, emptyState } from './dom';
+import { agentMascot } from './mascots';
 import {
   agentNames,
   relativeTime,
   statusLabels,
+  type AgentKind,
+  type AgentSession,
   type AgentSnapshot,
+  type AgentTokens,
 } from './model';
+
+const numbers = new Intl.NumberFormat();
+
+function metric(label: string, value: string | number) {
+  const row = element('div', 'agent-metric');
+  row.append(
+    element('dt', '', label),
+    element(
+      'dd',
+      '',
+      typeof value === 'number' ? numbers.format(value) : value,
+    ),
+  );
+  return row;
+}
+
+function tokenMetrics(tokens: AgentTokens, label: string) {
+  return [
+    metric(label, tokens.total),
+    ...(tokens.input === null ? [] : [metric('Input tokens', tokens.input)]),
+    ...(tokens.output === null ? [] : [metric('Output tokens', tokens.output)]),
+  ];
+}
+
+function tokenAvailability(agent: AgentKind, enabled: boolean) {
+  if (agent === 'cursor' || agent === 'antigravity')
+    return 'Token totals are unavailable from local hooks.';
+  if ((agent === 'codex' || agent === 'claude') && !enabled)
+    return 'Enable Codex and Claude token usage in menu bar Settings.';
+  return 'Waiting for token counts from this agent.';
+}
+
+function clockTime(ms: number) {
+  const seconds = Math.max(0, Math.floor(ms / 1000));
+  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 3600)
+    return `${Math.floor(seconds / 60)}m ${String(seconds % 60).padStart(2, '0')}s`;
+  return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
+}
+
+function sessionCard(agent: AgentKind) {
+  const item = element('article', 'agent-session');
+  item.dataset.provider = agent;
+  const top = element('div', 'agent-session-top');
+  const avatar = element('div', 'agent-avatar');
+  avatar.append(agentMascot(agent));
+  const identity = element('div', 'session-identity');
+  const name = element('span', 'session-agent', agentNames[agent]);
+  const project = element('h3');
+  identity.append(name, project);
+  const status = element('span', 'status-pill');
+  top.append(avatar, identity, status);
+
+  const activity = element('p', 'session-activity');
+  const footer = element('summary', 'session-metrics');
+  const requests = element('span', 'session-requests');
+  requests.title = 'Requests observed by Ember in this session';
+  const elapsed = element('span', 'session-elapsed');
+  footer.append(
+    requests,
+    elapsed,
+    element('span', 'session-detail-label', 'Details'),
+  );
+  const details = element('details', 'session-details');
+  const info = element('dl', 'agent-metrics');
+  const tokenNote = element('p', 'agent-token-note');
+  details.append(footer, info, tokenNote);
+  item.append(top, activity, details);
+  let detailKey = '';
+
+  return {
+    item,
+    update(session: AgentSession, now: number, tokenUsageEnabled: boolean) {
+      item.dataset.status = session.status;
+      project.textContent = session.project;
+      project.title = session.project;
+      status.textContent = statusLabels[session.status];
+      activity.textContent = session.activity;
+      const { usage } = session;
+      requests.textContent =
+        agent === 'antigravity'
+          ? `${usage.modelCalls} model call${usage.modelCalls === 1 ? '' : 's'}`
+          : `${session.requests} request${session.requests === 1 ? '' : 's'}`;
+      const sinceSignal = relativeTime(session.updatedAt, now).toLowerCase();
+      elapsed.textContent =
+        session.turnStartedAt === null
+          ? `Signal ${sinceSignal}`
+          : `${clockTime(now - session.turnStartedAt)} elapsed`;
+      const key = JSON.stringify([
+        session.model,
+        usage,
+        sinceSignal,
+        tokenUsageEnabled,
+      ]);
+      if (detailKey !== key) {
+        detailKey = key;
+        info.replaceChildren(
+          metric('Model', session.model ?? 'Waiting for model'),
+          metric('Last signal', sinceSignal),
+          metric('Tool calls', usage.toolCalls),
+          ...(agent === 'cursor'
+            ? [
+                metric('Tool failures', usage.toolFailures),
+                ...(usage.thinkingMs
+                  ? [metric('Reported thinking', clockTime(usage.thinkingMs))]
+                  : []),
+              ]
+            : []),
+          ...(agent === 'gemini'
+            ? [metric('Model calls', usage.modelCalls)]
+            : []),
+          ...(usage.tokens
+            ? tokenMetrics(
+                usage.tokens,
+                usage.recentTokensOnly ? 'Recent tokens' : 'Session tokens',
+              )
+            : []),
+        );
+        tokenNote.hidden = usage.tokens !== null;
+        tokenNote.textContent = tokenAvailability(agent, tokenUsageEnabled);
+      }
+    },
+  };
+}
+
+function agentUsagePanel() {
+  const panel = element('div', 'agent-usage-list');
+  let key = '';
+  return {
+    panel,
+    clear() {
+      key = '';
+      panel.replaceChildren(
+        emptyState(
+          'Agent usage is unavailable',
+          'Ember will check again in a moment.',
+        ),
+      );
+    },
+    render(snapshot: AgentSnapshot) {
+      const next = JSON.stringify([
+        snapshot.connections,
+        snapshot.usage,
+        snapshot.tokenUsageEnabled,
+      ]);
+      if (next === key) return;
+      key = next;
+      panel.replaceChildren(
+        element(
+          'p',
+          'agent-token-note',
+          'Counters cover sessions Ember observed. Token totals refer to the last session that reported them.',
+        ),
+        ...snapshot.connections.map(({ agent, installed }) => {
+          const card = element('article', 'provider-usage');
+          card.dataset.provider = agent;
+          const title = element('h3', 'provider-usage-name');
+          title.append(
+            agentMascot(agent),
+            element('span', '', agentNames[agent]),
+          );
+          card.append(title);
+          const usage = snapshot.usage.find((entry) => entry.agent === agent);
+          if (!installed || !usage?.sessions) {
+            card.append(
+              element(
+                'p',
+                'agent-token-note',
+                installed ? 'Waiting for a session.' : 'Not connected',
+              ),
+            );
+            return card;
+          }
+          const info = element('dl', 'agent-metrics');
+          info.append(
+            metric('Observed sessions', usage.sessions),
+            agent === 'antigravity'
+              ? metric('Model calls', usage.modelCalls)
+              : metric('Requests', usage.requests),
+            metric('Tool calls', usage.toolCalls),
+          );
+          if (agent === 'gemini')
+            info.append(metric('Model calls', usage.modelCalls));
+          if (agent === 'cursor') {
+            info.append(metric('Tool failures', usage.toolFailures));
+            if (usage.thinkingMs)
+              info.append(
+                metric('Reported thinking', clockTime(usage.thinkingMs)),
+              );
+          }
+          if (usage.latestTokens) {
+            info.append(
+              ...tokenMetrics(
+                usage.latestTokens,
+                usage.recentTokensOnly
+                  ? 'Recent tokens'
+                  : 'Latest session tokens',
+              ),
+            );
+            if (usage.tokenSignalAt)
+              info.append(
+                metric(
+                  'Last token report',
+                  relativeTime(usage.tokenSignalAt).toLowerCase(),
+                ),
+              );
+          }
+          card.append(info);
+          if (!usage.latestTokens)
+            card.append(
+              element(
+                'p',
+                'agent-token-note',
+                tokenAvailability(agent, snapshot.tokenUsageEnabled),
+              ),
+            );
+          return card;
+        }),
+      );
+    },
+  };
+}
 
 export function agentsView() {
   const section = element('section', 'agents-view');
   section.id = 'agents-panel';
   section.setAttribute('role', 'tabpanel');
   section.setAttribute('aria-labelledby', 'agents-tab');
-  section.append(element('h2', '', 'AI agents'));
-  const heading = element('div', 'list-meta');
-  const count = element('span', '', 'Loading agent status…');
-  heading.append(count);
+  const heading = element('div', 'agent-heading');
+  const title = element('h2', '', 'Current work');
+  const counts = element('span', 'agent-count', 'Checking…');
+  const toggle = button('Usage', 'agent-usage-toggle');
+  toggle.disabled = true;
+  toggle.setAttribute('aria-pressed', 'false');
+  heading.append(title, counts, toggle);
   const sessions = element('div', 'agent-sessions');
-  const privacy = element(
-    'p',
-    'privacy-note',
-    'Project name and activity only. No prompts, transcripts, or tool contents. Quiet signals become “Signal quiet” after 15 minutes.',
+  const usage = agentUsagePanel();
+  usage.panel.hidden = true;
+  const connectedEmpty = emptyState(
+    'No active projects',
+    'Start a request in a connected agent to see it here.',
   );
-  section.append(heading, sessions, privacy);
-  let key = '';
-  function render(snapshot: AgentSnapshot) {
-    const next = JSON.stringify(snapshot);
-    if (next === key) return;
-    key = next;
-    count.textContent = `LOCAL SESSIONS · ${snapshot.sessions.length}`;
-    sessions.replaceChildren(
-      ...(snapshot.sessions.length
-        ? snapshot.sessions.map((session) => {
-            const item = element('article', 'agent-session');
-            item.dataset.status = session.status;
-            const top = element('div', 'agent-session-top');
-            const identity = element(
-              'span',
-              'session-agent',
-              agentNames[session.agent],
-            );
-            const status = element(
-              'span',
-              'status-pill',
-              statusLabels[session.status],
-            );
-            top.append(identity, status);
-            const title = element('h3', '', session.project);
-            const activity = element('p', 'session-activity', session.activity);
-            const time = element(
-              'time',
-              'session-time',
-              `Updated ${relativeTime(session.updatedAt).toLowerCase()}`,
-            );
-            time.dateTime = new Date(session.updatedAt).toISOString();
-            item.append(top, title, activity, time);
-            return item;
-          })
-        : [
-            emptyState(
-              'Ember’s keeping an ear out.',
-              snapshot.connections.some((c) => c.installed)
-                ? 'Start a new request in your connected agent. Its status will appear here.'
-                : 'Connect an agent in menu bar Settings.',
-            ),
-          ]),
-    );
+  const disconnectedEmpty = emptyState(
+    'Connect an agent',
+    'Open Bondex Buddy in the menu bar, then Settings.',
+  );
+  const unavailable = emptyState(
+    'Agent activity is unavailable',
+    'Ember will check again in a moment.',
+  );
+  section.append(heading, sessions, usage.panel);
+
+  const cards = new Map<string, ReturnType<typeof sessionCard>>();
+  let snapshot: AgentSnapshot | null | undefined;
+
+  toggle.addEventListener('click', () => {
+    const showUsage = usage.panel.hidden;
+    usage.panel.hidden = !showUsage;
+    sessions.hidden = showUsage;
+    counts.hidden = showUsage;
+    title.textContent = showUsage ? 'Agent usage' : 'Current work';
+    toggle.setAttribute('aria-pressed', String(showUsage));
+    if (snapshot && showUsage) usage.render(snapshot);
+  });
+
+  function render(next: AgentSnapshot | null | undefined) {
+    snapshot = next;
+    toggle.disabled = !next;
+    if (next === undefined) return;
+    if (next === null) {
+      counts.textContent = 'Signal unavailable';
+      counts.classList.remove('is-live');
+      cards.clear();
+      if (sessions.firstChild !== unavailable)
+        sessions.replaceChildren(unavailable);
+      usage.clear();
+      return;
+    }
+
+    if (!usage.panel.hidden) usage.render(next);
+    const now = Date.now();
+    const working = next.sessions.filter(
+      ({ status }) => status === 'working',
+    ).length;
+    const waiting = next.sessions.filter(
+      ({ status }) => status === 'needsInput',
+    ).length;
+    counts.textContent =
+      [working ? `${working} working` : '', waiting ? `${waiting} waiting` : '']
+        .filter(Boolean)
+        .join(' · ') || 'Idle';
+    counts.classList.toggle('is-live', working + waiting > 0);
+    const keys = new Set<string>();
+    const items: HTMLElement[] = next.sessions.map((session) => {
+      const key = `${session.agent}:${session.session}`;
+      keys.add(key);
+      let card = cards.get(key);
+      if (!card) {
+        card = sessionCard(session.agent);
+        cards.set(key, card);
+      }
+      card.update(session, now, next.tokenUsageEnabled);
+      return card.item;
+    });
+    for (const key of cards.keys()) {
+      if (!keys.has(key)) cards.delete(key);
+    }
+    if (!items.length)
+      items.push(
+        next.connections.some(({ installed }) => installed)
+          ? connectedEmpty
+          : disconnectedEmpty,
+      );
+    if (
+      sessions.childElementCount !== items.length ||
+      items.some((item, index) => sessions.children[index] !== item)
+    ) {
+      sessions.replaceChildren(...items);
+    }
   }
 
-  return {
-    section,
-    async refresh() {
-      render(await readAgents());
-    },
-  };
+  return { section, render };
 }

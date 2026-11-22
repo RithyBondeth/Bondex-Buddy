@@ -2,16 +2,27 @@
 
 :root {
   color-scheme: dark;
-  --ink: #f8f1ee;
-  --muted: #c4bac5;
-  --line: #514650;
-  --surface: #201d24;
-  --paper: #141318;
-  --peach: #f4c28d;
-  --raised: #302a34;
-  --accent: #e1cde3;
-  --action-ink: #241a21;
-  --shadow: #09080b;
+  --ink: #f7f7f5;
+  --muted: #b0b0b0;
+  --line: #323232;
+  --surface: #101010;
+  --paper: #080808;
+  --peach: #ffd1a1;
+  --raised: #202020;
+  --accent: #f3efe8;
+  --action-ink: #101010;
   --pixel-font: 'Pixelify Sans Variable', ui-monospace, monospace;
-  --pixel-radius: 2px;
+  --pixel-radius: 6px;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes pane-enter {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

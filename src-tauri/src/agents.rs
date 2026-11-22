@@ -10,10 +10,14 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use tauri::WebviewWindow;
 
+use crate::agent_usage::{self, OPT_IN_FILE, Tokens, Usage};
+
 const LIMIT: u64 = 1_048_576;
 const STALE_MS: u64 = 15 * 60_000;
 const RETAIN_MS: u64 = 24 * 60 * 60_000;
 const MARKER: &str = "--buddy-agent-hook";
+const AGENTS: [&str; 5] = ["codex", "claude", "gemini", "antigravity", "cursor"];
+const ANTIGRAVITY_HOOK: &str = "bondex-buddy-observer";
 
 #[derive(Default)]
 pub struct AgentSetup(Mutex<()>);
@@ -34,18 +38,21 @@ pub struct AgentEvent {
     status: String,
     activity: String,
     updated_at: u64,
-}
-
-fn valid_agent(agent: &str) -> Result<(), String> {
-    if !matches!(agent, "codex" | "claude") {
-        return Err("Unknown agent".into());
-    }
-    Ok(())
+    #[serde(default)]
+    requests: u32,
+    #[serde(default)]
+    turn_started_at: Option<u64>,
+    #[serde(default)]
+    model: Option<String>,
+    #[serde(default)]
+    usage: Usage,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    last_model_sample: Option<Tokens>,
 }
 
 fn events(agent: &str) -> &'static [&'static str] {
-    if agent == "codex" {
-        &[
+    match agent {
+        "codex" => &[
             "SessionStart",
             "UserPromptSubmit",
             "PreToolUse",
@@ -54,9 +61,8 @@ fn events(agent: &str) -> &'static [&'static str] {
             "Stop",
             "SessionEnd",
             "Interrupt",
-        ]
-    } else {
-        &[
+        ],
+        "claude" => &[
             "SessionStart",
             "UserPromptSubmit",
             "PreToolUse",
@@ -66,19 +72,51 @@ fn events(agent: &str) -> &'static [&'static str] {
             "Stop",
             "StopFailure",
             "SessionEnd",
-        ]
+        ],
+        "gemini" => &[
+            "SessionStart",
+            "BeforeAgent",
+            "BeforeTool",
+            "AfterTool",
+            "BeforeModel",
+            "AfterModel",
+            "AfterAgent",
+            "Notification",
+            "SessionEnd",
+        ],
+        "antigravity" => &[
+            "SessionStart",
+            "PreInvocation",
+            "PostInvocation",
+            "PreToolUse",
+            "PostToolUse",
+            "Stop",
+        ],
+        "cursor" => &[
+            "sessionStart",
+            "beforeSubmitPrompt",
+            "postToolUse",
+            "postToolUseFailure",
+            "afterAgentThought",
+            "stop",
+            "sessionEnd",
+        ],
+        _ => &[],
     }
 }
 
 fn config_path(agent: &str) -> Result<PathBuf, String> {
-    valid_agent(agent)?;
     let home = dirs::home_dir().ok_or("Home folder unavailable")?;
-    let (variable, default, name) = if agent == "codex" {
-        ("CODEX_HOME", ".codex", "hooks.json")
-    } else {
-        ("CLAUDE_CONFIG_DIR", ".claude", "settings.json")
+    let (variable, default, name) = match agent {
+        "codex" => (Some("CODEX_HOME"), ".codex", "hooks.json"),
+        "claude" => (Some("CLAUDE_CONFIG_DIR"), ".claude", "settings.json"),
+        "gemini" => (Some("GEMINI_CLI_HOME"), "", ".gemini/settings.json"),
+        "antigravity" => (None, ".gemini/config", "hooks.json"),
+        "cursor" => (None, ".cursor", "hooks.json"),
+        _ => return Err("Unknown agent".into()),
     };
-    let directory = std::env::var_os(variable)
+    let directory = variable
+        .and_then(std::env::var_os)
         .filter(|v| !v.is_empty())
         .map(PathBuf::from)
         .unwrap_or_else(|| home.join(default));
@@ -114,7 +152,7 @@ fn read_config(path: &Path) -> Result<(Vec<u8>, Value), String> {
             "Agent settings are not valid JSON; the file was left unchanged".to_string()
         })?
     };
-    if !value.is_object() || value.get("hooks").is_some_and(|v| !v.is_object()) {
+    if !value.is_object() {
         return Err("Agent hooks have an unsupported format; the file was left unchanged".into());
     }
     Ok((raw, value))
@@ -136,39 +174,82 @@ fn hook_command(agent: &str) -> Result<String, String> {
     Ok(format!("'{}' {MARKER} {agent}", raw.replace('\'', "'\\''")))
 }
 
-fn ours(hook: &Value) -> bool {
-    hook.get("command")
-        .and_then(Value::as_str)
-        .is_some_and(|command| command.contains(&format!(" {MARKER} ")))
+fn ours(hook: &Value, agent: &str) -> bool {
+    hook["command"].as_str().is_some_and(|command| {
+        command
+            .rsplit_once(&format!(" {MARKER} "))
+            .is_some_and(|(_, arguments)| arguments.split_whitespace().next() == Some(agent))
+    })
 }
 
-fn edit_hooks(value: &mut Value, agent: &str, command: &str, install: bool) -> Result<(), String> {
-    let hooks = value
-        .as_object_mut()
-        .ok_or("Settings must be an object")?
-        .entry("hooks")
-        .or_insert_with(|| json!({}))
-        .as_object_mut()
-        .ok_or("Hooks must be an object")?;
-    for groups in hooks.values_mut() {
-        let groups = groups.as_array_mut().ok_or("Hook groups must be arrays")?;
-        for group in groups.iter_mut() {
-            let entries = group
+fn nested_hooks(agent: &str, event: &str) -> bool {
+    match agent {
+        "cursor" => false,
+        "antigravity" => matches!(event, "PreToolUse" | "PostToolUse"),
+        _ => true,
+    }
+}
+
+fn event_command(command: &str, agent: &str, event: &str) -> String {
+    if matches!(agent, "antigravity" | "cursor") {
+        format!("{command} {event}")
+    } else {
+        command.into()
+    }
+}
+
+fn remaining_hooks(entries: &mut Vec<Value>, agent: &str, event: &str) -> Result<(), String> {
+    if nested_hooks(agent, event) {
+        for group in entries.iter_mut() {
+            let hooks = group
                 .get_mut("hooks")
                 .and_then(Value::as_array_mut)
                 .ok_or("Hook entries must be arrays")?;
-            entries.retain(|hook| !ours(hook));
+            hooks.retain(|hook| !ours(hook, agent));
         }
-        groups.retain(|group| group["hooks"].as_array().is_some_and(|a| !a.is_empty()));
+        entries.retain(|group| {
+            group["hooks"]
+                .as_array()
+                .is_some_and(|hooks| !hooks.is_empty())
+        });
+    } else {
+        entries.retain(|hook| !ours(hook, agent));
     }
-    if install {
-        for event in events(agent) {
-            let groups = hooks
-                .entry(*event)
-                .or_insert_with(|| json!([]))
-                .as_array_mut()
-                .ok_or("Hook groups must be arrays")?;
-            let mut hook = json!({"type":"command", "command":command, "timeout":2});
+    Ok(())
+}
+
+fn edit_hooks(value: &mut Value, agent: &str, command: &str, install: bool) -> Result<(), String> {
+    let root = value.as_object_mut().ok_or("Settings must be an object")?;
+    if agent == "cursor" && install {
+        root.entry("version").or_insert_with(|| json!(1));
+    }
+    let key = if agent == "antigravity" {
+        ANTIGRAVITY_HOOK
+    } else {
+        "hooks"
+    };
+    if !install && !root.contains_key(key) {
+        return Ok(());
+    }
+    let hooks = root
+        .entry(key)
+        .or_insert_with(|| json!({}))
+        .as_object_mut()
+        .ok_or("Hooks must be an object")?;
+    for event in events(agent) {
+        if let Some(entries) = hooks.get_mut(*event) {
+            remaining_hooks(
+                entries.as_array_mut().ok_or("Hook groups must be arrays")?,
+                agent,
+                event,
+            )?;
+        }
+        if install {
+            let timeout = if agent == "gemini" { 2000 } else { 2 };
+            let mut hook = json!({"type":"command", "command":event_command(command, agent, event), "timeout":timeout});
+            if agent == "gemini" {
+                hook["name"] = json!(format!("Bondex Buddy ({event})"));
+            }
             if agent == "claude" {
                 hook["onFailure"] = json!("continue");
                 #[cfg(windows)]
@@ -176,21 +257,63 @@ fn edit_hooks(value: &mut Value, agent: &str, command: &str, install: bool) -> R
                     hook["shell"] = json!("powershell");
                 }
             }
-            groups.push(json!({"hooks":[hook]}));
+            let entry = if nested_hooks(agent, event) {
+                json!({"hooks":[hook]})
+            } else {
+                hook
+            };
+            hooks
+                .entry(*event)
+                .or_insert_with(|| json!([]))
+                .as_array_mut()
+                .ok_or("Hook groups must be arrays")?
+                .push(entry);
+        } else if hooks
+            .get(*event)
+            .and_then(Value::as_array)
+            .is_some_and(Vec::is_empty)
+        {
+            hooks.remove(*event);
         }
+    }
+    if agent == "antigravity" && hooks.is_empty() {
+        root.remove(key);
     }
     Ok(())
 }
 
 fn installed(value: &Value, agent: &str, command: &str) -> bool {
-    events(agent).iter().all(|event| {
-        value["hooks"][*event].as_array().is_some_and(|groups| {
-            groups.iter().any(|group| {
-                group["hooks"].as_array().is_some_and(|hooks| {
-                    hooks
-                        .iter()
-                        .any(|hook| hook["command"] == command && hook["type"] == "command")
-                })
+    let key = if agent == "antigravity" {
+        ANTIGRAVITY_HOOK
+    } else {
+        "hooks"
+    };
+    let hooks = &value[key];
+    if hooks["enabled"].as_bool() == Some(false)
+        || value["hooksConfig"]["enabled"].as_bool() == Some(false)
+    {
+        return false;
+    }
+    // Existing connections keep working when a new optional telemetry hook is added.
+    let required: &[&str] = match agent {
+        "codex" | "claude" => &["UserPromptSubmit", "Stop"],
+        "gemini" => &["BeforeAgent", "AfterAgent"],
+        "antigravity" => &["PreInvocation", "Stop"],
+        "cursor" => &["beforeSubmitPrompt", "stop"],
+        _ => return false,
+    };
+    required.iter().all(|event| {
+        let command = event_command(command, agent, event);
+        let matches = |hook: &Value| hook["command"] == command && hook["type"] == "command";
+        hooks[*event].as_array().is_some_and(|entries| {
+            entries.iter().any(|entry| {
+                if nested_hooks(agent, event) {
+                    entry["hooks"]
+                        .as_array()
+                        .is_some_and(|entries| entries.iter().any(matches))
+                } else {
+                    matches(entry)
+                }
             })
         })
     })
@@ -200,11 +323,30 @@ fn clean_label(raw: &str, max: usize) -> String {
     raw.chars().filter(|c| !c.is_control()).take(max).collect()
 }
 
+#[cfg(test)]
 fn parse_event(agent: &str, raw: &[u8], now: u64) -> Option<AgentEvent> {
-    valid_agent(agent).ok()?;
-    let value: Value = serde_json::from_slice(raw).ok()?;
-    let event = value["hook_event_name"].as_str()?;
-    let session = value["session_id"].as_str()?;
+    parse_signal(agent, &serde_json::from_slice(raw).ok()?, None, now)
+}
+
+fn parse_signal(
+    agent: &str,
+    value: &Value,
+    explicit_event: Option<&str>,
+    now: u64,
+) -> Option<AgentEvent> {
+    let event = if agent == "antigravity" {
+        explicit_event?
+    } else {
+        value["hook_event_name"].as_str()?
+    };
+    if !events(agent).contains(&event) {
+        return None;
+    }
+    let session = match agent {
+        "cursor" => value["conversation_id"].as_str(),
+        "antigravity" => value["conversationId"].as_str(),
+        _ => value["session_id"].as_str(),
+    }?;
     if session.is_empty()
         || session.len() > 100
         || !session
@@ -213,45 +355,100 @@ fn parse_event(agent: &str, raw: &[u8], now: u64) -> Option<AgentEvent> {
     {
         return None;
     }
-    let tool = value["tool_name"].as_str().unwrap_or("");
-    let asks = ["AskUserQuestion", "ExitPlanMode", "request_user_input"]
-        .iter()
-        .any(|name| tool.ends_with(name));
+    let tool = value["tool_name"]
+        .as_str()
+        .or_else(|| value["toolCall"]["name"].as_str())
+        .unwrap_or("");
+    let asks = [
+        "AskUserQuestion",
+        "ExitPlanMode",
+        "request_user_input",
+        "ask_user",
+        "ask_user_question",
+    ]
+    .iter()
+    .any(|name| tool.ends_with(name));
+    let before_tool = matches!(event, "PreToolUse" | "BeforeTool" | "preToolUse");
+    let after_tool = matches!(
+        event,
+        "PostToolUse" | "AfterTool" | "postToolUse" | "postToolUseFailure"
+    );
+    let before_model = matches!(event, "BeforeModel" | "PreInvocation");
+    let request = matches!(
+        event,
+        "UserPromptSubmit" | "BeforeAgent" | "beforeSubmitPrompt"
+    );
+    let chunk = if event == "AfterModel" {
+        // Gemini streams a hook per chunk. Only usage-bearing chunks need a write.
+        Some(agent_usage::gemini_tokens(value)?)
+    } else {
+        None
+    };
+    let error = matches!(event, "StopFailure")
+        || (event == "stop" && value["status"] == "error")
+        || (agent == "antigravity"
+            && event == "Stop"
+            && matches!(
+                value["terminationReason"].as_str(),
+                Some("error" | "max_steps_exceeded")
+            ));
+    let aborted = event == "stop" && value["status"] == "aborted";
     let (status, activity) = match event {
-        "SessionStart" => ("idle", "Session started".into()),
-        "UserPromptSubmit" => ("working", "Thinking through your request".into()),
+        "SessionStart" | "sessionStart" => ("idle", "Session started".into()),
+        _ if request => ("working", "Thinking through your request".into()),
         "PermissionRequest" => ("needsInput", "Waiting for permission".into()),
-        "PreToolUse" if asks => ("needsInput", "Waiting for your answer".into()),
-        "PreToolUse" | "PostToolUse" => (
-            "working",
-            if tool.is_empty() {
-                "Working on your request".into()
-            } else {
-                format!("Using {}", clean_label(tool, 60))
-            },
-        ),
         "Notification"
             if matches!(
                 value["notification_type"].as_str(),
-                Some("permission_prompt" | "idle_prompt" | "elicitation_dialog")
+                Some("permission_prompt" | "idle_prompt" | "elicitation_dialog" | "ToolPermission")
             ) =>
         {
             ("needsInput", "Waiting for your input".into())
         }
-        "Stop" => ("done", "Response ready".into()),
-        "StopFailure" => ("error", "Turn ended with an error".into()),
+        _ if before_tool && asks => ("needsInput", "Waiting for your answer".into()),
+        _ if before_tool || after_tool => (
+            "working",
+            if tool.trim().is_empty() {
+                "Using a tool".into()
+            } else {
+                format!("Using {}", clean_label(tool, 60))
+            },
+        ),
+        _ if before_model
+            || chunk.is_some()
+            || matches!(event, "PostInvocation" | "afterAgentThought") =>
+        {
+            ("working", "Working with the model".into())
+        }
+        _ if error => ("error", "Turn ended with an error".into()),
+        _ if aborted => ("idle", "Turn interrupted".into()),
+        "Stop" if agent == "antigravity" && value["fullyIdle"].as_bool() == Some(false) => {
+            ("working", "Finishing background tasks".into())
+        }
+        "Stop" | "stop" | "AfterAgent" => ("done", "Response ready".into()),
         "Interrupt" => ("idle", "Turn interrupted".into()),
-        "SessionEnd" => ("idle", "Session ended".into()),
+        "SessionEnd" | "sessionEnd" => ("idle", "Session ended".into()),
         _ => return None,
     };
-    // Only a project label and lifecycle information are retained. Never inspect transcripts,
-    // prompt text, tool arguments, permission details, or model output.
-    let project = value["cwd"]
+    let roots = match agent {
+        "cursor" => &value["workspace_roots"],
+        "antigravity" => &value["workspacePaths"],
+        _ => &Value::Null,
+    };
+    let project = roots[0]
         .as_str()
+        .or_else(|| value["cwd"].as_str())
         .and_then(|cwd| cwd.trim_end_matches(['/', '\\']).rsplit(['/', '\\']).next())
         .map(|s| clean_label(s, 80))
-        .filter(|s| !s.is_empty())
+        .filter(|s| !s.trim().is_empty())
         .unwrap_or_else(|| "Local session".into());
+    let model = value["model_id"]
+        .as_str()
+        .or_else(|| value["model"].as_str())
+        .or_else(|| value["modelName"].as_str())
+        .or_else(|| value["llm_request"]["model"].as_str())
+        .map(|model| clean_label(model, 80))
+        .filter(|model| !model.trim().is_empty());
     Some(AgentEvent {
         agent: agent.into(),
         session: session.into(),
@@ -259,6 +456,21 @@ fn parse_event(agent: &str, raw: &[u8], now: u64) -> Option<AgentEvent> {
         status: status.into(),
         activity,
         updated_at: now,
+        requests: u32::from(request),
+        turn_started_at: matches!(status, "working" | "needsInput").then_some(now),
+        model,
+        usage: Usage {
+            tool_calls: u32::from(before_tool || (agent == "cursor" && after_tool)),
+            tool_failures: u32::from(event == "postToolUseFailure"),
+            model_calls: u32::from(before_model),
+            thinking_ms: if event == "afterAgentThought" {
+                value["duration_ms"].as_u64().unwrap_or(0)
+            } else {
+                0
+            },
+            ..Usage::default()
+        },
+        last_model_sample: chunk,
     })
 }
 
@@ -275,10 +487,17 @@ pub fn handle_hook_cli() -> bool {
     if args.get(1).map(String::as_str) != Some(MARKER) {
         return false;
     }
-    // Observation must never block an agent or emit a hook decision/context.
+    // Give providers with a JSON output contract their neutral response.
+    let agent = args.get(2).map(String::as_str).unwrap_or("");
+    let explicit = args.get(3).map(String::as_str);
+    match (agent, explicit) {
+        ("antigravity", Some("Stop")) => println!(r#"{{"decision":"stop"}}"#),
+        ("cursor", Some("beforeSubmitPrompt")) => println!(r#"{{"continue":true}}"#),
+        ("antigravity" | "cursor" | "gemini", _) => println!("{{}}"),
+        _ => {}
+    }
     let _ = (|| -> Result<(), String> {
         let received_at = now_ms();
-        let agent = args.get(2).ok_or("Missing agent")?;
         let mut raw = Vec::new();
         std::io::stdin()
             .take(LIMIT + 1)
@@ -287,8 +506,33 @@ pub fn handle_hook_cli() -> bool {
         if raw.len() as u64 > LIMIT {
             return Ok(());
         }
-        if let Some(event) = parse_event(agent, &raw, received_at) {
-            write_event(&data_dir()?, &event)?;
+        let value: Value = serde_json::from_slice(&raw).map_err(|error| error.to_string())?;
+        if let Some(mut event) = parse_signal(agent, &value, explicit, received_at) {
+            let folder = data_dir()?;
+            if matches!(agent, "codex" | "claude")
+                && matches!(
+                    value["hook_event_name"].as_str(),
+                    Some("UserPromptSubmit" | "PostToolUse" | "Stop")
+                )
+                && agent_usage::is_enabled(&folder)
+                && let Some(path) = value["transcript_path"].as_str()
+                && let Some(config) = config_path(agent)?.parent()
+                && let Some((tokens, partial)) = agent_usage::log_tokens(
+                    agent,
+                    &config.join(if agent == "codex" {
+                        "sessions"
+                    } else {
+                        "projects"
+                    }),
+                    Path::new(path),
+                    &event.session,
+                )
+            {
+                event.usage.tokens = Some(tokens);
+                event.usage.recent_tokens_only = partial;
+                event.usage.token_signal_at = Some(received_at);
+            }
+            write_event(&folder, event)?;
         }
         Ok(())
     })();
@@ -306,20 +550,76 @@ fn event_lock(folder: &Path) -> Result<fs::File, String> {
         .map_err(|e| e.to_string())
 }
 
-fn write_event(folder: &Path, event: &AgentEvent) -> Result<(), String> {
+fn write_event(folder: &Path, mut event: AgentEvent) -> Result<(), String> {
     let lock = event_lock(folder)?;
     lock.lock().map_err(|e| e.to_string())?;
     let path = folder.join(format!("{}-{}.json", event.agent, event.session));
     // A late-finishing older hook must not replace a newer event.
-    if let Ok(previous) = bounded_read(&path)
-        && let Ok(previous) = serde_json::from_slice::<AgentEvent>(&previous)
-        && previous.updated_at > event.updated_at
+    let mut previous_sample = None;
+    if let Ok(raw) = bounded_read(&path)
+        && let Ok(previous) = serde_json::from_slice::<AgentEvent>(&raw)
     {
-        return Ok(());
+        if previous.updated_at > event.updated_at {
+            return Ok(());
+        }
+        if event.updated_at - previous.updated_at <= RETAIN_MS {
+            let new_request = event.requests > 0;
+            if event.usage.model_calls == 0 && !new_request {
+                previous_sample = previous.last_model_sample;
+            }
+            event.usage.tool_calls = event
+                .usage
+                .tool_calls
+                .saturating_add(previous.usage.tool_calls);
+            event.usage.tool_failures = event
+                .usage
+                .tool_failures
+                .saturating_add(previous.usage.tool_failures);
+            event.usage.model_calls = event
+                .usage
+                .model_calls
+                .saturating_add(previous.usage.model_calls);
+            event.usage.thinking_ms = event
+                .usage
+                .thinking_ms
+                .saturating_add(previous.usage.thinking_ms);
+            if event.usage.tokens.is_none() {
+                event.usage.tokens = previous.usage.tokens;
+                event.usage.recent_tokens_only = previous.usage.recent_tokens_only;
+                event.usage.token_signal_at = previous.usage.token_signal_at;
+            }
+            if event.project == "Local session" {
+                event.project = previous.project;
+            }
+            if event.activity == "Session started"
+                && matches!(previous.status.as_str(), "working" | "needsInput")
+            {
+                event.status = previous.status.clone();
+                event.activity = previous.activity;
+            }
+            event.requests = previous.requests.saturating_add(event.requests);
+            event.model = event.model.or(previous.model);
+            if !new_request
+                && event.status != "idle"
+                && (matches!(previous.status.as_str(), "working" | "needsInput")
+                    || previous.status == event.status)
+            {
+                event.turn_started_at = previous.turn_started_at.or(event.turn_started_at);
+            }
+        }
+    }
+    if let Some(sample) = event.last_model_sample {
+        let new_sample = previous_sample.map_or(sample, |prior| prior.max(sample));
+        let delta = previous_sample.map_or(sample, |prior| new_sample.delta(prior));
+        event.usage.tokens = Some(event.usage.tokens.map_or(delta, |total| total.add(delta)));
+        event.last_model_sample = Some(new_sample);
+        event.usage.token_signal_at = Some(event.updated_at);
+    } else {
+        event.last_model_sample = previous_sample;
     }
     crate::clipboard::private_write(
         &path,
-        &serde_json::to_vec(event).map_err(|e| e.to_string())?,
+        &serde_json::to_vec(&event).map_err(|e| e.to_string())?,
     )
 }
 
@@ -336,6 +636,50 @@ pub struct Connection {
 pub struct Snapshot {
     connections: Vec<Connection>,
     sessions: Vec<AgentEvent>,
+    cue: Option<AgentEvent>,
+    usage: Vec<ProviderUsage>,
+    token_usage_enabled: bool,
+}
+
+#[derive(Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ProviderUsage {
+    agent: String,
+    sessions: usize,
+    requests: u32,
+    tool_calls: u32,
+    tool_failures: u32,
+    model_calls: u32,
+    thinking_ms: u64,
+    latest_tokens: Option<Tokens>,
+    recent_tokens_only: bool,
+    token_signal_at: Option<u64>,
+}
+
+fn summarize_usage(agent: &str, sessions: &[AgentEvent]) -> ProviderUsage {
+    let mut usage = ProviderUsage {
+        agent: agent.into(),
+        ..ProviderUsage::default()
+    };
+    for session in sessions.iter().filter(|session| session.agent == agent) {
+        usage.sessions += 1;
+        usage.requests = usage.requests.saturating_add(session.requests);
+        usage.tool_calls = usage.tool_calls.saturating_add(session.usage.tool_calls);
+        usage.tool_failures = usage
+            .tool_failures
+            .saturating_add(session.usage.tool_failures);
+        usage.model_calls = usage.model_calls.saturating_add(session.usage.model_calls);
+        usage.thinking_ms = usage.thinking_ms.saturating_add(session.usage.thinking_ms);
+        if session.usage.tokens.is_some()
+            && (usage.latest_tokens.is_none()
+                || session.usage.token_signal_at > usage.token_signal_at)
+        {
+            usage.latest_tokens = session.usage.tokens;
+            usage.recent_tokens_only = session.usage.recent_tokens_only;
+            usage.token_signal_at = session.usage.token_signal_at;
+        }
+    }
+    usage
 }
 
 fn sessions(folder: &Path, now: u64) -> Vec<AgentEvent> {
@@ -351,7 +695,7 @@ fn sessions(folder: &Path, now: u64) -> Vec<AgentEvent> {
             }
             if let Ok(raw) = bounded_read(&path)
                 && let Ok(mut event) = serde_json::from_slice::<AgentEvent>(&raw)
-                && valid_agent(&event.agent).is_ok()
+                && AGENTS.contains(&event.agent.as_str())
                 && event.project.len() <= 400
                 && event.activity.len() <= 400
                 && event.updated_at <= now + 30_000
@@ -360,7 +704,7 @@ fn sessions(folder: &Path, now: u64) -> Vec<AgentEvent> {
                     expire_record(&path, now);
                     continue;
                 }
-                if now.saturating_sub(event.updated_at) > STALE_MS
+                if now.saturating_sub(event.updated_at) >= STALE_MS
                     && matches!(event.status.as_str(), "working" | "needsInput")
                 {
                     event.status = "stale".into();
@@ -402,7 +746,7 @@ fn expire_record(path: &Path, now: u64) {
 
 fn connections() -> Vec<Connection> {
     let mut connections = Vec::new();
-    for agent in ["codex", "claude"] {
+    for agent in AGENTS {
         let result = config_path(agent)
             .and_then(|path| read_config(&path))
             .and_then(|(_, value)| Ok(installed(&value, agent, &hook_command(agent)?)));
@@ -445,12 +789,66 @@ pub fn agent_snapshot(
         .filter(|connection| connection.installed)
         .map(|connection| connection.agent.as_str())
         .collect();
-    let mut sessions = connected_sessions(&data_dir()?, now_ms(), &connected);
-    sessions.truncate(40);
+    let now = now_ms();
+    let folder = data_dir()?;
+    let token_usage_enabled = agent_usage::is_enabled(&folder);
+    let mut sessions = connected_sessions(&folder, now, &connected);
+    if !token_usage_enabled {
+        for event in sessions
+            .iter_mut()
+            .filter(|event| matches!(event.agent.as_str(), "codex" | "claude"))
+        {
+            event.usage.tokens = None;
+        }
+    }
+    let usage = connected
+        .iter()
+        .map(|agent| summarize_usage(agent, &sessions))
+        .collect();
+    let (sessions, cue) = current_work(sessions, now);
     Ok(Snapshot {
         connections,
         sessions,
+        cue,
+        usage,
+        token_usage_enabled,
     })
+}
+
+fn current_work(mut sessions: Vec<AgentEvent>, now: u64) -> (Vec<AgentEvent>, Option<AgentEvent>) {
+    sessions.sort_by_key(|event| cue_priority(event, now));
+    let cue = sessions
+        .first()
+        .filter(|event| cue_priority(event, now) < 4)
+        .cloned();
+    sessions.retain(|event| cue_priority(event, now) <= 1);
+    sessions.truncate(40);
+    (sessions, cue)
+}
+
+#[tauri::command]
+pub fn agent_token_usage(window: WebviewWindow) -> Result<bool, String> {
+    crate::settings::require_settings(&window)?;
+    Ok(agent_usage::is_enabled(&data_dir()?))
+}
+
+#[tauri::command]
+pub fn set_agent_token_usage(
+    window: WebviewWindow,
+    state: tauri::State<'_, AgentSetup>,
+    enabled: bool,
+) -> Result<bool, String> {
+    crate::settings::require_settings(&window)?;
+    let _guard = state.0.lock().map_err(|error| error.to_string())?;
+    let path = data_dir()?.join(OPT_IN_FILE);
+    if enabled {
+        crate::clipboard::private_write(&path, b"enabled")?;
+    } else if let Err(error) = fs::remove_file(path)
+        && error.kind() != std::io::ErrorKind::NotFound
+    {
+        return Err(error.to_string());
+    }
+    Ok(enabled)
 }
 
 #[tauri::command]
@@ -507,40 +905,135 @@ fn update_config(path: &Path, agent: &str, command: &str, connect: bool) -> Resu
     crate::clipboard::private_write(path, &updated)
 }
 
-#[tauri::command]
-pub fn agent_cue(window: WebviewWindow) -> Result<String, String> {
-    if window.label() != "main" {
-        return Err("Only Ember can read the status cue".into());
+fn cue_priority(event: &AgentEvent, now: u64) -> usize {
+    if now.saturating_sub(event.updated_at) >= STALE_MS {
+        return 4;
     }
-    let connected: Vec<_> = ["codex", "claude"]
-        .into_iter()
-        .filter(|agent| {
-            config_path(agent)
-                .and_then(|path| read_config(&path))
-                .and_then(|(_, value)| Ok(installed(&value, agent, &hook_command(agent)?)))
-                .unwrap_or(false)
-        })
-        .collect();
-    let now = now_ms();
-    let events = connected_sessions(&data_dir()?, now, &connected);
-    Ok(cue_for(&events, now).into())
-}
-
-fn cue_for(events: &[AgentEvent], now: u64) -> &'static str {
-    for status in ["needsInput", "working", "error", "done"] {
-        if events
-            .iter()
-            .any(|event| event.status == status && now.saturating_sub(event.updated_at) < STALE_MS)
-        {
-            return status;
-        }
+    match event.status.as_str() {
+        "needsInput" => 0,
+        "working" => 1,
+        "error" => 2,
+        "done" => 3,
+        _ => 4,
     }
-    "idle"
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn new_integrations_preserve_existing_hooks_and_use_provider_formats() {
+        for (agent, original) in [
+            (
+                "gemini",
+                json!({"hooks": {"BeforeAgent": [{"hooks": [{"name": "other", "type": "command", "command": "keep"}]}]}}),
+            ),
+            (
+                "antigravity",
+                json!({"formatter": {"PostToolUse": [{"hooks": [{"command": "keep"}]}]}}),
+            ),
+            (
+                "cursor",
+                json!({"version": 1, "hooks": {"beforeSubmitPrompt": [{"command": "keep"}]}}),
+            ),
+        ] {
+            let command = format!("'/app' --buddy-agent-hook {agent}");
+            let mut value = original.clone();
+            edit_hooks(&mut value, agent, &command, true).unwrap();
+            let first = value.clone();
+            edit_hooks(&mut value, agent, &command, true).unwrap();
+            assert_eq!(value, first);
+            assert!(installed(&value, agent, &command));
+            match agent {
+                "gemini" => assert_eq!(
+                    value["hooks"]["BeforeModel"][0]["hooks"][0]["timeout"],
+                    2000
+                ),
+                "antigravity" => assert_eq!(
+                    value[ANTIGRAVITY_HOOK]["PreInvocation"][0]["command"],
+                    format!("{command} PreInvocation")
+                ),
+                "cursor" => assert_eq!(
+                    value["hooks"]["beforeSubmitPrompt"][1]["command"],
+                    format!("{command} beforeSubmitPrompt")
+                ),
+                _ => unreachable!(),
+            }
+            edit_hooks(&mut value, agent, &command, false).unwrap();
+            assert_eq!(value, original);
+        }
+    }
+
+    #[test]
+    fn live_projects_exclude_completed_sessions_but_keep_their_usage() {
+        let start = |name, at| {
+            let raw = serde_json::to_vec(&json!({
+                "hook_event_name": name, "conversation_id": "cursor-1",
+                "workspace_roots": ["/work/private/demo"], "model_id": "example",
+                "prompt": "discard me"
+            }))
+            .unwrap();
+            parse_event("cursor", &raw, at).unwrap()
+        };
+        let mut active = start("beforeSubmitPrompt", 10);
+        assert_eq!(active.project, "demo");
+        assert_eq!(active.requests, 1);
+        assert_eq!(active.model.as_deref(), Some("example"));
+        assert!(!serde_json::to_string(&active).unwrap().contains("discard"));
+        let done = start("stop", 20);
+        active.session = "cursor-2".into();
+        let all = vec![done, active];
+        assert_eq!(summarize_usage("cursor", &all).sessions, 2);
+        let (live, cue) = current_work(all, 20);
+        assert_eq!(live.len(), 1);
+        assert_eq!(cue.unwrap().session, "cursor-2");
+
+        let data = json!({
+            "conversationId": "ag-1", "workspacePaths": ["/work/agent"],
+            "modelName": "example", "fullyIdle": false
+        });
+        assert_eq!(
+            parse_signal("antigravity", &data, Some("Stop"), 30)
+                .unwrap()
+                .status,
+            "working"
+        );
+        let mut finished = data;
+        finished["fullyIdle"] = json!(true);
+        assert_eq!(
+            parse_signal("antigravity", &finished, Some("Stop"), 40)
+                .unwrap()
+                .status,
+            "done"
+        );
+    }
+
+    #[test]
+    fn gemini_counts_each_model_response_once_across_streaming_chunks() {
+        let folder =
+            std::env::temp_dir().join(format!("buddy-gemini-stream-{}", std::process::id()));
+        let write = |name, count, at| {
+            let data = json!({
+                "hook_event_name": name, "session_id": "gemini-1", "cwd": "/work/demo",
+                "llm_request": {"model": "gemini-example"},
+                "llm_response": {"usageMetadata": {"totalTokenCount": count}},
+            });
+            write_event(&folder, parse_signal("gemini", &data, None, at).unwrap()).unwrap();
+        };
+        write("BeforeAgent", 0, 1);
+        write("BeforeModel", 0, 2);
+        write("AfterModel", 10, 3);
+        write("AfterModel", 10, 4);
+        write("AfterModel", 12, 5);
+        write("BeforeModel", 0, 6);
+        write("AfterModel", 20, 7);
+        let saved = &sessions(&folder, 7)[0];
+        assert_eq!(saved.usage.tokens.unwrap().total, 32);
+        assert_eq!(saved.usage.model_calls, 2);
+        assert_eq!(saved.requests, 1);
+        fs::remove_dir_all(folder).unwrap();
+    }
 
     #[test]
     fn lifecycle_retains_only_status_and_project_basename() {
@@ -569,6 +1062,43 @@ mod tests {
             .status,
             "done"
         );
+    }
+
+    #[test]
+    fn usage_survives_tool_updates_and_starts_a_new_turn_on_request() {
+        let dir = std::env::temp_dir().join(format!("buddy-usage-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(
+            dir.join("codex-existing.json"),
+            br#"{"agent":"codex","session":"existing","project":"demo","status":"idle","activity":"Session started","updatedAt":1}"#,
+        )
+        .unwrap();
+        let record = |name, at| {
+            let raw = serde_json::to_vec(&json!({
+                "hook_event_name": name,
+                "session_id": "existing",
+                "cwd": "/private/demo",
+                "model": (name == "UserPromptSubmit").then_some("sample-model"),
+            }))
+            .unwrap();
+            write_event(&dir, parse_event("codex", &raw, at).unwrap()).unwrap();
+        };
+        record("UserPromptSubmit", 10);
+        record("PreToolUse", 20);
+        record("PermissionRequest", 25);
+        record("Stop", 30);
+        record("PreToolUse", 22);
+        let finished = &sessions(&dir, 30)[0];
+        assert_eq!(finished.status, "done");
+        assert_eq!(finished.requests, 1);
+        assert_eq!(finished.turn_started_at, Some(10));
+        assert_eq!(finished.model.as_deref(), Some("sample-model"));
+
+        record("UserPromptSubmit", 40);
+        let working = &sessions(&dir, 40)[0];
+        assert_eq!(working.requests, 2);
+        assert_eq!(working.turn_started_at, Some(40));
+        fs::remove_dir_all(dir).unwrap();
     }
 
     #[test]
@@ -638,6 +1168,11 @@ mod tests {
                 status: "working".into(),
                 activity: "Working".into(),
                 updated_at: timestamp,
+                requests: 0,
+                turn_started_at: None,
+                model: None,
+                usage: Usage::default(),
+                last_model_sample: None,
             };
             fs::write(
                 dir.join(format!("{id}.json")),
@@ -700,8 +1235,13 @@ mod tests {
             status: "working".into(),
             activity: "Working".into(),
             updated_at: 1,
+            requests: 0,
+            turn_started_at: None,
+            model: None,
+            usage: Usage::default(),
+            last_model_sample: None,
         };
-        write_event(&dir, &working).unwrap();
+        write_event(&dir, working.clone()).unwrap();
         for index in 0..50 {
             let newer = AgentEvent {
                 agent: "claude".into(),
@@ -710,14 +1250,15 @@ mod tests {
                 updated_at: index + 2,
                 ..working.clone()
             };
-            write_event(&dir, &newer).unwrap();
+            write_event(&dir, newer).unwrap();
         }
         let connected = connected_sessions(&dir, 60, &["codex"]);
         assert_eq!(connected.len(), 1);
-        assert_eq!(cue_for(&connected, 60), "working");
-        let all_connected = connected_sessions(&dir, 60, &["codex", "claude"]);
+        assert_eq!(connected[0].status, "working");
+        let mut all_connected = connected_sessions(&dir, 60, &["codex", "claude"]);
         assert_eq!(all_connected.len(), 51);
-        assert_eq!(cue_for(&all_connected, 60), "working");
+        all_connected.sort_by_key(|event| cue_priority(event, 60));
+        assert_eq!(all_connected[0].status, "working");
         fs::remove_dir_all(dir).unwrap();
     }
 
@@ -732,8 +1273,13 @@ mod tests {
                 status: "working".into(),
                 activity: "Working".into(),
                 updated_at: 1,
+                requests: 0,
+                turn_started_at: None,
+                model: None,
+                usage: Usage::default(),
+                last_model_sample: None,
             };
-            write_event(&dir, &event).unwrap();
+            write_event(&dir, event).unwrap();
         }
         assert!(sessions(&dir, RETAIN_MS + 2).is_empty());
         let files: Vec<_> = fs::read_dir(&dir)

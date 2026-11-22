@@ -187,7 +187,7 @@ export async function createHabitatRenderer(
   const runners = new Map<string, HTMLCanvasElement>();
   const frames = new Map<
     string,
-    { canvas: HTMLCanvasElement; mask: number[] }
+    { canvas: HTMLCanvasElement; mask: number[]; signature: number }
   >();
   let lastCanvas: HTMLCanvasElement | undefined;
   let lastHadParticles = false;
@@ -228,7 +228,7 @@ export async function createHabitatRenderer(
     const y = baseline - sprite.height;
     // The shadow stays grounded while the character and wardrobe travel together.
     petContext.clearRect(0, 0, petLayer.width, petLayer.height);
-    petContext.fillStyle = '#695044';
+    petContext.fillStyle = '#383532';
     petContext.fillRect(
       39 + Math.min(lift, 5),
       baseline - 1,
@@ -295,27 +295,35 @@ export async function createHabitatRenderer(
     }
     if (!play.free) {
       // The pixel ledge anchors the character and doubles as its drag handle.
-      context.fillStyle = '#50382d';
+      context.fillStyle = '#191919';
       context.fillRect(21, 94, 68, 3);
-      context.fillStyle = '#bb8957';
+      context.fillStyle = '#646460';
       context.fillRect(22, 94, 66, 1);
-      context.fillStyle = '#77513c';
+      context.fillStyle = '#101010';
       context.fillRect(25, 97, 60, 3);
     }
     // Read pixels only when a cached pose is created, never on every RAF frame.
     const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+    let signature = 2166136261;
     let mask: number[] = Array.from(
       { length: canvas.width * canvas.height },
-      (_, pixel) => (data[pixel * 4 + 3] > 0 ? 1 : 0),
+      (_, pixel) => {
+        if (!data[pixel * 4 + 3]) return 0;
+        signature = Math.imul(signature ^ pixel, 16777619);
+        return 1;
+      },
     );
     // Share identical silhouettes, so color-only pose changes need no native IPC.
     for (const cached of frames.values()) {
-      if (mask.every((value, index) => value === cached.mask[index])) {
+      if (
+        signature === cached.signature &&
+        mask.every((value, index) => value === cached.mask[index])
+      ) {
         mask = cached.mask;
         break;
       }
     }
-    const result = { canvas: frame, mask };
+    const result = { canvas: frame, mask, signature };
     if (frames.size >= 240) frames.delete(frames.keys().next().value!);
     frames.set(key, result);
     return result;
