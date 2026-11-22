@@ -400,13 +400,7 @@ fn expire_record(path: &Path, now: u64) {
     }
 }
 
-#[tauri::command]
-pub fn agent_snapshot(
-    window: WebviewWindow,
-    state: tauri::State<'_, AgentSetup>,
-) -> Result<Snapshot, String> {
-    crate::panel::require_panel(&window)?;
-    let _guard = state.0.lock().map_err(|e| e.to_string())?;
+fn connections() -> Vec<Connection> {
     let mut connections = Vec::new();
     for agent in ["codex", "claude"] {
         let result = config_path(agent)
@@ -425,6 +419,27 @@ pub fn agent_snapshot(
             },
         });
     }
+    connections
+}
+
+#[tauri::command]
+pub fn agent_connections(
+    window: WebviewWindow,
+    state: tauri::State<'_, AgentSetup>,
+) -> Result<Vec<Connection>, String> {
+    crate::settings::require_settings(&window)?;
+    let _guard = state.0.lock().map_err(|e| e.to_string())?;
+    Ok(connections())
+}
+
+#[tauri::command]
+pub fn agent_snapshot(
+    window: WebviewWindow,
+    state: tauri::State<'_, AgentSetup>,
+) -> Result<Snapshot, String> {
+    crate::panel::require_panel(&window)?;
+    let _guard = state.0.lock().map_err(|e| e.to_string())?;
+    let connections = connections();
     let connected: Vec<_> = connections
         .iter()
         .filter(|connection| connection.installed)
@@ -445,7 +460,7 @@ pub fn agent_connect(
     agent: String,
     connect: bool,
 ) -> Result<(), String> {
-    crate::panel::require_panel(&window)?;
+    crate::settings::require_settings(&window)?;
     let _guard = state.0.lock().map_err(|e| e.to_string())?;
     let path = config_path(&agent)?;
     update_config(&path, &agent, &hook_command(&agent)?, connect)

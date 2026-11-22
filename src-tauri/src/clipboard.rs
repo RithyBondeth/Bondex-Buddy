@@ -236,6 +236,61 @@ pub fn clipboard_snapshot(
     Ok(state.0.lock().map_err(|e| e.to_string())?.snapshot.clone())
 }
 
+#[derive(Serialize)]
+pub struct CaptureStatus {
+    enabled: bool,
+    error: Option<String>,
+}
+
+impl From<&Snapshot> for CaptureStatus {
+    fn from(snapshot: &Snapshot) -> Self {
+        Self {
+            enabled: snapshot.enabled,
+            error: snapshot.error.clone(),
+        }
+    }
+}
+
+fn apply_edit(
+    window: &WebviewWindow,
+    vault: &mut Vault,
+    action: &str,
+    id: Option<u64>,
+) -> Result<(), String> {
+    let mut next = vault.clone();
+    next.edit(action, id)?;
+    save(&path(window.app_handle())?, &next)?;
+    *vault = next;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn clipboard_capture_status(
+    window: WebviewWindow,
+    state: tauri::State<'_, ClipboardState>,
+) -> Result<CaptureStatus, String> {
+    crate::settings::require_settings(&window)?;
+    let vault = state.0.lock().map_err(|e| e.to_string())?;
+    Ok(CaptureStatus::from(&vault.snapshot))
+}
+
+#[tauri::command]
+pub fn set_clipboard_capture(
+    window: WebviewWindow,
+    state: tauri::State<'_, ClipboardState>,
+    enabled: bool,
+) -> Result<CaptureStatus, String> {
+    crate::settings::require_settings(&window)?;
+    let mut vault = state.0.lock().map_err(|e| e.to_string())?;
+    apply_edit(
+        &window,
+        &mut vault,
+        if enabled { "enable" } else { "pause" },
+        None,
+    )?;
+    Ok(CaptureStatus::from(&vault.snapshot))
+}
+
 #[tauri::command]
 pub fn clipboard_edit(
     window: WebviewWindow,
@@ -244,11 +299,11 @@ pub fn clipboard_edit(
     id: Option<u64>,
 ) -> Result<Snapshot, String> {
     crate::panel::require_panel(&window)?;
+    if matches!(action.as_str(), "enable" | "pause") {
+        return Err("Manage clipboard capture in Settings.".into());
+    }
     let mut vault = state.0.lock().map_err(|e| e.to_string())?;
-    let mut next = vault.clone();
-    next.edit(&action, id)?;
-    save(&path(window.app_handle())?, &next)?;
-    *vault = next;
+    apply_edit(&window, &mut vault, &action, id)?;
     Ok(vault.snapshot.clone())
 }
 

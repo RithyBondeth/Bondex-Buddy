@@ -1,0 +1,132 @@
+.settings-page {
+  background: var(--paper);
+}
+#settings {
+  min-height: 100vh;
+}
+#settings .panel-header {
+  padding: 17px 20px 15px;
+}
+#settings .ember-portrait {
+  width: 40px;
+  height: 40px;
+}
+#settings .ember-portrait::after {
+  width: 40px;
+  height: 44px;
+  background-size: 60px 60px;
+  background-position: -10px -4px;
+}
+#settings .panel-brand h1 {
+  font-size: 24px;
+}
+#settings .panel-tabs {
+  padding: 8px 20px;
+}
+.settings-body {
+  padding: 16px 20px 24px;
+}
+.settings-preview {
+  margin: 14px 20px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.settings-pane {
+  display: grid;
+  gap: 12px;
+}
+.settings-group {
+  padding: 12px 14px 2px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.settings-group h2 {
+  margin: 0 0 4px;
+  font: 600 17px/1.2 var(--pixel-font);
+}
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 44px;
+  border-bottom: 1px solid var(--line);
+}
+.setting-row:last-child {
+  border-bottom: none;
+}
+.setting-description {
+  display: grid;
+  gap: 4px;
+  padding-block: 6px;
+}
+.setting-description small,
+.settings-note {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.settings-note {
+  margin: 8px 0 10px;
+}
+.setting-select {
+  max-width: 135px;
+  min-height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding-inline: 5px;
+  background: var(--raised);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+}
+.setting-select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+#settings .setting-switch {
+  appearance: none;
+  width: 32px;
+  height: 19px;
+  margin: 0;
+  flex: none;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--paper);
+  display: grid;
+  place-items: center start;
+  padding: 3px;
+  cursor: pointer;
+}
+.setting-switch::after {
+  content: '';
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+  background: var(--muted);
+}
+#settings .setting-switch:checked {
+  border-color: var(--peach);
+  background: var(--raised);
+  justify-items: end;
+}
+.setting-switch:checked::after {
+  background: var(--peach);
+}
+#settings .setting-switch:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+#settings .agent-connections {
+  margin: 0;
+  border-top: none;
+}
+#settings .agent-connection {
+  justify-content: space-between;
+  padding-block: 4px;
+  gap: 4px 8px;
+}
+#settings .agent-connection .connect-button {
+  min-width: 78px;
+}

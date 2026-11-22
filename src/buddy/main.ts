@@ -3,6 +3,7 @@ import { agentsView } from './agents-view';
 import { clipboardView } from './clipboard-view';
 import { native } from './api';
 import { button, element, errorMessage } from './dom';
+import { icon } from './icons';
 import './panel.css';
 
 const root = document.querySelector<HTMLElement>('#buddy');
@@ -47,14 +48,13 @@ const announce = (message: string, error = false) => {
   notice.hidden = false;
 };
 const clipboard = clipboardView(announce);
-const agents = agentsView(announce);
+const agents = agentsView();
 const body = element('div', 'panel-body');
 body.append(clipboard.section, agents.section);
 const footer = element('footer', 'panel-footer');
-footer.append(
-  element('span', '', 'A calmer corner of your desktop.'),
-  element('span', 'footer-paw', '✧'),
-);
+const heart = icon('heart');
+heart.classList.add('footer-paw');
+footer.append(element('span', '', 'A calmer corner of your desktop.'), heart);
 root.append(header, tabs, notice, body, footer);
 if (!native)
   announce(

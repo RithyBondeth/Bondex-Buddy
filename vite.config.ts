@@ -14,6 +14,7 @@ export default defineConfig({
       input: {
         main: 'index.html',
         buddy: 'buddy.html',
+        settings: 'settings.html',
         nativeCheck: 'native-check.html',
         motionReview: 'motion-review.html',
       },

@@ -27,6 +27,7 @@
     "notices:stage": "node scripts/notices.mjs --stage"
   },
   "dependencies": {
+    "@fontsource-variable/pixelify-sans": "^5.3.0",
     "@tauri-apps/api": "^2.12.5"
   },
   "devDependencies": {

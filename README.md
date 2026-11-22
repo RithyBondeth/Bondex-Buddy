@@ -26,11 +26,11 @@ npm ci
 npm run desktop:dev
 ```
 
-For the Canvas preview in a browser, run `npm run dev`. Open `/motion-review.html` on that server to review all five animations and preview cosmetics without altering saved progress. Native placement, transparency, tray, idle observation, and click-through must be checked in the Tauri app. Use the menu bar/system tray icon to **Show spirit**, **Hide spirit**, **Reset to bottom right**, **Move to next display**, or **Quit Tiny Desk Spirit**.
+For the Canvas preview in a browser, run `npm run dev`. Open `/motion-review.html` on that server to review all five animations and preview cosmetics without altering saved progress. Native placement, transparency, tray, idle observation, and click-through must be checked in the Tauri app. Use the menu bar/system tray icon to **Show spirit**, **Hide spirit**, **Reset to bottom right**, **Move to next display**, or **Quit Tiny Desk Spirit**. On macOS, click the Bondex Buddy menu bar icon and choose **Settings…** for pet preferences, clipboard capture, agent connections, and launch at login.
 
-Hover over the habitat (or focus the pet with the keyboard) to reveal **Start/Pause/Resume** and **Reset**. A completed focus starts one five-minute break; finishing the break returns to idle. Reset cancels the current session without completion. Clicking the pet gives a two-second Happy reaction, except during a running focus session. Browser previews support the timer but do not simulate OS activity.
+Click Ember or press **Enter** while Ember has keyboard focus to open the thought bubble. The **Focus** tab holds the timer and reset control. Completing a focus session starts a five-minute break, then Ember returns to idle. Reset cancels the current session without recording a completion. Drag Ember or use the arrow keys to move the pet. Browser previews support the timer without simulating OS activity.
 
-Sound starts **Muted**. Enable it explicitly for quiet procedural rain and gentle pet/completion chimes; the setting is not saved yet. Hidden habitats suspend audio and animation. The OS reduced-motion preference disables the animation loop and floating particles while keeping state changes and timer controls functional.
+Sound starts muted on each launch. Turn it on in **Settings → Ember** for quiet rain and gentle chimes. Hidden habitats suspend audio and animation. The OS reduced-motion preference disables the animation loop and floating particles while keeping state changes and timer controls functional.
 
 ## Commands
 
@@ -51,6 +51,8 @@ Sound starts **Muted**. Enable it explicitly for quiet procedural rain and gentl
 The first native build downloads and compiles the Rust dependencies and takes longer than later builds. Commit both `package-lock.json` and `src-tauri/Cargo.lock` for reproducible dependency resolution. Dependency notices are bundled automatically; run `npm run notices:generate` after changing dependencies and use `npm run notices:check` to verify freshness. Signing, notarization, and release distribution remain open.
 
 ## Folder structure
+
+The Next.js landing page lives in [`website/`](website/README.md) as a separate npm package in this repository. To start it, run `cd website`, `npm ci`, and `npm run dev`. It showcases Ember with scroll-driven pixel transitions; the desktop app continues to use the root commands above.
 
 ```text
 assets/                    Runtime assets and preserved source artwork
@@ -73,6 +75,7 @@ src-tauri/
   capabilities/            Explicit frontend permissions
   icons/                   Ember fox app icons
   src/                     Native Rust entry points and OS integration
+website/                   Independent Next.js landing page package
 ```
 
 ## Development rules

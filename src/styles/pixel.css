@@ -1,0 +1,17 @@
+@import '@fontsource-variable/pixelify-sans';
+
+:root {
+  color-scheme: dark;
+  --ink: #f8f1ee;
+  --muted: #c4bac5;
+  --line: #514650;
+  --surface: #201d24;
+  --paper: #141318;
+  --peach: #f4c28d;
+  --raised: #302a34;
+  --accent: #e1cde3;
+  --action-ink: #241a21;
+  --shadow: #09080b;
+  --pixel-font: 'Pixelify Sans Variable', ui-monospace, monospace;
+  --pixel-radius: 2px;
+}

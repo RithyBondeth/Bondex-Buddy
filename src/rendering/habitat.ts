@@ -67,6 +67,18 @@ export async function createHabitatRenderer(
 }> {
   const output = canvas.getContext('2d');
   if (!output) throw new Error('Canvas is unavailable.');
+  const petLayer = document.createElement('canvas');
+  petLayer.width = canvas.width;
+  petLayer.height = canvas.height;
+  const petContext = petLayer.getContext('2d');
+  if (!petContext) throw new Error('Canvas is unavailable.');
+  petContext.imageSmoothingEnabled = false;
+  const petScale = 1 / 2;
+  const baseline = 94;
+  const petWidth = Math.round(petLayer.width * petScale);
+  const petHeight = Math.round(petLayer.height * petScale);
+  const petLeft = Math.round((petLayer.width - petWidth) / 2);
+  const petTop = baseline - Math.round(baseline * petScale);
   const sources: Record<Mood, string> = {
     Idle: idleUrl,
     Working: workingUrl,
@@ -213,18 +225,24 @@ export async function createHabitatRenderer(
       sprite = runner;
     }
     const x = Math.floor((110 - sprite.width) / 2);
-    const y = 94 - sprite.height;
+    const y = baseline - sprite.height;
     // The shadow stays grounded while the character and wardrobe travel together.
-    context.fillStyle = '#695044';
-    context.fillRect(39 + Math.min(lift, 5), 93, 32 - Math.min(lift, 5) * 2, 1);
-    context.save();
-    context.translate(sway, -lift);
+    petContext.clearRect(0, 0, petLayer.width, petLayer.height);
+    petContext.fillStyle = '#695044';
+    petContext.fillRect(
+      39 + Math.min(lift, 5),
+      baseline - 1,
+      32 - Math.min(lift, 5) * 2,
+      1,
+    );
+    petContext.save();
+    petContext.translate(sway, -lift);
     if (play.facing === -1) {
-      context.translate(110, 0);
-      context.scale(-1, 1);
+      petContext.translate(110, 0);
+      petContext.scale(-1, 1);
     }
     for (const band of spriteBands(sprite.height, pose, breath)) {
-      context.drawImage(
+      petContext.drawImage(
         sprite,
         0,
         band.sourceY,
@@ -243,46 +261,46 @@ export async function createHabitatRenderer(
       pose,
       breath,
     );
-    context.save();
-    context.translate(life.look, 0);
+    petContext.translate(life.look, 0);
     if (play.frame < 0 && mood !== 'Sleeping' && outfit === 'beanie') {
-      context.fillStyle = '#6c8390';
-      context.fillRect(38, 49 + head, 31, 5);
-      context.fillRect(42, 46 + head, 23, 4);
-      context.fillRect(51, 43 + head, 5, 3);
-      context.fillStyle = '#b9c6cb';
-      context.fillRect(38, 53 + head, 31, 2);
+      petContext.fillStyle = '#6c8390';
+      petContext.fillRect(38, 49 + head, 31, 5);
+      petContext.fillRect(42, 46 + head, 23, 4);
+      petContext.fillRect(51, 43 + head, 5, 3);
+      petContext.fillStyle = '#b9c6cb';
+      petContext.fillRect(38, 53 + head, 31, 2);
     } else if (play.frame < 0 && mood !== 'Sleeping' && outfit === 'scarf') {
-      context.fillStyle = '#b65e50';
-      context.fillRect(42, 76 + collar, 23, 3);
-      context.fillRect(43, 79 + collar, 5, 9);
+      petContext.fillStyle = '#b65e50';
+      petContext.fillRect(42, 76 + collar, 23, 3);
+      petContext.fillRect(43, 79 + collar, 5, 9);
     }
-    context.restore();
-    context.restore();
+    petContext.restore();
+    // Resize the assembled pose once to keep the wardrobe and animation bands aligned.
+    context.drawImage(petLayer, petLeft, petTop, petWidth, petHeight);
     if (!play.free && decor === 'plant') {
       context.fillStyle = '#77513c';
-      context.fillRect(14, 86, 12, 8);
+      context.fillRect(23, 86, 12, 8);
       context.fillStyle = '#b98963';
-      context.fillRect(15, 87, 10, 2);
+      context.fillRect(24, 87, 10, 2);
       context.fillStyle = '#638260';
-      context.fillRect(19, 77, 2, 10);
-      context.fillRect(14, 79, 6, 3);
-      context.fillRect(21, 76, 5, 3);
+      context.fillRect(28, 77, 2, 10);
+      context.fillRect(23, 79, 6, 3);
+      context.fillRect(30, 76, 5, 3);
     } else if (!play.free && decor === 'lantern') {
       context.fillStyle = '#77513c';
-      context.fillRect(15, 80, 11, 14);
-      context.fillRect(18, 77, 5, 3);
+      context.fillRect(24, 80, 11, 14);
+      context.fillRect(27, 77, 5, 3);
       context.fillStyle = '#edc574';
-      context.fillRect(17, 82, 7, 9);
+      context.fillRect(26, 82, 7, 9);
     }
     if (!play.free) {
       // The pixel ledge anchors the character and doubles as its drag handle.
       context.fillStyle = '#50382d';
-      context.fillRect(5, 94, 100, 3);
+      context.fillRect(21, 94, 68, 3);
       context.fillStyle = '#bb8957';
-      context.fillRect(6, 94, 98, 1);
+      context.fillRect(22, 94, 66, 1);
       context.fillStyle = '#77513c';
-      context.fillRect(9, 97, 92, 3);
+      context.fillRect(25, 97, 60, 3);
     }
     // Read pixels only when a cached pose is created, never on every RAF frame.
     const { data } = context.getImageData(0, 0, canvas.width, canvas.height);

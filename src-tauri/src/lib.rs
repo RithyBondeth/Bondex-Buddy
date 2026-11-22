@@ -5,6 +5,7 @@ mod native_check;
 mod panel;
 mod placement;
 mod roaming;
+mod settings;
 mod shell;
 mod storage;
 mod tray;
@@ -34,6 +35,7 @@ pub fn run() {
         .manage(clipboard::ClipboardState::default())
         .manage(agents::AgentSetup::default())
         .manage(panel::PanelState::default())
+        .manage(settings::SettingsState::default())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
@@ -41,10 +43,18 @@ pub fn run() {
         ))
         .invoke_handler(tauri::generate_handler![
             panel::set_companion_open,
+            settings::read_habitat_settings,
+            settings::publish_habitat_settings,
+            settings::change_habitat_setting,
+            settings::launch_at_login,
+            settings::set_launch_at_login,
             clipboard::clipboard_snapshot,
+            clipboard::clipboard_capture_status,
+            clipboard::set_clipboard_capture,
             clipboard::clipboard_edit,
             clipboard::clipboard_copy,
             agents::agent_snapshot,
+            agents::agent_connections,
             agents::agent_connect,
             agents::agent_cue,
             roaming::play_snapshot,
@@ -53,10 +63,10 @@ pub fn run() {
             shell::show_shell,
             shell::show_shell_error,
             shell::update_shell_mask,
-            shell::set_controls_visible,
-            shell::set_drawer_visible,
+            shell::set_habitat_focused,
             shell::set_working,
             shell::set_ghost_mode,
+            placement::hold_pet_pointer,
             placement::begin_drag,
             placement::nudge_habitat,
             shell::shell_visibility,
@@ -71,6 +81,7 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 
+            settings::setup(app)?;
             tray::setup(app)?;
             clipboard::start(app.handle())?;
             native_check::setup(app)?;
@@ -86,12 +97,19 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
-            if window.label() == "main"
-                && let tauri::WindowEvent::Focused(focused) = event
-            {
-                let _ = window.emit("habitat-focus", focused);
+            if let tauri::WindowEvent::Focused(focused) = event {
+                match window.label() {
+                    "main" => {
+                        let _ = window.emit("habitat-focus", focused);
+                    }
+                    "settings" => settings::set_focused(window.app_handle(), *focused),
+                    _ => {}
+                }
             }
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                if window.label() == "settings" {
+                    settings::set_focused(window.app_handle(), false);
+                }
                 api.prevent_close();
                 if let Err(error) = window.hide() {
                     eprintln!("Could not hide habitat: {error}");

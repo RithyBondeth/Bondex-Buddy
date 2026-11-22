@@ -21,19 +21,6 @@ export function clipboardView(announce: Announce) {
   section.setAttribute('aria-labelledby', 'clipboard-tab');
   const heading = element('div', 'section-heading');
   heading.append(element('h2', '', 'Clipboard'));
-  const capture = button('Enable capture', 'capture-toggle');
-  capture.disabled = true;
-  capture.setAttribute('aria-pressed', 'false');
-  heading.append(capture);
-  const intro = element('div', 'capture-intro');
-  intro.append(
-    element('h3', '', 'Good things, kept close.'),
-    element(
-      'p',
-      '',
-      'Enable capture to collect copied text. Recent clips clear when you quit; only pinned snippets are saved on this device.',
-    ),
-  );
   const tools = element('div', 'clipboard-tools');
   const searchLabel = element('label', 'search-box');
   const search = element('input');
@@ -58,7 +45,7 @@ export function clipboardView(announce: Announce) {
     'privacy-note',
     '50 recent clips · 20 pins · text up to 16 KB',
   );
-  section.append(heading, intro, tools, meta, problem, list, footer);
+  section.append(heading, tools, meta, problem, list, footer);
   if (!native) {
     const samples = button('Load sample clips', 'preview-samples');
     samples.addEventListener('click', () => {
@@ -76,10 +63,6 @@ export function clipboardView(announce: Announce) {
 
   function render(force = false) {
     if (!snapshot) return;
-    capture.disabled = busy;
-    capture.textContent = snapshot.enabled ? 'Pause capture' : 'Enable capture';
-    capture.setAttribute('aria-pressed', String(snapshot.enabled));
-    intro.hidden = snapshot.enabled || snapshot.entries.length > 0;
     problem.textContent = snapshot.error;
     problem.hidden = !snapshot.error;
     const entries = selectClips(snapshot.entries, search.value, onlyPinned);
@@ -175,7 +158,7 @@ export function clipboardView(announce: Announce) {
                   ? 'Pin a clip to keep it here after you quit.'
                   : snapshot.enabled
                     ? 'Copy some text in any app. Ember will keep it here.'
-                    : 'Enable capture above, then copy text in any app.',
+                    : 'Enable clipboard capture in menu bar Settings.',
             ),
           ]),
     );
@@ -192,7 +175,6 @@ export function clipboardView(announce: Announce) {
     busy = true;
     operationVersion++;
     section.setAttribute('aria-busy', 'true');
-    capture.disabled = true;
     try {
       await operation();
     } catch (error) {
@@ -200,7 +182,6 @@ export function clipboardView(announce: Announce) {
     } finally {
       busy = false;
       section.removeAttribute('aria-busy');
-      capture.disabled = false;
       render(true);
     }
   }
@@ -214,19 +195,6 @@ export function clipboardView(announce: Announce) {
     render();
   }
 
-  capture.addEventListener(
-    'click',
-    () =>
-      void run(async () => {
-        if (!snapshot) return;
-        snapshot = await editClipboard(snapshot.enabled ? 'pause' : 'enable');
-        announce(
-          snapshot.enabled
-            ? 'Capture on. Copy new text to add it here.'
-            : 'Capture paused. Your clips are still here.',
-        );
-      }),
-  );
   search.addEventListener('input', () => render());
   pinned.addEventListener('click', () => {
     onlyPinned = !onlyPinned;

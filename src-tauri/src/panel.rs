@@ -6,6 +6,7 @@ use tauri::{Emitter, Manager, PhysicalPosition, WebviewWindow};
 pub struct PanelState(Mutex<Option<Collapsed>>);
 struct Collapsed {
     position: PhysicalPosition<i32>,
+    expanded_position: PhysicalPosition<i32>,
     manual: bool,
 }
 #[derive(Serialize)]
@@ -16,8 +17,8 @@ pub struct PocketSize {
 }
 fn expanded_size(work_width: f64, work_height: f64) -> PocketSize {
     PocketSize {
-        width: work_width.clamp(220.0, 400.0),
-        height: work_height.clamp(200.0, 600.0),
+        width: work_width.clamp(220.0, 264.0),
+        height: work_height.clamp(200.0, 256.0),
     }
 }
 pub fn request_open(app: &tauri::AppHandle, tab: &str) {
@@ -76,6 +77,7 @@ pub fn set_companion_open(window: WebviewWindow, open: bool) -> Result<PocketSiz
             }
             *previous = Some(Collapsed {
                 position,
+                expanded_position: position_expanded,
                 manual: shell.manual_placement.load(Ordering::Relaxed),
             });
         }
@@ -91,15 +93,19 @@ pub fn set_companion_open(window: WebviewWindow, open: bool) -> Result<PocketSiz
         });
     }
     if let Some(saved) = previous.as_ref() {
+        let expanded = window.outer_position().map_err(|e| e.to_string())?;
+        let moved = expanded != saved.expanded_position;
+        let collapsed = PhysicalPosition::new(
+            saved.position.x + (expanded.x - saved.expanded_position.x),
+            saved.position.y + (expanded.y - saved.expanded_position.y),
+        );
         window
             .set_size(tauri::LogicalSize::new(220.0, 200.0))
             .map_err(|e| e.to_string())?;
-        window
-            .set_position(saved.position)
-            .map_err(|e| e.to_string())?;
+        window.set_position(collapsed).map_err(|e| e.to_string())?;
         shell
             .manual_placement
-            .store(saved.manual, Ordering::Relaxed);
+            .store(saved.manual || moved, Ordering::Relaxed);
         crate::placement::keep_visible(&window).map_err(|e| e.to_string())?;
         *previous = None;
     }
@@ -121,8 +127,8 @@ mod tests {
     #[test]
     fn pocket_fits_small_and_scaled_work_areas() {
         let regular = expanded_size(1440.0, 816.0);
-        assert_eq!((regular.width, regular.height), (400.0, 600.0));
-        let small = expanded_size(350.0, 500.0);
-        assert_eq!((small.width, small.height), (350.0, 500.0));
+        assert_eq!((regular.width, regular.height), (264.0, 256.0));
+        let small = expanded_size(240.0, 250.0);
+        assert_eq!((small.width, small.height), (240.0, 250.0));
     }
 }

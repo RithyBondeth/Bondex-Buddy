@@ -3,7 +3,7 @@ use std::sync::atomic::Ordering;
 use tauri::{Manager, PhysicalPosition, WebviewWindow};
 
 #[cfg(target_os = "macos")]
-fn mouse_down() -> bool {
+pub(crate) fn mouse_down() -> bool {
     #[link(name = "CoreGraphics", kind = "framework")]
     unsafe extern "C" {
         fn CGEventSourceButtonState(state: i32, button: u32) -> bool;
@@ -12,7 +12,7 @@ fn mouse_down() -> bool {
     unsafe { CGEventSourceButtonState(0, 0) }
 }
 #[cfg(target_os = "windows")]
-fn mouse_down() -> bool {
+pub(crate) fn mouse_down() -> bool {
     #[link(name = "user32")]
     unsafe extern "system" {
         fn GetAsyncKeyState(key: i32) -> i16;
@@ -21,7 +21,7 @@ fn mouse_down() -> bool {
     unsafe { GetAsyncKeyState(1) < 0 }
 }
 #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-fn mouse_down() -> bool {
+pub(crate) fn mouse_down() -> bool {
     false
 }
 
@@ -63,6 +63,17 @@ fn place(window: &WebviewWindow, p: PhysicalPosition<i32>, snap: bool) -> tauri:
             },
         ))?;
     }
+    Ok(())
+}
+#[tauri::command]
+pub fn hold_pet_pointer(
+    window: WebviewWindow,
+    state: tauri::State<'_, ShellState>,
+) -> Result<(), String> {
+    if window.label() != "main" {
+        return Err("Invalid habitat window".into());
+    }
+    state.pet_pressed.store(mouse_down(), Ordering::Relaxed);
     Ok(())
 }
 #[tauri::command]

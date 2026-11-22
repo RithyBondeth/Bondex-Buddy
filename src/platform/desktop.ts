@@ -17,8 +17,8 @@ export async function setCompanionOpen(
   if (isTauri()) return invoke('set_companion_open', { open });
   return open
     ? {
-        width: Math.max(220, Math.min(400, innerWidth)),
-        height: Math.max(200, Math.min(600, innerHeight)),
+        width: Math.max(220, Math.min(264, innerWidth)),
+        height: Math.max(200, Math.min(256, innerHeight)),
       }
     : { width: 220, height: 200 };
 }
@@ -42,6 +42,9 @@ export async function readAgentCue(): Promise<string> {
   return isTauri() ? invoke<string>('agent_cue') : 'idle';
 }
 
+export async function holdPetPointer(): Promise<void> {
+  if (isTauri()) await invoke('hold_pet_pointer');
+}
 export async function beginDrag(): Promise<void> {
   if (isTauri()) await invoke('begin_drag');
 }
@@ -59,10 +62,6 @@ export async function observeGhost(
 ): Promise<() => void> {
   if (!isTauri()) return () => {};
   return listen<boolean>('habitat-ghost', ({ payload }) => callback(payload));
-}
-
-export async function setDrawerVisible(visible: boolean): Promise<void> {
-  if (isTauri()) await invoke('set_drawer_visible', { visible });
 }
 
 export async function observeVisibility(
@@ -100,8 +99,8 @@ export async function updateHitMask(mask: number[]): Promise<void> {
   if (isTauri()) await invoke('update_shell_mask', { mask });
 }
 
-export async function setControlsVisible(visible: boolean): Promise<void> {
-  if (isTauri()) await invoke('set_controls_visible', { visible });
+export async function setHabitatFocused(focused: boolean): Promise<void> {
+  if (isTauri()) await invoke('set_habitat_focused', { focused });
 }
 
 export async function observeHover(

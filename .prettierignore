@@ -11,3 +11,6 @@ package-lock.json
 third-party/generated
 third-party/upstream
 .impeccable/
+
+# The landing page has its own formatting command.
+website/
