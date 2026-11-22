@@ -5,6 +5,33 @@ import { restingPlay, type PetPlay } from '../rendering/playful';
 
 export const isDesktop = isTauri;
 
+export interface PouchNotice {
+  added: number;
+  error: string | null;
+}
+
+export async function observePouch(
+  onHover: (hovered: boolean) => void,
+  onNotice: (notice: PouchNotice) => void,
+): Promise<() => void> {
+  if (!isTauri()) return () => {};
+  const hover = await listen<boolean>('pouch-hover', ({ payload }) =>
+    onHover(payload),
+  );
+  try {
+    const notice = await listen<PouchNotice>('pouch-notice', ({ payload }) =>
+      onNotice(payload),
+    );
+    return () => {
+      hover();
+      notice();
+    };
+  } catch (error) {
+    hover();
+    throw error;
+  }
+}
+
 export async function openBuddyPanel(
   tab: 'clipboard' | 'agents' = 'clipboard',
 ): Promise<void> {

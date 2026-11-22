@@ -8,6 +8,8 @@ Local `progress.json` in the operating system's application-data directory conta
 
 Launch at login is an explicit option in menu bar or tray Settings in release builds. It uses the OS startup mechanism through Tauri's autostart plugin, and is never automatically enabled. Debug builds disable the option so a development executable is not accidentally registered.
 
+The **Files** tab stores local copies of files you drop onto Ember or the thought bubble. The copies, file names, sizes, and expiration times live in `file-pouch/` in the app-data directory. Copies expire after 24 hours by default. The app removes expired copies while it runs and when it next starts. Removing a copy from the pouch leaves the original on disk.
+
 When you connect an agent in Settings, Bondex Buddy stores its provider, session identifier, project folder name, activity, timestamps, reported model identifier, and observed usage counters locally. Records expire 24 hours after the latest signal. Gemini CLI may report token counts in its hooks. The optional Codex and Claude token usage setting reads up to 2 MiB from the end of those agents’ active session logs to extract numeric token counters. Buddy discards prompts, conversation text, tool inputs and outputs, and full working-directory and log paths. Turning the setting off stops these log reads and hides their token totals.
 
 Audio is generated locally. No microphone permission or recordings are used. To remove local progress, quit the app and remove its `progress.json`; this resets rewards and preferences. OS login registration can be disabled in Settings before removing the app.

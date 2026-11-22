@@ -36,6 +36,8 @@ Open **Tasks** in the Focus tab to add a to-do. Choose **Focus** beside it to st
 - Choose **Remind** beside a task and set a date and time. When Ember shows the reminder, click the pet to snooze it for 10 minutes or dismiss it.
 - Open **Handoffs** in Agents to see recent responses and requests for input. Use the session shortcut on the card to return to the provider.
 
+Drop files from Finder or File Explorer onto Ember or the open thought bubble. Open **Files** to drag a copy back out, keep it for **+24h**, or remove it. Temporary copies expire after 24 hours by default.
+
 Set a **Water breaks** interval or try **Preview water walk** in menu bar Settings. Ember walks with a pixel droplet, stops to offer a water break, then returns to its starting spot. Click Ember during the visit for **Drank water**, **Snooze 10m**, or **Skip**. Scheduled visits wait for a running focus session to reach its break. With reduced motion, Ember offers the reminder in place.
 
 Sound starts muted on each launch. Turn it on in **Settings → Ember** for quiet rain and gentle chimes. Hidden habitats suspend audio and animation. The OS reduced-motion preference disables the animation loop and floating particles while keeping state changes and timer controls functional.

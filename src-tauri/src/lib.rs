@@ -5,6 +5,7 @@ mod clipboard;
 mod native_check;
 mod panel;
 mod placement;
+mod pouch;
 mod roaming;
 mod settings;
 mod shell;
@@ -35,6 +36,7 @@ pub fn run() {
         .manage(storage::ProgressStorage::default())
         .manage(clipboard::ClipboardState::default())
         .manage(agents::AgentSetup::default())
+        .manage(pouch::PouchState::default())
         .manage(panel::PanelState::default())
         .manage(settings::SettingsState::default())
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -54,6 +56,9 @@ pub fn run() {
             clipboard::set_clipboard_capture,
             clipboard::clipboard_edit,
             clipboard::clipboard_copy,
+            pouch::pouch_files,
+            pouch::pouch_edit,
+            pouch::pouch_drag,
             agents::agent_snapshot,
             agents::agent_handoff,
             agents::agent_connections,
@@ -89,6 +94,7 @@ pub fn run() {
             settings::setup(app)?;
             tray::setup(app)?;
             clipboard::start(app.handle())?;
+            pouch::start(app.handle());
             native_check::setup(app)?;
             let window = app
                 .get_webview_window("main")
@@ -102,6 +108,12 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
+            if window.label() == "main"
+                && let tauri::WindowEvent::DragDrop(event) = event
+                && let Some(main) = window.app_handle().get_webview_window("main")
+            {
+                pouch::drop_event(&main, event);
+            }
             if let tauri::WindowEvent::Focused(focused) = event {
                 match window.label() {
                     "main" => {

@@ -9,6 +9,7 @@ import { AnimationClock } from '../rendering/animation-clock';
 import {
   observeActivity,
   observePlay,
+  observePouch,
   setPlayContext,
   setPlayfulRoaming,
   startWaterWalk,
@@ -118,6 +119,11 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   const waterText = document.createElement('span');
   waterText.textContent = 'Time for a water break';
   waterCue.append(icon('water'), waterText);
+  const pouchCue = document.createElement('div');
+  pouchCue.className = 'pouch-cue';
+  pouchCue.setAttribute('aria-hidden', 'true');
+  const pouchText = document.createElement('span');
+  pouchCue.append(icon('files'), pouchText);
   const agentThought = createPetAgentThought();
   const announcement = document.createElement('span');
   announcement.className = 'sr-only';
@@ -135,6 +141,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     handle,
     moodLabel,
     waterCue,
+    pouchCue,
     agentThought.label,
     agentThought.pair,
     announcement,
@@ -148,6 +155,10 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   let soundedReminder = '';
   let showWater = false;
   let previewingWater = false;
+  let pouchHovered = false;
+  let recentFiles = 0;
+  let pouchStatus = '';
+  let pouchCueTimer: ReturnType<typeof setTimeout> | undefined;
   let waterLaunchPending = false;
   let browserWaterUntil = 0;
   let latestSnapshot: AgentSnapshot | null = null;
@@ -236,7 +247,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       void changePocket(false);
       return;
     }
-    if (['focus', 'clipboard', 'agents'].includes(tab))
+    if (['focus', 'clipboard', 'files', 'agents'].includes(tab))
       void changePocket(
         true,
         tab as PocketTab,
@@ -347,9 +358,13 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       due.length === 0 && (waterBeat === 'walk' || waterBeat === 'offer');
     waterCue.dataset.beat = showWater ? waterBeat! : '';
     habitat.classList.toggle('has-water-visit', showWater);
+    habitat.classList.toggle('has-pouch-cue', pouchHovered || !!pouchStatus);
+    habitat.classList.toggle('pouch-catching', pouchHovered);
+    pouchText.textContent = pouchHovered ? 'Drop to tuck away' : pouchStatus;
     const working = snapshot.mood === 'Working' && !showWater;
     quietPlay =
       companionOpen ||
+      pouchHovered ||
       due.length > 0 ||
       agentCue === 'needsInput' ||
       agentCue === 'working' ||
@@ -359,6 +374,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     if (
       habitatVisible &&
       !companionOpen &&
+      !pouchHovered &&
       due.length === 0 &&
       !waterBeat &&
       (idleSeconds === null || idleSeconds < 300) &&
@@ -483,12 +499,15 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     moodLabel.title = snapshot.activityAvailable
       ? 'System idle time is available; no input content is collected.'
       : 'System activity unavailable. Manual focus sessions still work.';
-    const thought = nextReminder
-      ? `Reminder for ${nextReminder.title}`
-      : waterBeat === 'offer'
-        ? 'Time for a water break'
-        : agentAnnouncement ||
-          (play.roaming ? 'Ember is playing' : snapshot.mood);
+    const thought = pouchHovered
+      ? 'Drop to tuck away'
+      : pouchStatus ||
+        (nextReminder
+          ? `Reminder for ${nextReminder.title}`
+          : waterBeat === 'offer'
+            ? 'Time for a water break'
+            : agentAnnouncement ||
+              (play.roaming ? 'Ember is playing' : snapshot.mood));
     const message = `${thought}. ${timer ? `${timer.phase} ${timer.status}.` : 'No focus session running.'}`;
     if (message !== lastAnnouncement) {
       announcement.textContent = message;
@@ -595,6 +614,35 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   const unsubscribeGhost = await observeGhost((ghost) =>
     habitat.classList.toggle('ghosted', ghost),
   );
+  const unsubscribePouch = await observePouch(
+    (hovered) => {
+      pouchHovered = hovered;
+      render();
+    },
+    ({ added, error }) => {
+      clearTimeout(pouchCueTimer);
+      recentFiles = added;
+      pouchStatus = added
+        ? `${added} ${added === 1 ? 'file' : 'files'} tucked away`
+        : (error ?? '');
+      if (added && engine.interact(Date.now())) {
+        moodStartedAt = performance.now();
+        clearTimeout(greetingEnd);
+        greetingEnd = setTimeout(render, 2000);
+      }
+      if (added) {
+        pouchCue.classList.remove('pouch-caught');
+        requestAnimationFrame(() => pouchCue.classList.add('pouch-caught'));
+      }
+      pocket.pouchChanged(added, error);
+      render();
+      pouchCueTimer = setTimeout(() => {
+        recentFiles = 0;
+        pouchStatus = '';
+        render();
+      }, 5000);
+    },
+  );
   try {
     await setGhostMode(progress.ghost);
     await revealHabitat(render(true)!);
@@ -604,6 +652,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     unsubscribeHover();
     unsubscribeAgentHover();
     unsubscribeGhost();
+    unsubscribePouch();
     throw error;
   }
   const unsubscribeActivity = await observeActivity((reading) => {
@@ -656,9 +705,11 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     const tab =
       nextReminder || showWater
         ? 'focus'
-        : handoff || liveAgent
-          ? 'agents'
-          : 'focus';
+        : recentFiles
+          ? 'files'
+          : handoff || liveAgent
+            ? 'agents'
+            : 'focus';
     void changePocket(!companionOpen, tab, view);
   });
   toggle.addEventListener('click', () => {
@@ -814,6 +865,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     clearInterval(interval);
     clearInterval(agentInterval);
     clearTimeout(greetingEnd);
+    clearTimeout(pouchCueTimer);
     unsubscribePlay();
     unsubscribePocket();
     unsubscribeSettings();
@@ -822,6 +874,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     unsubscribeHover();
     unsubscribeAgentHover();
     unsubscribeGhost();
+    unsubscribePouch();
     unsubscribeActivity();
     unsubscribeVisibility();
     motion.removeEventListener('change', syncMotion);

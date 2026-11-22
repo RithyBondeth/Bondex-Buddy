@@ -1,6 +1,6 @@
 # Ember’s desktop tools
 
-Click Ember to open a compact thought bubble with **Focus**, **Clipboard**, and **Agents**. Right-click Ember, press **U** while it has keyboard focus, or use a menu bar shortcut to open it directly to a tool. **Escape**, the close button, or clicking Ember collapses the bubble while preserving the timer and search.
+Click Ember to open a compact thought bubble with **Focus**, **Clips**, **Files**, and **Agents**. Right-click Ember, press **U** while it has keyboard focus, or use a menu bar shortcut to open it directly to a tool. **Escape**, the close button, or clicking Ember collapses the bubble while preserving the timer and search.
 
 On macOS, click the Bondex Buddy menu bar icon and choose **Settings…**. Settings holds decor, outfits, lighting, sound, Ghost Mode, playful roaming, launch at login, clipboard capture, and agent connections. On Windows, open Settings from the tray menu. Launch at login is available in release builds.
 
@@ -15,6 +15,12 @@ The history holds up to 50 unique clips, with up to 20 pins. Repeated text updat
 Recent history stays in process memory and clears when the app quits. Only the capture preference and explicitly pinned snippets are saved in `clipboard.json` under Tauri’s app-data directory. Pinned text is stored as local JSON, not encrypted. Pausing stops observation and leaves existing clips available. Clipboard text is never sent to an agent or network service. Capture includes copied plain text from all apps, so pause it before copying anything you do not want in history. Password detection and per-app exclusions are not implemented.
 
 Clipboard mutations are serialized. Persistent edits save before updating in-memory state, and invalid or unsupported files are preserved with capture disabled. Atomic writes use a same-directory temporary file with owner-only permissions on Unix. The frontend copies clipboard entries by their existing clip IDs. Ember’s window reads clipboard history and edits clips. Clipboard capture and agent connections are managed from Settings.
+
+## Files
+
+Ember accepts desktop file drops on the pet and the open thought bubble. The pouch keeps up to 50 individual files and 2 GB of local copies. The **Files** tab shows each copy’s size and time remaining. Drag the file name into Finder, File Explorer, or another app that accepts files. **+24h** extends a copy’s stay and **Remove** clears it from the pouch.
+
+The desktop shell handles inbound file paths and stages each complete copy before adding it to the list. The thought requests native drag-out by entry ID. Copies expire after 24 hours unless extended, and cleanup waits for an active drag to finish.
 
 ## Tasks and reminders
 

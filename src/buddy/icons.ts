@@ -11,6 +11,7 @@ const paths: Record<string, string> = {
   pocket:
     'M1 2h14v9h-2v2h-2v2H5v-2H3v-2H1zm2 2v2h2v2h2v1h2V8h2V6h2V4zm10 4h-2v2H9v1H7v-1H5V8H3v2h2v2h2v1h2v-1h2v-2h2z',
   heart: 'M0 4h2V2h4v2h4V2h4v2h2v4h-2v2h-2v2h-2v2H6v-2H4v-2H2V8H0z',
+  files: 'M1 3h6v2h8v9H1zm2 2v7h10V7H6V5zm2 4h6v2H5z',
   water:
     'M7 1h2v2h1v2h1v2h1v2h1v4h-1v1h-2v1H6v-1H4v-1H3V9h1V7h1V5h1V3h1zm-2 9v2h2v-1H6v-1z',
 };

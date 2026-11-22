@@ -22,6 +22,7 @@ pub struct ShellState {
     pub ignored: AtomicBool,
     pub ghosted: AtomicBool,
     pub tools_open: AtomicBool,
+    pub pouch_hover: AtomicBool,
     ghost_enabled: AtomicBool,
     working: AtomicBool,
     mask: Mutex<Vec<u8>>,
@@ -96,6 +97,41 @@ fn hits_mask(mask: &[u8], x: f64, y: f64, scale: f64) -> bool {
     let column = (x * MASK_WIDTH as f64 / LOGICAL_WIDTH).floor() as usize;
     let row = (y * MASK_HEIGHT as f64 / LOGICAL_HEIGHT).floor() as usize;
     mask.get(row * MASK_WIDTH + column).copied().unwrap_or(0) != 0
+}
+
+fn hits_drop_mask(mask: &[u8], x: f64, y: f64, scale: f64) -> bool {
+    [-7.0, 0.0, 7.0].into_iter().any(|dx| {
+        [-7.0, 0.0, 7.0]
+            .into_iter()
+            .any(|dy| hits_mask(mask, x + dx * scale, y + dy * scale, scale))
+    })
+}
+
+pub fn file_drop_target(window: &WebviewWindow, position: PhysicalPosition<f64>) -> bool {
+    let (Ok(scale), Ok(size)) = (window.scale_factor(), window.inner_size()) else {
+        return false;
+    };
+    let state = window.state::<ShellState>();
+    let open = state.tools_open.load(Ordering::Relaxed);
+    let width = size.width as f64;
+    let height = size.height as f64;
+    // WKWebView reports AppKit points, which the runtime wraps without rescaling.
+    #[cfg(target_os = "macos")]
+    let position = PhysicalPosition::new(position.x * scale, position.y * scale);
+    if hits_pocket(
+        position.x / scale,
+        position.y / scale,
+        width / scale,
+        height / scale,
+        open,
+    ) {
+        return true;
+    }
+    let (x, y) = pet_local(position.x, position.y, scale, width, height, open);
+    state
+        .mask
+        .lock()
+        .is_ok_and(|mask| hits_drop_mask(&mask, x, y, scale))
 }
 
 fn dock_position(x: i32, y: i32, width: u32, height: u32, scale: f64) -> PhysicalPosition<i32> {
@@ -243,6 +279,7 @@ pub fn start_hit_testing(window: WebviewWindow) {
                 let _ = window.emit("habitat-visibility", visible);
             }
             if !visible {
+                crate::pouch::set_hover(&window, false);
                 let _ = roamer.tick(&window, false, false, false);
                 window
                     .state::<ShellState>()
@@ -313,6 +350,8 @@ pub fn start_hit_testing(window: WebviewWindow) {
                             && state.ghost_enabled.load(Ordering::Relaxed)
                             && state.working.load(Ordering::Relaxed)
                             && inside))
+                        || (state.pouch_hover.load(Ordering::Relaxed)
+                            && hits_drop_mask(&mask, pet_x, pet_y, scale))
                         || hits_pocket(
                             x / scale,
                             y / scale,

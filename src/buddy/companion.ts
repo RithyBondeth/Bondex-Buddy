@@ -6,10 +6,11 @@ import type { AgentSession, AgentSnapshot } from './model';
 import type { FocusTask } from '../engine/tasks';
 import type { WaterAction } from '../engine/water';
 import { tasksView, type TaskControls } from './tasks-view';
+import { pouchView } from './pouch-view';
 import './panel.css';
 import './companion.css';
 
-export type PocketTab = 'focus' | 'clipboard' | 'agents';
+export type PocketTab = 'focus' | 'clipboard' | 'files' | 'agents';
 export type PocketView = 'reminder' | 'handoffs' | 'water';
 
 export function createCompanionPocket(
@@ -47,6 +48,7 @@ export function createCompanionPocket(
     notice.hidden = false;
   };
   const clipboard = clipboardView(announce, (text) => tasks.addFromText(text));
+  const pouch = pouchView(announce);
   const agents = agentsView(announce, controls.dismissHandoff);
   const focus = element('section', 'pocket-focus');
   focus.id = 'focus-panel';
@@ -88,6 +90,7 @@ export function createCompanionPocket(
   const sections = {
     focus,
     clipboard: clipboard.section,
+    files: pouch.section,
     agents: agents.section,
   };
   body.append(...Object.values(sections));
@@ -136,11 +139,13 @@ export function createCompanionPocket(
       body.scrollTop = 0;
     }
     if (tab === 'agents') agents.render(agentSnapshot);
+    if (tab === 'files') buttons.get('files')?.classList.remove('has-activity');
     void refresh();
   };
   for (const [tab, label] of Object.entries({
     focus: 'Focus',
     clipboard: 'Clipboard',
+    files: 'Files',
     agents: 'Agents',
   })) {
     const control = button('', 'pocket-tab');
@@ -192,12 +197,13 @@ export function createCompanionPocket(
       !opened ||
       disposed ||
       document.hidden ||
-      active !== 'clipboard'
+      (active !== 'clipboard' && active !== 'files')
     )
       return;
     loading = true;
     try {
-      await clipboard.refresh();
+      if (active === 'files') await pouch.refresh();
+      else await clipboard.refresh();
     } catch (error) {
       announce(errorMessage(error), true);
     } finally {
@@ -208,6 +214,16 @@ export function createCompanionPocket(
   select('focus');
   return {
     sheet,
+    pouchChanged(added: number, error: string | null) {
+      if (opened && active === 'files') {
+        if (error) announce(error, true);
+        else if (added)
+          announce(`${added} ${added === 1 ? 'file' : 'files'} tucked away.`);
+        void refresh();
+      } else if (added) {
+        buttons.get('files')?.classList.add('has-activity');
+      }
+    },
     setOpen(value: boolean, tab: PocketTab = active, view?: PocketView) {
       opened = value;
       sheet.inert = !value;
