@@ -431,7 +431,8 @@
   flex-basis: 100%;
   margin: 0;
 }
-.buddy-surface .agent-session {
+.buddy-surface .agent-session,
+.buddy-surface .provider-usage {
   --provider-ink: #cad6ff;
   --provider-surface: #171b26;
   padding: 10px;
@@ -440,9 +441,21 @@
   border-radius: 8px;
   transition: border-color 250ms var(--ease-out);
 }
-.buddy-surface .agent-session[data-provider='claude'] {
+.buddy-surface [data-provider='claude'] {
   --provider-ink: #ffceac;
   --provider-surface: #251b17;
+}
+.buddy-surface [data-provider='gemini'] {
+  --provider-ink: #ddd1ff;
+  --provider-surface: #231b31;
+}
+.buddy-surface [data-provider='antigravity'] {
+  --provider-ink: #c3e4e4;
+  --provider-surface: #19252b;
+}
+.buddy-surface [data-provider='cursor'] {
+  --provider-ink: #e3e4ec;
+  --provider-surface: #282930;
 }
 .buddy-surface .agent-session[data-status='working'] {
   border-color: color-mix(in srgb, var(--provider-ink) 27%, #202020);
@@ -456,6 +469,21 @@
 }
 .buddy-surface .agent-heading h2 {
   margin: 0;
+}
+.buddy-surface .agent-usage-toggle {
+  flex: none;
+  margin-left: auto;
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 10px;
+}
+.buddy-surface .agent-usage-toggle:hover,
+.buddy-surface .agent-usage-toggle[aria-pressed='true'] {
+  border-color: #986f54;
+  color: var(--peach);
 }
 .buddy-surface .agent-count {
   color: var(--muted);
@@ -476,7 +504,29 @@
   display: block;
   width: 24px;
   height: 24px;
+  object-fit: contain;
   image-rendering: pixelated;
+}
+.agent-session[data-status='working'] .agent-mascot,
+[data-agent='working'] .pet-agent .agent-mascot,
+.pet-agent-portraits .agent-mascot {
+  animation: mascot-working 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+.pet-agent-portraits .agent-mascot:nth-child(2) {
+  animation-delay: -750ms;
+}
+@keyframes mascot-working {
+  0%,
+  55%,
+  100% {
+    transform: translateY(0);
+  }
+  27% {
+    transform: translateY(-3px);
+  }
+  72% {
+    transform: translateY(-1px);
+  }
 }
 .buddy-surface .agent-avatar {
   flex: none;
@@ -562,6 +612,7 @@
 }
 .buddy-surface .session-metrics {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 5px;
   padding-top: 5px;
@@ -569,6 +620,82 @@
   color: var(--muted);
   font-size: 10px;
   font-variant-numeric: tabular-nums;
+}
+.buddy-surface .session-details {
+  color: var(--ink);
+}
+.buddy-surface .session-details summary {
+  list-style: none;
+  cursor: pointer;
+}
+.buddy-surface .session-details summary::-webkit-details-marker {
+  display: none;
+}
+.buddy-surface .session-detail-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--provider-ink);
+}
+.buddy-surface .session-detail-label::after {
+  content: '';
+  width: 4px;
+  height: 4px;
+  border-bottom: 1px solid;
+  border-right: 1px solid;
+  transform: rotate(45deg) translateY(-1px);
+  transition: transform 200ms var(--ease-out);
+}
+.buddy-surface .session-details[open] .session-detail-label::after {
+  transform: rotate(225deg) translate(-1px, -1px);
+}
+.buddy-surface .session-details summary:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+.buddy-surface .provider-usage-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 4px;
+  color: var(--provider-ink);
+  font-size: 12px;
+}
+.buddy-surface .provider-usage-name .agent-mascot {
+  width: 16px;
+  height: 16px;
+}
+.buddy-surface .agent-usage-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+.buddy-surface .agent-metrics {
+  display: grid;
+  gap: 4px;
+  margin: 5px 0 0;
+}
+.buddy-surface .agent-metric {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+  gap: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+.buddy-surface .agent-metric dd {
+  max-width: 108px;
+  margin: 0;
+  text-align: right;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.buddy-surface .agent-token-note {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 @media (max-width: 380px) {
   .buddy-surface .panel-header,

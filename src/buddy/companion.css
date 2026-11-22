@@ -295,8 +295,9 @@
   flex-wrap: wrap;
 }
 .companion-sheet .agent-count {
-  flex-shrink: 0;
-  max-width: 48%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.1;
 }
 @media (max-width: 239px) {
   .buddy-surface .pocket-bar,

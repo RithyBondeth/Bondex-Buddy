@@ -1,7 +1,11 @@
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import { connectAgent } from '../buddy/api';
 import { button, element, errorMessage, type Announce } from '../buddy/dom';
-import { agentNames, type AgentSnapshot } from '../buddy/model';
+import {
+  agentNames,
+  disconnectedAgents,
+  type AgentSnapshot,
+} from '../buddy/model';
 import { settingRow, settingSwitch, settingsGroup } from './habitat';
 
 type CaptureStatus = { enabled: boolean; error: string | null };
@@ -27,12 +31,23 @@ export function integrationSettings(announce: Announce) {
   const guidance = element(
     'p',
     'settings-note',
-    'Connect adds a status hook and saves a settings backup. Restart the agent afterward. In Codex, review the new hooks in Settings → Hooks.',
+    'Connect adds local activity hooks and saves a backup. Restart the agent afterward. In Codex, review the hooks in Settings → Hooks.',
   );
-  agents.append(connections, guidance);
+  const tokenUsage = settingSwitch();
+  tokenUsage.disabled = true;
+  agents.append(
+    connections,
+    guidance,
+    settingRow(
+      'Codex and Claude token usage',
+      tokenUsage,
+      'Read token counters from connected sessions’ local logs. Bondex Buddy saves only the usage numbers.',
+    ),
+  );
   section.append(clipboard, agents);
   let clipboardBusy = false;
   let agentBusy = false;
+  let tokenUsageBusy = false;
 
   function renderCapture(state: CaptureStatus) {
     capture.checked = state.enabled;
@@ -127,6 +142,32 @@ export function integrationSettings(announce: Announce) {
     if (!agentBusy) renderConnections(items);
   }
 
+  async function refreshTokenUsage() {
+    if (!native || tokenUsageBusy) return;
+    const enabled = await invoke<boolean>('agent_token_usage');
+    if (!tokenUsageBusy) {
+      tokenUsage.checked = enabled;
+      tokenUsage.disabled = false;
+    }
+  }
+
+  tokenUsage.addEventListener('change', async () => {
+    const enabled = tokenUsage.checked;
+    tokenUsageBusy = true;
+    tokenUsage.disabled = true;
+    try {
+      tokenUsage.checked = await invoke<boolean>('set_agent_token_usage', {
+        enabled,
+      });
+    } catch (error) {
+      tokenUsage.checked = !enabled;
+      announce(errorMessage(error), true);
+    } finally {
+      tokenUsageBusy = false;
+      tokenUsage.disabled = false;
+    }
+  });
+
   capture.addEventListener('change', async () => {
     const enabled = capture.checked;
     clipboardBusy = true;
@@ -144,16 +185,16 @@ export function integrationSettings(announce: Announce) {
     }
   });
 
-  if (!native)
-    renderConnections([
-      { agent: 'codex', installed: false, error: null },
-      { agent: 'claude', installed: false, error: null },
-    ]);
+  if (!native) renderConnections(disconnectedAgents);
 
   return {
     section,
     async refresh() {
-      await Promise.all([refreshClipboard(), refreshAgents()]);
+      await Promise.all([
+        refreshClipboard(),
+        refreshAgents(),
+        refreshTokenUsage(),
+      ]);
     },
   };
 }

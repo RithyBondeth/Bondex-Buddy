@@ -10,3 +10,5 @@ The selected character is Ember fox. The original reference and four mood source
 - The app bundles Pixelify Sans via Fontsource under the SIL Open Font License 1.1. The dependency inventory includes its license text. Body text uses operating-system fonts.
 
 The generated notices inventory covers third-party software dependencies, not a license grant for this project's code or generated artwork. The owner has not selected a project license. Final character, cosmetic, motion, and sound approval remain tracked in the roadmap.
+
+The Claude Code indicator uses Anthropic’s [Clawd still artwork](https://claude.ai/images/clawd/core/Clawd-Still.png), cropped to its transparent bounds and scaled to its original pixel grid. The other agent portraits are Bondex Buddy artwork. The working animation moves the portrait as a whole.

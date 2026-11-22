@@ -29,7 +29,8 @@ export function createPetAgentThought() {
     const cue = snapshot?.cue;
     const working =
       snapshot?.sessions.filter(({ status }) => status === 'working') ?? [];
-    if (cue) {
+    const current = cue?.status === 'working' || cue?.status === 'needsInput';
+    if (current) {
       if (label.dataset.provider !== cue.agent) {
         label.querySelector('img')?.remove();
         label.prepend(agentMascot(cue.agent));
@@ -39,9 +40,14 @@ export function createPetAgentThought() {
       project.textContent = cue.project;
     }
     const showPair = working.length >= 2;
-    label.hidden = showPair;
+    label.hidden = showPair || !current;
     pair.hidden = !showPair;
-    if (!showPair) return cue ? `${agentStatus(cue)} in ${cue.project}` : '';
+    if (!showPair)
+      return current
+        ? `${agentStatus(cue)} in ${cue.project}`
+        : cue?.status === 'error'
+          ? agentStatus(cue)
+          : '';
 
     // Keep the two portraits in place when one session reports a new tool event.
     const featured = working

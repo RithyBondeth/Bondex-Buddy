@@ -1,4 +1,5 @@
 mod activity;
+mod agent_usage;
 mod agents;
 mod clipboard;
 mod native_check;
@@ -55,6 +56,8 @@ pub fn run() {
             clipboard::clipboard_copy,
             agents::agent_snapshot,
             agents::agent_connections,
+            agents::agent_token_usage,
+            agents::set_agent_token_usage,
             agents::agent_connect,
             roaming::play_snapshot,
             roaming::set_play_context,

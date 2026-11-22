@@ -237,15 +237,14 @@ canvas {
   transition-delay: 0s;
 }
 [data-agent='working']:not(.companion-open) .pet-agent,
-[data-agent='needsInput']:not(.companion-open) .pet-agent,
-[data-agent='error']:not(.companion-open) .pet-agent,
-[data-agent='done'].show-thought:not(.companion-open) .pet-agent {
+[data-agent='needsInput']:not(.companion-open) .pet-agent {
   visibility: visible;
   opacity: 1;
   transform: translate(50%, 0) scale(1);
   transition-delay: 0s;
 }
-[data-agent]:not([data-agent='idle']) .mood-label {
+[data-agent='working'] .mood-label,
+[data-agent='needsInput'] .mood-label {
   opacity: 0;
   visibility: hidden;
 }
