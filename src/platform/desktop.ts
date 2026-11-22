@@ -38,10 +38,6 @@ export async function observeBuddyOpen(
   };
 }
 
-export async function readAgentCue(): Promise<string> {
-  return isTauri() ? invoke<string>('agent_cue') : 'idle';
-}
-
 export async function holdPetPointer(): Promise<void> {
   if (isTauri()) await invoke('hold_pet_pointer');
 }
@@ -108,6 +104,15 @@ export async function observeHover(
 ): Promise<() => void> {
   if (!isTauri()) return () => {};
   return listen<boolean>('habitat-hover', ({ payload }) => onHover(payload));
+}
+
+export async function observeAgentHover(
+  onHover: (inside: boolean) => void,
+): Promise<() => void> {
+  if (!isTauri()) return () => {};
+  return listen<boolean>('habitat-agent-hover', ({ payload }) =>
+    onHover(payload),
+  );
 }
 
 export async function observeActivity(

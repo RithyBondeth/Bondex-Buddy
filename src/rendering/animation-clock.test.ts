@@ -32,19 +32,19 @@ describe('animation lifecycle', () => {
     clock.setState(true, false);
     expect(pending.size).toBe(1);
     for (let time = 8; time <= 1000; time += 8) step(time);
-    expect(draw.mock.calls.length).toBeGreaterThan(20);
-    expect(draw.mock.calls.length).toBeLessThanOrEqual(31);
+    expect(draw.mock.calls.length).toBeGreaterThan(50);
+    expect(draw.mock.calls.length).toBeLessThanOrEqual(61);
     expect(pending.size).toBe(1);
   });
 
-  it('holds a steady thirty-frame cadence across common display refresh rates', () => {
+  it('holds a steady sixty-frame cadence across common display refresh rates', () => {
     for (const refresh of [60, 120, 144]) {
       const { clock, draw, step } = setup();
       clock.setState(true, false);
       for (let frame = 1; frame <= refresh; frame++)
         step((frame * 1000) / refresh);
-      expect(draw.mock.calls.length).toBeGreaterThanOrEqual(30);
-      expect(draw.mock.calls.length).toBeLessThanOrEqual(31);
+      expect(draw.mock.calls.length).toBeGreaterThanOrEqual(60);
+      expect(draw.mock.calls.length).toBeLessThanOrEqual(61);
       clock.dispose();
     }
   });

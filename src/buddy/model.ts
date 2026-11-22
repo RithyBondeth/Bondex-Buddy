@@ -23,6 +23,9 @@ export interface AgentSession {
   status: AgentStatus;
   activity: string;
   updatedAt: number;
+  requests: number;
+  turnStartedAt: number | null;
+  model: string | null;
 }
 
 export interface AgentSnapshot {
@@ -32,6 +35,7 @@ export interface AgentSnapshot {
     error: string | null;
   }[];
   sessions: AgentSession[];
+  cue: AgentSession | null;
 }
 
 export const agentNames = { codex: 'Codex', claude: 'Claude Code' };

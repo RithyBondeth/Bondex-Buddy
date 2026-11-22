@@ -34,6 +34,12 @@ pub struct AgentEvent {
     status: String,
     activity: String,
     updated_at: u64,
+    #[serde(default)]
+    requests: u32,
+    #[serde(default)]
+    turn_started_at: Option<u64>,
+    #[serde(default)]
+    model: Option<String>,
 }
 
 fn valid_agent(agent: &str) -> Result<(), String> {
@@ -259,6 +265,12 @@ fn parse_event(agent: &str, raw: &[u8], now: u64) -> Option<AgentEvent> {
         status: status.into(),
         activity,
         updated_at: now,
+        requests: u32::from(event == "UserPromptSubmit"),
+        turn_started_at: matches!(status, "working" | "needsInput").then_some(now),
+        model: value["model"]
+            .as_str()
+            .map(|model| clean_label(model, 80))
+            .filter(|model| !model.trim().is_empty()),
     })
 }
 
@@ -288,7 +300,7 @@ pub fn handle_hook_cli() -> bool {
             return Ok(());
         }
         if let Some(event) = parse_event(agent, &raw, received_at) {
-            write_event(&data_dir()?, &event)?;
+            write_event(&data_dir()?, event)?;
         }
         Ok(())
     })();
@@ -306,20 +318,33 @@ fn event_lock(folder: &Path) -> Result<fs::File, String> {
         .map_err(|e| e.to_string())
 }
 
-fn write_event(folder: &Path, event: &AgentEvent) -> Result<(), String> {
+fn write_event(folder: &Path, mut event: AgentEvent) -> Result<(), String> {
     let lock = event_lock(folder)?;
     lock.lock().map_err(|e| e.to_string())?;
     let path = folder.join(format!("{}-{}.json", event.agent, event.session));
     // A late-finishing older hook must not replace a newer event.
-    if let Ok(previous) = bounded_read(&path)
-        && let Ok(previous) = serde_json::from_slice::<AgentEvent>(&previous)
-        && previous.updated_at > event.updated_at
+    if let Ok(raw) = bounded_read(&path)
+        && let Ok(previous) = serde_json::from_slice::<AgentEvent>(&raw)
     {
-        return Ok(());
+        if previous.updated_at > event.updated_at {
+            return Ok(());
+        }
+        if event.updated_at - previous.updated_at <= RETAIN_MS {
+            let new_request = event.requests > 0;
+            event.requests = previous.requests.saturating_add(event.requests);
+            event.model = event.model.or(previous.model);
+            if !new_request
+                && event.status != "idle"
+                && (matches!(previous.status.as_str(), "working" | "needsInput")
+                    || previous.status == event.status)
+            {
+                event.turn_started_at = previous.turn_started_at.or(event.turn_started_at);
+            }
+        }
     }
     crate::clipboard::private_write(
         &path,
-        &serde_json::to_vec(event).map_err(|e| e.to_string())?,
+        &serde_json::to_vec(&event).map_err(|e| e.to_string())?,
     )
 }
 
@@ -336,6 +361,7 @@ pub struct Connection {
 pub struct Snapshot {
     connections: Vec<Connection>,
     sessions: Vec<AgentEvent>,
+    cue: Option<AgentEvent>,
 }
 
 fn sessions(folder: &Path, now: u64) -> Vec<AgentEvent> {
@@ -360,7 +386,7 @@ fn sessions(folder: &Path, now: u64) -> Vec<AgentEvent> {
                     expire_record(&path, now);
                     continue;
                 }
-                if now.saturating_sub(event.updated_at) > STALE_MS
+                if now.saturating_sub(event.updated_at) >= STALE_MS
                     && matches!(event.status.as_str(), "working" | "needsInput")
                 {
                     event.status = "stale".into();
@@ -445,11 +471,19 @@ pub fn agent_snapshot(
         .filter(|connection| connection.installed)
         .map(|connection| connection.agent.as_str())
         .collect();
-    let mut sessions = connected_sessions(&data_dir()?, now_ms(), &connected);
+    let now = now_ms();
+    let mut sessions = connected_sessions(&data_dir()?, now, &connected);
+    // Bring live work and requests for attention ahead of session history.
+    sessions.sort_by_key(|event| cue_priority(event, now));
+    let cue = sessions
+        .first()
+        .filter(|event| cue_priority(event, now) < 4)
+        .cloned();
     sessions.truncate(40);
     Ok(Snapshot {
         connections,
         sessions,
+        cue,
     })
 }
 
@@ -507,35 +541,17 @@ fn update_config(path: &Path, agent: &str, command: &str, connect: bool) -> Resu
     crate::clipboard::private_write(path, &updated)
 }
 
-#[tauri::command]
-pub fn agent_cue(window: WebviewWindow) -> Result<String, String> {
-    if window.label() != "main" {
-        return Err("Only Ember can read the status cue".into());
+fn cue_priority(event: &AgentEvent, now: u64) -> usize {
+    if now.saturating_sub(event.updated_at) >= STALE_MS {
+        return 4;
     }
-    let connected: Vec<_> = ["codex", "claude"]
-        .into_iter()
-        .filter(|agent| {
-            config_path(agent)
-                .and_then(|path| read_config(&path))
-                .and_then(|(_, value)| Ok(installed(&value, agent, &hook_command(agent)?)))
-                .unwrap_or(false)
-        })
-        .collect();
-    let now = now_ms();
-    let events = connected_sessions(&data_dir()?, now, &connected);
-    Ok(cue_for(&events, now).into())
-}
-
-fn cue_for(events: &[AgentEvent], now: u64) -> &'static str {
-    for status in ["needsInput", "working", "error", "done"] {
-        if events
-            .iter()
-            .any(|event| event.status == status && now.saturating_sub(event.updated_at) < STALE_MS)
-        {
-            return status;
-        }
+    match event.status.as_str() {
+        "needsInput" => 0,
+        "working" => 1,
+        "error" => 2,
+        "done" => 3,
+        _ => 4,
     }
-    "idle"
 }
 
 #[cfg(test)]
@@ -569,6 +585,43 @@ mod tests {
             .status,
             "done"
         );
+    }
+
+    #[test]
+    fn usage_survives_tool_updates_and_starts_a_new_turn_on_request() {
+        let dir = std::env::temp_dir().join(format!("buddy-usage-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(
+            dir.join("codex-existing.json"),
+            br#"{"agent":"codex","session":"existing","project":"demo","status":"idle","activity":"Session started","updatedAt":1}"#,
+        )
+        .unwrap();
+        let record = |name, at| {
+            let raw = serde_json::to_vec(&json!({
+                "hook_event_name": name,
+                "session_id": "existing",
+                "cwd": "/private/demo",
+                "model": (name == "UserPromptSubmit").then_some("sample-model"),
+            }))
+            .unwrap();
+            write_event(&dir, parse_event("codex", &raw, at).unwrap()).unwrap();
+        };
+        record("UserPromptSubmit", 10);
+        record("PreToolUse", 20);
+        record("PermissionRequest", 25);
+        record("Stop", 30);
+        record("PreToolUse", 22);
+        let finished = &sessions(&dir, 30)[0];
+        assert_eq!(finished.status, "done");
+        assert_eq!(finished.requests, 1);
+        assert_eq!(finished.turn_started_at, Some(10));
+        assert_eq!(finished.model.as_deref(), Some("sample-model"));
+
+        record("UserPromptSubmit", 40);
+        let working = &sessions(&dir, 40)[0];
+        assert_eq!(working.requests, 2);
+        assert_eq!(working.turn_started_at, Some(40));
+        fs::remove_dir_all(dir).unwrap();
     }
 
     #[test]
@@ -638,6 +691,9 @@ mod tests {
                 status: "working".into(),
                 activity: "Working".into(),
                 updated_at: timestamp,
+                requests: 0,
+                turn_started_at: None,
+                model: None,
             };
             fs::write(
                 dir.join(format!("{id}.json")),
@@ -700,8 +756,11 @@ mod tests {
             status: "working".into(),
             activity: "Working".into(),
             updated_at: 1,
+            requests: 0,
+            turn_started_at: None,
+            model: None,
         };
-        write_event(&dir, &working).unwrap();
+        write_event(&dir, working.clone()).unwrap();
         for index in 0..50 {
             let newer = AgentEvent {
                 agent: "claude".into(),
@@ -710,14 +769,15 @@ mod tests {
                 updated_at: index + 2,
                 ..working.clone()
             };
-            write_event(&dir, &newer).unwrap();
+            write_event(&dir, newer).unwrap();
         }
         let connected = connected_sessions(&dir, 60, &["codex"]);
         assert_eq!(connected.len(), 1);
-        assert_eq!(cue_for(&connected, 60), "working");
-        let all_connected = connected_sessions(&dir, 60, &["codex", "claude"]);
+        assert_eq!(connected[0].status, "working");
+        let mut all_connected = connected_sessions(&dir, 60, &["codex", "claude"]);
         assert_eq!(all_connected.len(), 51);
-        assert_eq!(cue_for(&all_connected, 60), "working");
+        all_connected.sort_by_key(|event| cue_priority(event, 60));
+        assert_eq!(all_connected[0].status, "working");
         fs::remove_dir_all(dir).unwrap();
     }
 
@@ -732,8 +792,11 @@ mod tests {
                 status: "working".into(),
                 activity: "Working".into(),
                 updated_at: 1,
+                requests: 0,
+                turn_started_at: None,
+                model: None,
             };
-            write_event(&dir, &event).unwrap();
+            write_event(&dir, event).unwrap();
         }
         assert!(sessions(&dir, RETAIN_MS + 2).is_empty());
         let files: Vec<_> = fs::read_dir(&dir)

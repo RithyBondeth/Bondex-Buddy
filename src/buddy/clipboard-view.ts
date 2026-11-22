@@ -20,7 +20,11 @@ export function clipboardView(announce: Announce) {
   section.setAttribute('role', 'tabpanel');
   section.setAttribute('aria-labelledby', 'clipboard-tab');
   const heading = element('div', 'section-heading');
-  heading.append(element('h2', '', 'Clipboard'));
+  const title = element('div', 'clipboard-title');
+  const count = element('span', 'clipboard-count', 'Loading…');
+  title.append(element('h2', '', 'Clipboard'), count);
+  const clear = button('Clear all', 'text-button');
+  heading.append(title, clear);
   const tools = element('div', 'clipboard-tools');
   const searchLabel = element('label', 'search-box');
   const search = element('input');
@@ -33,10 +37,6 @@ export function clipboardView(announce: Announce) {
   const pinned = button('Pinned', 'filter-button');
   pinned.setAttribute('aria-pressed', 'false');
   tools.append(searchLabel, pinned);
-  const meta = element('div', 'list-meta');
-  const count = element('span', '', 'Loading clipboard…');
-  const clear = button('Clear all', 'text-button');
-  meta.append(count, clear);
   const problem = element('p', 'inline-error');
   problem.hidden = true;
   const list = element('div', 'clip-list');
@@ -45,7 +45,7 @@ export function clipboardView(announce: Announce) {
     'privacy-note',
     '50 recent clips · 20 pins · text up to 16 KB',
   );
-  section.append(heading, tools, meta, problem, list, footer);
+  section.append(heading, tools, problem, list, footer);
   if (!native) {
     const samples = button('Load sample clips', 'preview-samples');
     samples.addEventListener('click', () => {
@@ -67,6 +67,7 @@ export function clipboardView(announce: Announce) {
     problem.hidden = !snapshot.error;
     const entries = selectClips(snapshot.entries, search.value, onlyPinned);
     count.textContent = `${entries.length} ${onlyPinned ? 'pinned ' : ''}clip${entries.length === 1 ? '' : 's'}${snapshot.enabled ? ' · Capturing' : ' · Capture paused'}`;
+    count.classList.toggle('is-capturing', snapshot.enabled);
     clear.disabled = !snapshot.entries.length || busy;
     const key = JSON.stringify([snapshot.revision, search.value, onlyPinned]);
     if (!force && renderKey === key) return;

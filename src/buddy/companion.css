@@ -4,18 +4,22 @@
   inset: 10px 10px 76px;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--line);
+  border: 1px solid #383431;
   border-radius: 10px;
-  background: var(--surface);
-  box-shadow: 3px 4px 0 #09080b80;
+  background:
+    radial-gradient(ellipse at 42% -20%, #26211d, transparent 65%),
+    linear-gradient(#151515, #0d0d0d 85%);
+  box-shadow:
+    0 12px 24px #0005,
+    inset 0 1px #ffffff1c;
   transform-origin: calc(100% - 100px) 100%;
   opacity: 0;
-  transform: translateY(4px) scale(0.96);
+  transform: translateY(8px) scale(0.955);
   visibility: hidden;
   transition:
-    transform 160ms var(--ease-out),
-    opacity 160ms ease,
-    visibility 160ms;
+    transform 180ms var(--ease-out),
+    opacity 180ms var(--ease-out),
+    visibility 0s 180ms;
   z-index: 4;
 }
 .companion-sheet::before,
@@ -27,14 +31,14 @@
   pointer-events: none;
 }
 .companion-sheet::before {
-  right: 65px;
+  right: 83px;
   bottom: -12px;
   width: 9px;
   height: 9px;
   border-radius: 3px;
 }
 .companion-sheet::after {
-  right: 77px;
+  right: 92px;
   bottom: -19px;
   width: 5px;
   height: 5px;
@@ -44,6 +48,17 @@
   opacity: 1;
   transform: none;
   visibility: visible;
+  transition:
+    transform 340ms var(--ease-out),
+    opacity 260ms var(--ease-out),
+    visibility 0s;
+}
+.companion-open .companion-sheet::before,
+.companion-open .companion-sheet::after {
+  animation: pane-enter 250ms var(--ease-out) both;
+}
+.companion-open .companion-sheet::after {
+  animation-delay: 35ms;
 }
 .companion-sheet svg {
   display: block;
@@ -53,54 +68,90 @@
 }
 .buddy-surface .pocket-bar {
   display: flex;
-  align-items: flex-start;
-  padding: 5px 6px;
-  border-bottom: 1px solid var(--line);
-  gap: 3px;
+  align-items: center;
+  padding: 6px 7px 5px;
+  border-bottom: 1px solid #ffffff12;
+  gap: 5px;
 }
 .buddy-surface .pocket-tabs {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   flex: 1;
   min-width: 0;
-  gap: 2px;
+  isolation: isolate;
+  border: 1px solid #ffffff12;
+  border-radius: 7px;
+  background: #0a0a0acc;
+}
+.buddy-surface .pocket-tab-indicator {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(100% / 3);
+  border-radius: 6px;
+  border: 1px solid #ffe0be23;
+  background: linear-gradient(#302723, #231f1c);
+  box-shadow: inset 0 1px #ffffff14;
+  transform: translateX(var(--tab-offset, 0%));
+  transition: transform 330ms var(--ease-out);
+  pointer-events: none;
+  z-index: -1;
 }
 .buddy-surface .pocket-tab,
 .buddy-surface .pocket-close {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid transparent;
-  border-radius: 5px;
+  border: 0;
+  border-radius: 6px;
   background: transparent;
   color: var(--muted);
 }
 .buddy-surface .pocket-close {
-  width: 24px;
+  width: 23px;
   height: 26px;
 }
+.buddy-surface .pocket-close svg {
+  width: 11px;
+  height: 11px;
+}
 .buddy-surface .pocket-tab {
-  min-height: 33px;
-  padding: 2px 0;
-  flex-direction: column;
-  gap: 1px;
+  position: relative;
+  min-width: 0;
+  min-height: 28px;
+  padding: 2px;
+  gap: 4px;
   font-size: 10px;
+  font-weight: 600;
   line-height: 1.2;
+}
+.buddy-surface .pocket-tab svg {
+  width: 12px;
+  height: 12px;
 }
 .buddy-surface .pocket-tab:hover,
 .buddy-surface .pocket-close:hover {
-  background: var(--raised);
+  background: #ffffff0c;
   color: var(--ink);
 }
 .buddy-surface .pocket-tab[aria-selected='true'] {
-  background: var(--raised);
-  border-color: var(--line);
   color: var(--peach);
+}
+.buddy-surface .pocket-tab.has-activity::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 3px;
+  height: 3px;
+  border-radius: 1px;
+  background: var(--peach);
 }
 .buddy-surface .pocket-body {
   padding: 9px 10px;
-  overflow: auto;
+  overflow: hidden auto;
   min-height: 0;
+  min-width: 0;
   flex: 1;
   overscroll-behavior: contain;
   scrollbar-width: thin;
@@ -109,10 +160,13 @@
 }
 .buddy-surface .pocket-body h2 {
   font-size: 14px;
-  margin: 0 0 6px;
+  margin: 0;
 }
 .buddy-surface .pocket-body input {
   user-select: text;
+}
+.buddy-surface .pocket-body input:focus-visible {
+  outline-offset: -2px;
 }
 .companion-sheet .panel-notice {
   margin: 0 0 8px;
@@ -123,32 +177,43 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  padding: 3px 4px 0;
 }
 .buddy-surface .focus-clock {
   flex: none;
-  font: 550 36px/1 var(--pixel-font);
+  font: 550 clamp(30px, 15.2vw, 40px) / 1 var(--pixel-font);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
   color: var(--accent);
+  transition: color 260ms var(--ease-out);
+}
+.buddy-surface [data-state='running'] .focus-clock {
+  color: var(--peach);
 }
 .buddy-surface .focus-phase {
   margin: 0;
   text-align: right;
   color: var(--muted);
   font-size: 11px;
+  overflow-wrap: anywhere;
 }
 .buddy-surface .focus-track {
-  margin: 8px 0 12px;
+  margin: 9px 0 11px;
   height: 4px;
-  background: var(--raised);
+  border-radius: 3px;
+  background: #282421;
   overflow: hidden;
 }
 .buddy-surface .focus-track > div {
   width: 100%;
   height: 100%;
-  background: var(--peach);
+  background: linear-gradient(90deg, #d59976, var(--peach));
   transform: scaleX(0);
   transform-origin: left;
   transition: transform 1s linear;
+}
+.buddy-surface [data-state='ready'] .focus-track > div {
+  transition: transform 260ms var(--ease-out);
 }
 .buddy-surface .focus-actions {
   display: flex;
@@ -157,39 +222,97 @@
 .buddy-surface .focus-actions button {
   min-height: 29px;
   border: 1px solid var(--line);
-  border-radius: 4px;
-  background: var(--raised);
+  border-radius: 6px;
+  background: #1c1b1a;
   color: var(--ink);
   padding: 4px 6px;
   font-size: 11px;
 }
 .buddy-surface .focus-actions .session-toggle {
   flex: 1;
-  background: var(--peach);
-  border-color: var(--peach);
+  background: #f1dcca;
+  border-color: #f1dcca;
   color: var(--action-ink);
   font-weight: 700;
+  box-shadow: inset 0 1px #fff7;
 }
 .buddy-surface .focus-actions .session-toggle:hover {
-  background: #f8dfbd;
+  background: #fff;
 }
 .buddy-surface .focus-actions button:hover {
   border-color: var(--accent);
 }
+.buddy-surface .focus-actions button:active:not(:disabled),
+.buddy-surface .pocket-tab:active {
+  transform: scale(0.975);
+}
+.companion-open .pocket-body > [role='tabpanel']:not([hidden]) {
+  animation: pane-enter 260ms var(--ease-out) both;
+}
 .companion-sheet .clipboard-tools,
 .companion-sheet .section-heading {
-  margin-bottom: 8px;
+  margin-bottom: 7px;
 }
-.companion-sheet .section-heading {
-  gap: 4px;
+.companion-sheet .clipboard-title {
+  display: grid;
+  gap: 2px;
 }
-.companion-sheet .section-heading h2 {
-  margin: 0;
+.companion-sheet .section-heading .text-button {
+  align-self: start;
+  padding: 4px;
+  max-width: 46%;
+}
+.companion-sheet .search-box {
+  padding: 0 7px;
+  transition: border-color 200ms var(--ease-out);
+}
+.companion-sheet .search-box:focus-within {
+  border-color: #bb9577;
+}
+.companion-sheet .search-mark {
+  margin-right: 4px;
+  font-size: 16px;
+}
+.companion-sheet .search-box input {
+  padding: 6px 0;
+  font-size: 11px;
+}
+.companion-sheet .filter-button {
+  padding: 4px 7px;
+  font-size: 10px;
+}
+.companion-sheet .clip-text {
+  margin: 4px 0 5px;
+  line-height: 1.35;
+}
+.companion-sheet .clip-list,
+.companion-sheet .agent-sessions {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+.companion-sheet .clip-actions,
+.companion-sheet .session-metrics {
+  flex-wrap: wrap;
+}
+.companion-sheet .agent-count {
+  flex-shrink: 0;
+  max-width: 48%;
+}
+@media (max-width: 239px) {
+  .buddy-surface .pocket-bar,
+  .buddy-surface .pocket-body {
+    padding-inline: 7px;
+  }
+  .buddy-surface .pocket-tab {
+    gap: 2px;
+  }
 }
 .companion-sheet .empty-state,
-.companion-sheet .clip-item,
-.companion-sheet .agent-session {
+.companion-sheet .clip-item {
   padding: 8px;
+}
+.companion-sheet .agent-session {
+  padding: 7px 8px;
 }
 .companion-open > .mood-label,
 .companion-open > .drag-handle {

@@ -56,7 +56,6 @@ pub fn run() {
             agents::agent_snapshot,
             agents::agent_connections,
             agents::agent_connect,
-            agents::agent_cue,
             roaming::play_snapshot,
             roaming::set_play_context,
             roaming::set_playful_roaming,

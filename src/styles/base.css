@@ -2,7 +2,6 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: transparent;
   font-synthesis: none;
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 html,
@@ -69,17 +68,17 @@ canvas {
   width: 220px;
   height: 200px;
   image-rendering: pixelated;
-  transition: opacity 240ms ease;
+  transition: opacity 300ms var(--ease-out);
 }
 
 .mood-label {
   position: absolute;
   bottom: 76px;
   right: 110px;
-  transform: translateX(50%);
+  transform: translate(50%, 3px);
   margin: 0;
   padding: 4px 9px;
-  border-radius: var(--pixel-radius);
+  border-radius: 6px;
   color: var(--ink);
   background: var(--surface);
   box-shadow: inset 0 0 0 1px var(--line);
@@ -91,19 +90,164 @@ canvas {
   visibility: hidden;
   opacity: 0;
   transition:
-    opacity 180ms ease,
-    visibility 180ms;
+    opacity 220ms var(--ease-out),
+    transform 220ms var(--ease-out),
+    visibility 220ms;
 }
 .show-thought .mood-label {
   visibility: visible;
   opacity: 1;
+  transform: translate(50%, 0);
 }
 
-[data-agent='needsInput'] .mood-label,
-[data-agent='error'] .mood-label {
+.pet-agent {
+  position: absolute;
+  right: 110px;
+  bottom: 76px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+  max-width: 178px;
+  box-sizing: border-box;
+  padding: 4px 8px 4px 5px;
+  border: 1px solid #424653;
+  border-radius: 8px;
+  background: linear-gradient(115deg, #1b202b, #101014);
+  box-shadow: 0 4px 14px #0005;
+  color: #d5ddff;
+  transform: translate(50%, 4px) scale(0.97);
+  transform-origin: bottom center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 240ms var(--ease-out),
+    transform 320ms var(--ease-out),
+    visibility 0s 320ms;
+}
+.pet-agent[data-provider='claude'] {
+  border-color: #574039;
+  background: linear-gradient(115deg, #2c201b, #151112);
+  color: #ffceac;
+}
+.pet-agent .agent-mascot {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+.pet-agent-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  font-size: 10px;
+  line-height: 1.15;
+}
+.pet-agent-copy > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pet-agent-copy span {
+  color: var(--ink);
+}
+.pet-agent-pair {
+  /* Keep this hit area in sync with hovers_agent_pair() in Rust. */
+  position: absolute;
+  right: 81px;
+  bottom: 76px;
+  width: 58px;
+  height: 30px;
+  z-index: 2;
+  pointer-events: none;
+}
+.browser-preview .pet-agent-pair {
+  pointer-events: auto;
+}
+.pet-agent-pair[hidden],
+.pet-agent[hidden],
+.companion-open > .pet-agent-pair {
+  display: none;
+}
+.pet-agent-portraits {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  box-sizing: border-box;
+  height: 100%;
+  border: 1px solid #45413f;
+  border-radius: 8px;
+  background: linear-gradient(115deg, #2a201d, #191d27);
+  box-shadow: 0 4px 14px #0005;
+  animation: pane-enter 280ms var(--ease-out) both;
+}
+.pet-agent-portraits .agent-mascot {
+  width: 20px;
+  height: 20px;
+}
+.pet-agent-details {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  box-sizing: border-box;
+  width: 178px;
+  max-height: 84px;
+  overflow: hidden;
+  padding: 7px 8px;
+  border: 1px solid #494441;
+  border-radius: 8px;
+  background: #151413;
+  box-shadow: 0 8px 20px #0007;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.25;
+  transform: translate(-50%, 4px);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    transform 240ms var(--ease-out),
+    opacity 180ms var(--ease-out),
+    visibility 0s 240ms;
+}
+.pet-agent-detail + .pet-agent-detail {
+  margin-top: 5px;
+}
+.pet-agent-detail > * {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pet-agent-detail strong {
+  color: #cad6ff;
+}
+.pet-agent-detail[data-provider='claude'] strong {
+  color: #ffceac;
+}
+.pet-agent-more {
+  margin-top: 3px;
+}
+.pet-agent-pair.is-hovered .pet-agent-details,
+.browser-preview .pet-agent-pair:hover .pet-agent-details,
+.pet:focus-visible ~ .pet-agent-pair .pet-agent-details {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+  transition-delay: 0s;
+}
+[data-agent='working']:not(.companion-open) .pet-agent,
+[data-agent='needsInput']:not(.companion-open) .pet-agent,
+[data-agent='error']:not(.companion-open) .pet-agent,
+[data-agent='done'].show-thought:not(.companion-open) .pet-agent {
   visibility: visible;
   opacity: 1;
-  background: #6b4529;
+  transform: translate(50%, 0) scale(1);
+  transition-delay: 0s;
+}
+[data-agent]:not([data-agent='idle']) .mood-label {
+  opacity: 0;
+  visibility: hidden;
 }
 
 .drag-handle {

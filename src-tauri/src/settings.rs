@@ -47,6 +47,7 @@ pub enum Lighting {
 pub fn setup(app: &App) -> tauri::Result<()> {
     WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("settings.html".into()))
         .title("Bondex Buddy Settings")
+        .theme(Some(tauri::Theme::Dark))
         .inner_size(430.0, 560.0)
         .min_inner_size(340.0, 360.0)
         .center()

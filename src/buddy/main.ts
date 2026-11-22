@@ -1,7 +1,7 @@
 import { listen } from '@tauri-apps/api/event';
 import { agentsView } from './agents-view';
 import { clipboardView } from './clipboard-view';
-import { native } from './api';
+import { native, readAgents } from './api';
 import { button, element, errorMessage } from './dom';
 import { icon } from './icons';
 import './panel.css';
@@ -73,7 +73,8 @@ async function refresh() {
   if (loading || disposed || document.hidden) return;
   loading = true;
   try {
-    await (active === 'clipboard' ? clipboard.refresh() : agents.refresh());
+    if (active === 'clipboard') await clipboard.refresh();
+    else agents.render(await readAgents());
   } catch (error) {
     announce(errorMessage(error), true);
   } finally {

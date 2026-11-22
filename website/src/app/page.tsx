@@ -42,7 +42,10 @@ export default function Home() {
           <a href="#how-it-works">Little rituals</a>
           <MotionToggle />
           <a className="button button-small" href="#get-the-app">
-            Get the app <span aria-hidden="true">↗</span>
+            Get the app{' '}
+            <span className="button-arrow" aria-hidden="true">
+              ↗
+            </span>
           </a>
         </nav>
       </header>
@@ -170,10 +173,10 @@ export default function Home() {
           className="download-section"
           aria-labelledby="download-heading"
         >
-          <GridPulse cell={32} ambient={3} maxLit={70} />
+          <GridPulse cell={32} ambient={2} />
           <div className="download-content">
             <Reveal>
-              <div className="download-pets" aria-hidden="true">
+              <div className="download-pets" aria-hidden="true" data-grid-avoid>
                 {companions.map((pet) => (
                   <Image
                     key={pet.id}
@@ -196,8 +199,15 @@ export default function Home() {
               <p data-grid-avoid>
                 Follow the journey from the first pixels to the first release.
               </p>
-              <a className="button button-primary" href={repository}>
-                Follow on GitHub <span aria-hidden="true">↗</span>
+              <a
+                className="button button-primary"
+                href={repository}
+                data-grid-avoid
+              >
+                Follow on GitHub{' '}
+                <span className="button-arrow" aria-hidden="true">
+                  ↗
+                </span>
               </a>
               <p className="release-note" data-grid-avoid>
                 In development for macOS & Windows. Public downloads coming

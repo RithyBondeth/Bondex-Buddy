@@ -1,342 +1,289 @@
 'use client';
 
-import * as React from 'react';
-
+import {
+  useEffect,
+  useRef,
+  type ComponentPropsWithoutRef,
+  type CSSProperties,
+} from 'react';
 import { useCalmMotion } from '@/components/motion-preferences';
 import { cn } from '@/lib/utils';
 
-export type GridPulseProps = Omit<
-  React.ComponentPropsWithoutRef<'div'>,
-  'children'
-> & {
-  /** Cell size in px. The hairlines and the lit cells share it. */
+type Point = { x: number; y: number };
+type Pulse = { col: number; row: number; start: number };
+
+type GridPulseProps = Omit<ComponentPropsWithoutRef<'div'>, 'children'> & {
   cell?: number;
-  interactive?: boolean;
-  /** How far from the pointer a cell can still catch light, in cells. */
+  /** Radius of the pointer light, in cells. */
   reach?: number;
-  /** How many cells light on their own each beat, so the grid is never dead. */
+  /** Number of quiet background pulses per cycle. */
   ambient?: number;
-  /** A lid, so a fast sweep cannot light the whole field at once. */
-  maxLit?: number;
-  /**
-   * Elements whose lines of text the light holds back from, looked up
-   * inside the grid's parent.
-   */
-  avoid?: string;
 };
 
-/** Hue at the top of the field and how far it turns by the bottom: yellow,
- *  through orange, red, magenta and blue, to green. */
-const HUE_TOP = 60;
-const HUE_SPAN = 270;
-/**
- * Each cell takes one of these lightnesses, so a sweep reads as a field of
- * tints rather than one flat colour. On a dark ground the pale end of the
- * ladder would fade through grey, so it starts deeper there.
- */
-const TINTS = [88, 80, 72, 64, 56];
-const TINTS_DARK = [72, 65, 58, 51, 44];
-/** How faint a cell goes right behind a line of text. */
-const FAINT = 0.13;
-/** How many cells it takes to come back up to full strength. */
-const FADE = 2.2;
-/** Clearing kept around each line of text, in px. */
-const PAD = 5;
-const FADE_IN = 160;
-const FADE_OUT = 750;
+const pulseDuration = 2200;
+const lightness = [56, 62, 53, 59] as const;
+const gridHue = (row: number, rows: number) =>
+  Math.round((420 - (270 * row) / Math.max(rows - 1, 1)) % 360);
 
-type Cell = {
-  col: number;
-  row: number;
-  colour: string;
-  /** How much of its colour the cell is allowed, 0 to 1. */
-  dim: number;
-  born: number;
-  /** When it starts to fade out. */
-  until: number;
+const approach = (
+  current: number,
+  target: number,
+  elapsed: number,
+  time: number,
+) => target + (current - target) * Math.exp(-elapsed / time);
+
+const falloff = (distance: number) => {
+  const t = Math.max(0, 1 - distance);
+  return t * t * (3 - 2 * t);
 };
 
-const easeOut = (t: number) => 1 - (1 - t) ** 2;
-const easeIn = (t: number) => t * t;
-
-/**
- * A fine grid that takes colour where the pointer passes and lets it go a
- * moment later, with a few cells lighting on their own. The spectrum runs
- * down the field like a printed colour chart, so a sweep reveals one
- * coherent band of colour rather than confetti.
- *
- * Place it inside a positioned container, under the content. It is
- * decoration only: hidden from assistive tech, transparent to the pointer,
- * drawn on one canvas that sleeps whenever nothing is lit, paused off screen,
- * and still for readers who ask for reduced motion.
- */
+/** A decorative grid with one continuous light field beneath the pointer. */
 export function GridPulse({
-  cell = 24,
-  interactive = true,
-  reach = 2.6,
+  cell = 32,
+  reach = 3.4,
   ambient = 2,
-  maxLit = 180,
-  avoid = '[data-grid-avoid]',
   className,
   style,
   ...props
 }: GridPulseProps) {
-  const reducedMotion = useCalmMotion();
-  const box = React.useRef<HTMLDivElement>(null);
-  const canvas = React.useRef<HTMLCanvasElement>(null);
+  const reduced = useCalmMotion();
+  const box = useRef<HTMLDivElement>(null);
+  const canvas = useRef<HTMLCanvasElement>(null);
 
-  React.useEffect(() => {
-    const el = box.current;
-    const paper = canvas.current;
-    const ctx = paper?.getContext('2d');
-    if (!el || !paper || !ctx) return;
-    if (reducedMotion) {
+  useEffect(() => {
+    const layer = box.current;
+    const surface = canvas.current;
+    const section = layer?.parentElement;
+    const context = surface?.getContext('2d');
+    if (!layer || !surface || !section || !context) return;
+    const [el, paper, parent, ctx] = [
+      layer,
+      surface,
+      section,
+      context,
+    ] as const;
+    if (reduced) {
       ctx.clearRect(0, 0, paper.width, paper.height);
       return;
     }
 
-    let cols = 1;
-    let rows = 1;
     let width = 0;
     let height = 0;
-    let clear: DOMRect[] = [];
-    let tints = TINTS;
-    const cells = new Map<string, Cell>();
+    let rowHues: number[] = [];
+    let bounds = el.getBoundingClientRect();
+    let text: DOMRect[] = [];
+    let layoutDirty = true;
+    let visible = false;
+    let frame = 0;
+    let timer = 0;
+    let last = 0;
+    let strength = 0;
+    let pointer: Point | null = null;
+    let center: Point | null = null;
+    let pulses: Pulse[] = [];
 
-    // Light or dark ground, read from the text colour the grid inherits,
-    // so it follows any theme switch: a class, an attribute or the system.
-    // Resolved through a pixel, since computed colours may be oklch.
-    const probe = document.createElement('canvas').getContext('2d', {
-      willReadFrequently: true,
-    });
-    const readTheme = () => {
-      if (!probe) return;
-      probe.clearRect(0, 0, 1, 1);
-      probe.fillStyle = getComputedStyle(el).color;
-      probe.fillRect(0, 0, 1, 1);
-      const [r, g, b] = probe.getImageData(0, 0, 1, 1).data;
-      const light = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.5;
-      tints = light ? TINTS_DARK : TINTS;
-    };
+    function wake() {
+      if (!frame && visible && !document.hidden)
+        frame = requestAnimationFrame(draw);
+    }
 
-    // Protect the lines of text, not the boxes that hold them: a paragraph
-    // set to a measure keeps that width on its short last line too, and the
-    // box would hold a band of cells dark where there is nothing to read.
-    const measureText = () => {
-      const bounds = el.getBoundingClientRect();
-      const scope = el.parentElement ?? document;
-      clear = [...scope.querySelectorAll(avoid)].flatMap((node) => {
-        const range = document.createRange();
-        range.selectNodeContents(node);
-        const lines = [...range.getClientRects()].filter(
-          (r) => r.width > 0 && r.height > 0,
-        );
-        const boxes = lines.length > 0 ? lines : [node.getBoundingClientRect()];
-        return boxes.map(
-          (r) =>
-            new DOMRect(
-              r.left - bounds.left - PAD,
-              r.top - bounds.top - PAD,
-              r.width + PAD * 2,
-              r.height + PAD * 2,
-            ),
-        );
-      });
-    };
+    function measureLayout() {
+      bounds = el.getBoundingClientRect();
+      text = [...parent.querySelectorAll('[data-grid-avoid]')].flatMap(
+        (node) => {
+          const range = document.createRange();
+          range.selectNodeContents(node);
+          return [...range.getClientRects()];
+        },
+      );
+      layoutDirty = false;
+    }
 
-    const measure = () => {
+    function invalidateLayout() {
+      layoutDirty = true;
+      if (pointer || strength || pulses.length) wake();
+    }
+
+    function measureSize() {
       width = el.clientWidth;
       height = el.clientHeight;
-      cols = Math.max(1, Math.ceil(width / cell));
-      rows = Math.max(1, Math.ceil(height / cell));
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       paper.width = Math.round(width * dpr);
       paper.height = Math.round(height * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      readTheme();
-      measureText();
-      wake();
-    };
+      rowHues = Array.from({ length: Math.ceil(height / cell) }, (_, row) =>
+        gridHue(row, Math.ceil(height / cell)),
+      );
+      invalidateLayout();
+    }
 
-    /**
-     * How bright a cell may be, by its distance from the nearest line of
-     * text. Cells behind the words go faint rather than dark: a hole cut in
-     * the grid reads as a fault, a dip in brightness reads as depth.
-     */
-    const brightness = (col: number, row: number) => {
-      const x = col * cell + cell / 2;
-      const y = row * cell + cell / 2;
-      let nearest = Number.POSITIVE_INFINITY;
-      for (const r of clear) {
-        const dx = Math.max(r.left - x, 0, x - r.right);
-        const dy = Math.max(r.top - y, 0, y - r.bottom);
-        nearest = Math.min(nearest, Math.hypot(dx, dy));
+    function paintCell(col: number, row: number, alpha: number) {
+      const x = col * cell + cell / 2 + bounds.left;
+      const y = row * cell + cell / 2 + bounds.top;
+      let nearest = Infinity;
+      for (const rect of text) {
+        const dx = Math.max(rect.left - x - 6, 0, x - rect.right - 6);
+        const dy = Math.max(rect.top - y - 6, 0, y - rect.bottom - 6);
+        nearest = Math.min(nearest, dx * dx + dy * dy);
         if (nearest === 0) break;
       }
-      if (nearest === Number.POSITIVE_INFINITY) return 1;
-      return FAINT + (1 - FAINT) * Math.min(1, nearest / (FADE * cell));
-    };
+      const textDim = 1 - 0.85 * falloff(Math.sqrt(nearest) / (cell * 1.6));
+      ctx.globalAlpha = alpha * textDim;
+      // Keep the tint tied to the cell so it stays steady as the light moves.
+      const tint = lightness[(col * 7 + row * 13) % lightness.length];
+      ctx.fillStyle = `hsl(${rowHues[row]} 94% ${tint}%)`;
+      ctx.fillRect(col * cell + 1, row * cell + 1, cell - 1, cell - 1);
+    }
 
-    const ink = (row: number) => {
-      const t = rows > 1 ? Math.min(1, row / (rows - 1)) : 0;
-      const hue = (((HUE_TOP - t * HUE_SPAN) % 360) + 360) % 360;
-      const tint = tints[Math.floor(Math.random() * tints.length)];
-      return `hsl(${Math.round(hue)} 94% ${tint}%)`;
-    };
-
-    // One loop draws every cell; it runs only while something is lit.
-    let frame = 0;
-    const draw = (now: number) => {
+    function draw(now: number) {
       frame = 0;
+      if (layoutDirty) measureLayout();
+      const elapsed = last ? Math.min(now - last, 50) : 16;
+      last = now;
+      const target = pointer && {
+        x: pointer.x - bounds.left,
+        y: pointer.y - bounds.top,
+      };
+      const inside =
+        target &&
+        target.x >= 0 &&
+        target.x < width &&
+        target.y >= 0 &&
+        target.y < height;
+
+      if (inside) {
+        center = center
+          ? {
+              x: approach(center.x, target.x, elapsed, 65),
+              y: approach(center.y, target.y, elapsed, 65),
+            }
+          : target;
+      }
+      strength = approach(
+        strength,
+        inside ? 1 : 0,
+        elapsed,
+        inside ? 105 : 150,
+      );
+      if (!inside && strength < 0.005) {
+        strength = 0;
+        center = null;
+      }
+
       ctx.clearRect(0, 0, width, height);
-      for (const [key, c] of cells) {
-        let alpha: number;
-        if (now < c.until) {
-          alpha = easeOut(Math.min(1, (now - c.born) / FADE_IN));
-        } else {
-          const t = (now - c.until) / FADE_OUT;
-          if (t >= 1) {
-            cells.delete(key);
-            continue;
+      pulses = pulses.filter((pulse) => now - pulse.start < pulseDuration);
+      for (const pulse of pulses) {
+        const phase = Math.max(0, (now - pulse.start) / pulseDuration);
+        paintCell(pulse.col, pulse.row, 0.12 * Math.sin(Math.PI * phase) ** 2);
+      }
+
+      if (center) {
+        const radius = reach * cell;
+        const xMin = Math.max(0, Math.floor((center.x - radius) / cell));
+        const xMax = Math.min(
+          Math.ceil(width / cell),
+          Math.ceil((center.x + radius) / cell),
+        );
+        const yMin = Math.max(0, Math.floor((center.y - radius) / cell));
+        const yMax = Math.min(
+          Math.ceil(height / cell),
+          Math.ceil((center.y + radius) / cell),
+        );
+        for (let row = yMin; row < yMax; row++) {
+          for (let col = xMin; col < xMax; col++) {
+            const distance = Math.hypot(
+              (col + 0.5) * cell - center.x,
+              (row + 0.5) * cell - center.y,
+            );
+            const alpha = 0.64 * strength * falloff(distance / radius);
+            if (alpha > 0.001) paintCell(col, row, alpha);
           }
-          alpha = 1 - easeIn(t);
         }
-        ctx.globalAlpha = alpha * c.dim;
-        ctx.fillStyle = c.colour;
-        // Inset by the hairline, so the grid still shows between lit cells.
-        ctx.fillRect(c.col * cell + 1, c.row * cell + 1, cell - 1, cell - 1);
       }
       ctx.globalAlpha = 1;
-      if (cells.size > 0) frame = requestAnimationFrame(draw);
-    };
-    const wake = () => {
-      if (!frame) frame = requestAnimationFrame(draw);
-    };
 
-    /** Lights one cell, unless it is off the grid or already lit. */
-    const light = (col: number, row: number, hold: number) => {
-      if (col < 0 || row < 0 || col >= cols || row >= rows) return;
-      if (cells.size >= maxLit) return;
-      const key = `${col},${row}`;
-      const now = performance.now();
-      const lit = cells.get(key);
-      if (lit && now < lit.until) return;
-      // A cell caught again while fading picks up from where it had got to,
-      // instead of blinking out and back in.
-      let born = now;
-      if (lit) {
-        const faded = 1 - easeIn(Math.min(1, (now - lit.until) / FADE_OUT));
-        born = now - (1 - Math.sqrt(1 - faded)) * FADE_IN;
-      }
-      cells.set(key, {
-        col,
-        row,
-        colour: lit?.colour ?? ink(row),
-        dim: brightness(col, row),
-        born,
-        until: now + hold,
-      });
+      const moving =
+        inside &&
+        center &&
+        (strength < 0.995 ||
+          Math.hypot(center.x - target.x, center.y - target.y) > 0.1);
+      if (moving || (!inside && strength > 0) || pulses.length) wake();
+      else last = 0;
+    }
+
+    function onMove(event: PointerEvent) {
+      if (document.hidden || event.pointerType === 'touch') return;
+      if (!pointer) layoutDirty = true;
+      pointer = { x: event.clientX, y: event.clientY };
       wake();
-    };
+    }
 
-    // The pointer paints. Cells further from it catch light less often, so
-    // the edge of the trail breaks up instead of moving as a block.
-    let pending = 0;
-    let at: { x: number; y: number } | null = null;
-    const paint = () => {
-      pending = 0;
-      if (!at || !visible || document.hidden) return;
-      const cx = Math.floor(at.x / cell);
-      const cy = Math.floor(at.y / cell);
-      const span = Math.ceil(reach);
-      for (let dy = -span; dy <= span; dy++) {
-        for (let dx = -span; dx <= span; dx++) {
-          const away = Math.hypot(dx, dy);
-          if (away > reach) continue;
-          if (Math.random() > 1 - away / (reach + 0.6)) continue;
-          light(cx + dx, cy + dy, 260 + Math.random() * 900);
-        }
-      }
-    };
-    // Listened for on the window, because the grid sits under the content
-    // and never receives the pointer itself.
-    const onMove = (event: PointerEvent) => {
-      if (!visible || document.hidden || event.pointerType === 'touch') return;
-      const bounds = el.getBoundingClientRect();
-      at = { x: event.clientX - bounds.left, y: event.clientY - bounds.top };
-      if (!pending) pending = requestAnimationFrame(paint);
-    };
+    function leave() {
+      pointer = null;
+      if (strength) wake();
+    }
 
-    // A few cells find their own way on, so the grid is alive on arrival and
-    // on a screen with no pointer at all. Paused while out of sight.
-    let visible = true;
-    let beat = 0;
-    const drift = () => {
-      beat = window.setTimeout(drift, 1400 + Math.random() * 1800);
-      if (!visible || document.hidden) return;
-      for (let i = 0; i < ambient; i++) {
-        light(
-          Math.floor(Math.random() * cols),
-          Math.floor(Math.random() * rows),
-          900 + Math.random() * 1600,
-        );
+    function pulse() {
+      if (!visible || document.hidden || ambient <= 0) return;
+      const start = performance.now();
+      const cols = Math.ceil(width / cell);
+      const rows = Math.ceil(height / cell);
+      pulses = Array.from({ length: ambient }, () => ({
+        col: Math.floor(Math.random() * cols),
+        row: Math.floor(Math.random() * rows),
+        start,
+      }));
+      wake();
+      timer = window.setTimeout(pulse, 2800);
+    }
+
+    function syncVisibility() {
+      window.clearTimeout(timer);
+      if (visible && !document.hidden) {
+        invalidateLayout();
+        if (ambient > 0) timer = window.setTimeout(pulse, 700);
+        return;
       }
-    };
-    beat = window.setTimeout(drift, 500);
+      cancelAnimationFrame(frame);
+      frame = 0;
+      last = 0;
+      strength = 0;
+      center = pointer = null;
+      pulses = [];
+      ctx.clearRect(0, 0, width, height);
+    }
 
     const sight = new IntersectionObserver(([entry]) => {
-      visible = entry?.isIntersecting ?? true;
-      if (!visible) {
-        cancelAnimationFrame(frame);
-        frame = 0;
-        cells.clear();
-        ctx.clearRect(0, 0, width, height);
-      }
+      visible = Boolean(entry?.isIntersecting);
+      syncVisibility();
     });
     sight.observe(el);
-    const resize = new ResizeObserver(measure);
+    const resize = new ResizeObserver(measureSize);
     resize.observe(el);
-    // Text added, removed or rewritten moves the lines to hold back from.
-    let recheck = 0;
-    const copy = new MutationObserver(() => {
-      if (!recheck) {
-        recheck = requestAnimationFrame(() => {
-          recheck = 0;
-          measureText();
-        });
-      }
-    });
-    copy.observe(el.parentElement ?? document.body, {
-      childList: true,
-      subtree: true,
-      characterData: true,
-    });
-    const theme = new MutationObserver(readTheme);
-    theme.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class', 'style', 'data-theme'],
-    });
-    const scheme = window.matchMedia('(prefers-color-scheme: dark)');
-    scheme.addEventListener('change', readTheme);
-    measure();
-    // Lines of text move once the web fonts arrive.
-    document.fonts?.ready.then(measureText).catch(() => {});
-    if (interactive)
-      window.addEventListener('pointermove', onMove, { passive: true });
+    const fonts = document.fonts;
+    fonts?.addEventListener('loadingdone', invalidateLayout);
+    document.addEventListener('visibilitychange', syncVisibility);
+    window.addEventListener('scroll', invalidateLayout, { passive: true });
+    window.addEventListener('blur', leave);
+    parent.addEventListener('pointermove', onMove, { passive: true });
+    parent.addEventListener('pointerleave', leave);
+    parent.addEventListener('pointercancel', leave);
+    measureSize();
 
     return () => {
       sight.disconnect();
       resize.disconnect();
-      copy.disconnect();
-      cancelAnimationFrame(recheck);
-      theme.disconnect();
-      scheme.removeEventListener('change', readTheme);
+      fonts?.removeEventListener('loadingdone', invalidateLayout);
+      document.removeEventListener('visibilitychange', syncVisibility);
+      window.removeEventListener('scroll', invalidateLayout);
+      window.removeEventListener('blur', leave);
+      parent.removeEventListener('pointermove', onMove);
+      parent.removeEventListener('pointerleave', leave);
+      parent.removeEventListener('pointercancel', leave);
       cancelAnimationFrame(frame);
-      cancelAnimationFrame(pending);
-      clearTimeout(beat);
-      window.removeEventListener('pointermove', onMove);
+      window.clearTimeout(timer);
     };
-  }, [cell, reach, ambient, maxLit, avoid, reducedMotion, interactive]);
+  }, [cell, reach, ambient, reduced]);
 
   return (
     <div
@@ -345,21 +292,17 @@ export function GridPulse({
       data-slot="grid-pulse"
       className={cn(
         'pointer-events-none absolute inset-0 overflow-hidden',
-        // The hairlines, faint on their own so the lit cells keep full ink.
-        // Override with --grid-pulse-line.
-        '[--grid-pulse-line:color-mix(in_oklab,var(--color-foreground)_7%,transparent)]',
-        // Fades out at the bottom, so whatever follows can climb over it.
-        '[mask-image:linear-gradient(to_bottom,#000_92%,transparent)]',
+        '[--grid-pulse-line:color-mix(in_oklab,var(--color-foreground)_5%,transparent)]',
+        '[mask-image:linear-gradient(to_bottom,#000_89%,transparent)]',
         className,
       )}
       style={
         {
-          '--grid-pulse-cell': `${cell}px`,
           backgroundImage:
             'linear-gradient(to right, var(--grid-pulse-line) 1px, transparent 1px), linear-gradient(to bottom, var(--grid-pulse-line) 1px, transparent 1px)',
-          backgroundSize: 'var(--grid-pulse-cell) var(--grid-pulse-cell)',
+          backgroundSize: `${cell}px ${cell}px`,
           ...style,
-        } as React.CSSProperties
+        } as CSSProperties
       }
       {...props}
     >

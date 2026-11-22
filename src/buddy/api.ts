@@ -78,6 +78,7 @@ export function readAgents(): Promise<AgentSnapshot> {
           { agent: 'claude', installed: false, error: null },
         ],
         sessions: [],
+        cue: null,
       });
 }
 

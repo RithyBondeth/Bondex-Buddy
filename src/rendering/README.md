@@ -8,7 +8,7 @@
 
 The renderer caches both articulated sprites (up to 120) and assembled frames (up to 240). Each assembled frame has an alpha mask; identical silhouettes share a mask reference, so native updates happen only when the interactive silhouette changes. Pixel readback happens only on a cache miss. The shelf and decor remain stationary while the character and wardrobe animate. Decorative steam, hearts, and sleep glyphs never intercept clicks.
 
-`AnimationClock` caps rendering at 30 fps with cadence correction for different display refresh rates. It cancels its RAF loop while hidden or when reduced motion is requested. Rendering consumes mood state; it does not decide focus, break, or progression rules.
+`AnimationClock` caps rendering at 60 fps with cadence correction for different display refresh rates. It cancels its RAF loop while hidden or when reduced motion is requested. Rendering consumes mood state; it does not decide focus, break, or progression rules.
 
 Open `/motion-review.html` on the development server for the interactive pet studio. Click Ember for the greeting, choose a mood to inspect it, and preview cosmetics without changing saved progress. The expandable motion timeline supports pause, restart, and scrubbing. Its renderer checks exercise animated silhouettes, accessories, caching, and reduced motion. Native transparency, Dock occlusion, pointer pass-through, placement, and drag behavior require checks in Tauri on each target OS. Native focus events keep hidden controls from intercepting clicks after the user returns to another app.
 

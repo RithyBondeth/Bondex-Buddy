@@ -8,6 +8,8 @@ Local `progress.json` in the operating system's application-data directory conta
 
 Launch at login is an explicit option in menu bar or tray Settings in release builds. It uses the OS startup mechanism through Tauri's autostart plugin, and is never automatically enabled. Debug builds disable the option so a development executable is not accidentally registered.
 
+When you connect Codex or Claude Code in Settings, Bondex Buddy stores the provider, session identifier, project folder name, activity status, timestamps, observed request count, and last reported model identifier locally. These records expire after 24 hours. Bondex Buddy discards prompts, transcripts, tool inputs and outputs, and full working-directory paths.
+
 Audio is generated locally. No microphone permission or recordings are used. To remove local progress, quit the app and remove its `progress.json`; this resets rewards and preferences. OS login registration can be disabled in Settings before removing the app.
 
 The optional debug `native-test` feature creates an owned acceptance-test surface. It displays a transient click counter and coordinates for clicks on that surface, plus current window geometry and hit-test flags. These diagnostics are not saved or sent anywhere. The feature is inactive in normal builds and release builds, including release builds compiled with the feature enabled. It never enables OS login registration.
