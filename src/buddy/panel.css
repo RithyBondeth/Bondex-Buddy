@@ -485,6 +485,40 @@
   border-color: #986f54;
   color: var(--peach);
 }
+.buddy-surface .handoff-indicator {
+  width: 100%;
+  margin: 0 0 6px;
+  padding: 4px 7px;
+  border: 1px solid #684b38;
+  border-radius: 6px;
+  background: #211912;
+  color: var(--peach);
+  font-size: 10px;
+  text-align: left;
+}
+.buddy-surface .agent-handoffs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+.buddy-surface .handoff-project,
+.buddy-surface .handoff-status {
+  margin: 3px 0;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+}
+.buddy-surface .handoff-status {
+  color: var(--peach);
+}
+.buddy-surface .handoff-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 5px;
+}
+.buddy-surface .handoff-actions .agent-usage-toggle {
+  margin-left: 0;
+}
 .buddy-surface .agent-count {
   color: var(--muted);
   font-size: 10px;
@@ -508,7 +542,7 @@
   image-rendering: pixelated;
 }
 .agent-session[data-status='working'] .agent-mascot,
-[data-agent='working'] .pet-agent .agent-mascot,
+.pet-agent[data-status='working'] .agent-mascot,
 .pet-agent-portraits .agent-mascot {
   animation: mascot-working 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }

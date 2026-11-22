@@ -48,7 +48,7 @@ const announce = (message: string, error = false) => {
   notice.hidden = false;
 };
 const clipboard = clipboardView(announce);
-const agents = agentsView();
+const agents = agentsView(announce);
 const body = element('div', 'panel-body');
 body.append(clipboard.section, agents.section);
 const footer = element('footer', 'panel-footer');

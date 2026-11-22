@@ -2,6 +2,7 @@ import { invoke, isTauri } from '@tauri-apps/api/core';
 import {
   disconnectedAgents,
   type AgentKind,
+  type AgentSession,
   type AgentSnapshot,
   type ClipboardSnapshot,
 } from './model';
@@ -81,9 +82,21 @@ export function readAgents(): Promise<AgentSnapshot> {
         connections: disconnectedAgents,
         sessions: [],
         cue: null,
+        handoffs: [],
         usage: [],
         tokenUsageEnabled: false,
       });
+}
+
+export async function handoffAgent(item: AgentSession): Promise<string> {
+  if (!native) throw new Error('Session shortcuts run in the desktop app.');
+  const result = await invoke<'opened' | 'copiedCommand' | 'copiedSession'>(
+    'agent_handoff',
+    { agent: item.agent, session: item.session },
+  );
+  if (result === 'opened') return 'Sent the session to Codex.';
+  if (result === 'copiedSession') return 'Copied the Cursor session ID.';
+  return 'Copied the resume command. Run it from the session’s workspace.';
 }
 
 export async function connectAgent(

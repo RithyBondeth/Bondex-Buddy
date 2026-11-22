@@ -14,7 +14,10 @@ import {
 } from './dom';
 import { relativeTime, selectClips, type ClipboardSnapshot } from './model';
 
-export function clipboardView(announce: Announce) {
+export function clipboardView(
+  announce: Announce,
+  addTask?: (text: string) => Promise<boolean>,
+) {
   const section = element('section', 'clipboard-view');
   section.id = 'clipboard-panel';
   section.setAttribute('role', 'tabpanel');
@@ -139,7 +142,28 @@ export function clipboardView(announce: Announce) {
             announce('Clip removed.');
           }),
       );
-      actions.append(copy, pin, remove);
+      actions.append(copy, pin);
+      if (addTask) {
+        const task = button('Task', 'text-button clip-task-button');
+        task.dataset.action = `task-${entry.id}`;
+        task.setAttribute(
+          'aria-label',
+          `Add clip to Tasks: ${entry.text.slice(0, 50)}`,
+        );
+        task.addEventListener(
+          'click',
+          () =>
+            void run(async () => {
+              if (!(await addTask(entry.text)))
+                throw new Error(
+                  'Task is in Ember’s list. Open Tasks to retry saving.',
+                );
+              announce('Added to Tasks.');
+            }),
+        );
+        actions.append(task);
+      }
+      actions.append(remove);
       item.append(top, text, actions);
       return item;
     });

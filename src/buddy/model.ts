@@ -67,6 +67,7 @@ export interface AgentSnapshot {
   }[];
   sessions: AgentSession[];
   cue: AgentSession | null;
+  handoffs: AgentSession[];
   usage: AgentUsage[];
   tokenUsageEnabled: boolean;
 }

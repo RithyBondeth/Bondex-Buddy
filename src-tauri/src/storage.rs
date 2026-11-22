@@ -1,9 +1,4 @@
-use std::{
-    fs,
-    io::{Read, Write},
-    path::Path,
-    sync::Mutex,
-};
+use std::{fs, io::Read, path::Path, sync::Mutex};
 use tauri::Manager;
 
 #[derive(Default)]
@@ -42,21 +37,7 @@ fn write(path: &Path, raw: &str) -> Result<(), String> {
     if let Some(previous) = read(path)? {
         valid(&previous)?;
     }
-    let parent = path.parent().ok_or("Invalid progress path")?;
-    fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-    // Same-directory replacement preserves the previous file on pre-rename failure.
-    let temporary = path.with_extension(format!("{}.tmp", std::process::id()));
-    let result = (|| -> Result<(), String> {
-        let mut file = fs::File::create(&temporary).map_err(|e| e.to_string())?;
-        file.write_all(raw.as_bytes()).map_err(|e| e.to_string())?;
-        file.sync_all().map_err(|e| e.to_string())?;
-        drop(file);
-        fs::rename(&temporary, path).map_err(|e| e.to_string())
-    })();
-    if result.is_err() {
-        let _ = fs::remove_file(&temporary);
-    }
-    result
+    crate::clipboard::private_write(path, raw.as_bytes())
 }
 
 #[tauri::command]

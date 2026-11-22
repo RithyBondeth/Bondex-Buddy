@@ -55,6 +55,7 @@ pub fn run() {
             clipboard::clipboard_edit,
             clipboard::clipboard_copy,
             agents::agent_snapshot,
+            agents::agent_handoff,
             agents::agent_connections,
             agents::agent_token_usage,
             agents::set_agent_token_usage,
