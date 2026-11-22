@@ -19,6 +19,7 @@
   transition:
     transform 180ms var(--ease-out),
     opacity 180ms var(--ease-out),
+    border-color 180ms var(--ease-out),
     visibility 0s 180ms;
   z-index: 4;
 }
@@ -51,7 +52,11 @@
   transition:
     transform 340ms var(--ease-out),
     opacity 260ms var(--ease-out),
+    border-color 180ms var(--ease-out),
     visibility 0s;
+}
+.companion-open.pouch-catching .companion-sheet {
+  border-color: #ffc99b;
 }
 .companion-open .companion-sheet::before,
 .companion-open .companion-sheet::after {
@@ -76,7 +81,7 @@
 .buddy-surface .pocket-tabs {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   flex: 1;
   min-width: 0;
   isolation: isolate;
@@ -87,7 +92,7 @@
 .buddy-surface .pocket-tab-indicator {
   position: absolute;
   inset: 0 auto 0 0;
-  width: calc(100% / 3);
+  width: calc(100% / 4);
   border-radius: 6px;
   border: 1px solid #ffe0be23;
   background: linear-gradient(#302723, #231f1c);
@@ -117,10 +122,11 @@
 }
 .buddy-surface .pocket-tab {
   position: relative;
+  flex-direction: column;
   min-width: 0;
-  min-height: 28px;
+  min-height: 31px;
   padding: 2px;
-  gap: 4px;
+  gap: 2px;
   font-size: 10px;
   font-weight: 600;
   line-height: 1.2;
@@ -501,13 +507,10 @@
   overflow-wrap: anywhere;
   line-height: 1.1;
 }
-@media (max-width: 239px) {
+@media (max-width: 259px) {
   .buddy-surface .pocket-bar,
   .buddy-surface .pocket-body {
     padding-inline: 7px;
-  }
-  .buddy-surface .pocket-tab {
-    gap: 2px;
   }
 }
 .companion-sheet .empty-state,
@@ -523,4 +526,71 @@
 }
 .companion-open.ghosted canvas {
   opacity: 1;
+}
+
+.buddy-surface .pouch-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 7px;
+}
+.buddy-surface .pouch-count,
+.buddy-surface .pouch-empty {
+  color: var(--muted);
+  font-size: 11px;
+}
+.buddy-surface .pouch-empty {
+  padding: 8px;
+  border: 1px dashed var(--line);
+  border-radius: 7px;
+  line-height: 1.4;
+}
+.buddy-surface .pouch-files {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.buddy-surface .pouch-file {
+  min-width: 0;
+  padding: 4px 6px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #151413;
+}
+.buddy-surface .pouch-file-handle {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 1px;
+  cursor: grab;
+  touch-action: none;
+}
+.buddy-surface .pouch-file-handle:active {
+  cursor: grabbing;
+}
+.buddy-surface .pouch-file-handle svg {
+  color: var(--peach);
+}
+.buddy-surface .pouch-file-info {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  font-size: 11px;
+}
+.buddy-surface .pouch-file-info strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.buddy-surface .pouch-file-info small {
+  color: var(--muted);
+}
+.buddy-surface .pouch-file-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
 }

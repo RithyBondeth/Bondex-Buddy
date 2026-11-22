@@ -340,6 +340,65 @@ canvas {
 .has-water-visit .pet-agent-pair {
   display: none;
 }
+.pouch-cue {
+  position: absolute;
+  right: 110px;
+  bottom: 76px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 175px;
+  padding: 4px 7px;
+  border: 1px solid #76563d;
+  border-radius: 7px;
+  background: #211912;
+  color: var(--peach);
+  font-size: 10px;
+  white-space: nowrap;
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  transform: translate(50%, 4px);
+  transition:
+    opacity 200ms var(--ease-out),
+    transform 240ms var(--ease-out),
+    visibility 0s 240ms;
+}
+.pouch-cue span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pouch-cue svg {
+  width: 13px;
+  height: 13px;
+  flex: none;
+}
+.has-pouch-cue:not(.companion-open) .pouch-cue {
+  visibility: visible;
+  opacity: 1;
+  transform: translate(50%, 0);
+  transition-delay: 0s;
+}
+.pouch-catching:not(.companion-open) .pouch-cue {
+  border-color: #bc946f;
+}
+.pouch-caught svg {
+  animation: pouch-catch 420ms var(--ease-out) both;
+}
+@keyframes pouch-catch {
+  25% {
+    transform: translateY(2px) scale(1.14, 0.84);
+  }
+  60% {
+    transform: translateY(-2px) scale(0.96, 1.08);
+  }
+}
+.has-pouch-cue .mood-label,
+.has-pouch-cue .water-break-cue,
+.has-pouch-cue .pet-agent,
+.has-pouch-cue .pet-agent-pair {
+  display: none;
+}
 
 .drag-handle {
   all: unset;

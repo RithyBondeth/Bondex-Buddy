@@ -8,16 +8,21 @@
   ],
   "locks": {
     "package-lock.json": "ab16895a3eb2a4e9926a8a98bd97de6be40af149d9edfcbd942bb0f221571910",
-    "src-tauri/Cargo.lock": "12ffbbf062a834bf50e1a6129ed00a456818195981dd739183bacf829b3be346"
+    "src-tauri/Cargo.lock": "226942f55db397b7f8fbe24f23755769e5a36fc2cc48f543e2e9df3c36498905"
   },
-  "packageCount": 297,
-  "uniqueLicenseFiles": 194,
+  "packageCount": 315,
+  "uniqueLicenseFiles": 195,
   "unresolved": [
     "cargo:block2@0.6.2",
     "cargo:dispatch2@0.3.1",
     "cargo:objc2-app-kit@0.3.2",
+    "cargo:objc2-cloud-kit@0.3.2",
+    "cargo:objc2-core-data@0.3.2",
     "cargo:objc2-core-foundation@0.3.2",
     "cargo:objc2-core-graphics@0.3.2",
+    "cargo:objc2-core-image@0.3.2",
+    "cargo:objc2-core-text@0.3.2",
+    "cargo:objc2-core-video@0.3.2",
     "cargo:objc2-encode@4.1.0",
     "cargo:objc2-exception-helper@0.1.1",
     "cargo:objc2-foundation@0.3.2",
@@ -1017,6 +1022,38 @@
       "issues": []
     },
     {
+      "id": "cargo:core-graphics@0.24.0",
+      "ecosystem": "cargo",
+      "name": "core-graphics",
+      "version": "0.24.0",
+      "license": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/servo/core-foundation-rs",
+      "revision": "b10f1efc48343fc5590127ec6d890ffbb8b5bd02",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin"
+      ],
+      "files": [
+        {
+          "name": "COPYRIGHT",
+          "file": "licenses/ec82b96487e9e778ee610c7ab245162464782cfa1f555c2299333f8dbe5c036a.txt",
+          "sha256": "ec82b96487e9e778ee610c7ab245162464782cfa1f555c2299333f8dbe5c036a"
+        },
+        {
+          "name": "LICENSE-APACHE",
+          "file": "licenses/a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2.txt",
+          "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+        },
+        {
+          "name": "LICENSE-MIT",
+          "file": "licenses/62065228e42caebca7e7d7db1204cbb867033de5982ca4009928915e4095f3a3.txt",
+          "sha256": "62065228e42caebca7e7d7db1204cbb867033de5982ca4009928915e4095f3a3"
+        }
+      ],
+      "issues": []
+    },
+    {
       "id": "cargo:core-graphics@0.25.0",
       "ecosystem": "cargo",
       "name": "core-graphics",
@@ -1615,6 +1652,34 @@
           "name": "LICENSE-LIBM-MIT",
           "file": "licenses/9eff396a99bafd208e7126602420d6864f6066c08b84485a5b032320a9c01997.txt",
           "sha256": "9eff396a99bafd208e7126602420d6864f6066c08b84485a5b032320a9c01997"
+        }
+      ],
+      "issues": []
+    },
+    {
+      "id": "cargo:drag@2.1.1",
+      "ecosystem": "cargo",
+      "name": "drag",
+      "version": "2.1.1",
+      "license": "Apache-2.0 OR MIT",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": null,
+      "revision": "8b48f9883658507527287169b53d4ec7579b540c",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "LICENSE_APACHE-2.0",
+          "file": "licenses/0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594.txt",
+          "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594"
+        },
+        {
+          "name": "LICENSE_MIT",
+          "file": "licenses/9e17784d32fbb3ac50c6c543c307d0fbcb16969585cb4cee8839b50e774708f9.txt",
+          "sha256": "9e17784d32fbb3ac50c6c543c307d0fbcb16969585cb4cee8839b50e774708f9"
         }
       ],
       "issues": []
@@ -3564,6 +3629,42 @@
       ]
     },
     {
+      "id": "cargo:objc2-cloud-kit@0.3.2",
+      "ecosystem": "cargo",
+      "name": "objc2-cloud-kit",
+      "version": "0.3.2",
+      "license": "Zlib OR Apache-2.0 OR MIT",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/madsmtm/objc2",
+      "revision": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin"
+      ],
+      "files": [],
+      "issues": [
+        "No standalone license text collected; inspect source headers and upstream licensing."
+      ]
+    },
+    {
+      "id": "cargo:objc2-core-data@0.3.2",
+      "ecosystem": "cargo",
+      "name": "objc2-core-data",
+      "version": "0.3.2",
+      "license": "Zlib OR Apache-2.0 OR MIT",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/madsmtm/objc2",
+      "revision": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin"
+      ],
+      "files": [],
+      "issues": [
+        "No standalone license text collected; inspect source headers and upstream licensing."
+      ]
+    },
+    {
       "id": "cargo:objc2-core-foundation@0.3.2",
       "ecosystem": "cargo",
       "name": "objc2-core-foundation",
@@ -3585,6 +3686,60 @@
       "id": "cargo:objc2-core-graphics@0.3.2",
       "ecosystem": "cargo",
       "name": "objc2-core-graphics",
+      "version": "0.3.2",
+      "license": "Zlib OR Apache-2.0 OR MIT",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/madsmtm/objc2",
+      "revision": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin"
+      ],
+      "files": [],
+      "issues": [
+        "No standalone license text collected; inspect source headers and upstream licensing."
+      ]
+    },
+    {
+      "id": "cargo:objc2-core-image@0.3.2",
+      "ecosystem": "cargo",
+      "name": "objc2-core-image",
+      "version": "0.3.2",
+      "license": "Zlib OR Apache-2.0 OR MIT",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/madsmtm/objc2",
+      "revision": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin"
+      ],
+      "files": [],
+      "issues": [
+        "No standalone license text collected; inspect source headers and upstream licensing."
+      ]
+    },
+    {
+      "id": "cargo:objc2-core-text@0.3.2",
+      "ecosystem": "cargo",
+      "name": "objc2-core-text",
+      "version": "0.3.2",
+      "license": "Zlib OR Apache-2.0 OR MIT",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/madsmtm/objc2",
+      "revision": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin"
+      ],
+      "files": [],
+      "issues": [
+        "No standalone license text collected; inspect source headers and upstream licensing."
+      ]
+    },
+    {
+      "id": "cargo:objc2-core-video@0.3.2",
+      "ecosystem": "cargo",
+      "name": "objc2-core-video",
       "version": "0.3.2",
       "license": "Zlib OR Apache-2.0 OR MIT",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
@@ -7056,6 +7211,58 @@
       "issues": []
     },
     {
+      "id": "cargo:windows-core@0.52.0",
+      "ecosystem": "cargo",
+      "name": "windows-core",
+      "version": "0.52.0",
+      "license": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/microsoft/windows-rs",
+      "revision": "3a605cba064b26f2a198ac58085f8c8836f47c38",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "license-apache-2.0",
+          "file": "licenses/c16f8dcf1a368b83be78d826ea23de4079fe1b4469a0ab9ee20563f37ff3d44b.txt",
+          "sha256": "c16f8dcf1a368b83be78d826ea23de4079fe1b4469a0ab9ee20563f37ff3d44b"
+        },
+        {
+          "name": "license-mit",
+          "file": "licenses/c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383.txt",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+        }
+      ],
+      "issues": []
+    },
+    {
+      "id": "cargo:windows-core@0.58.0",
+      "ecosystem": "cargo",
+      "name": "windows-core",
+      "version": "0.58.0",
+      "license": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/microsoft/windows-rs",
+      "revision": "db06b51c2ebb743efb544d40e3064efa49f28d38",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "license-apache-2.0",
+          "file": "licenses/c16f8dcf1a368b83be78d826ea23de4079fe1b4469a0ab9ee20563f37ff3d44b.txt",
+          "sha256": "c16f8dcf1a368b83be78d826ea23de4079fe1b4469a0ab9ee20563f37ff3d44b"
+        },
+        {
+          "name": "license-mit",
+          "file": "licenses/c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383.txt",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+        }
+      ],
+      "issues": []
+    },
+    {
       "id": "cargo:windows-core@0.62.2",
       "ecosystem": "cargo",
       "name": "windows-core",
@@ -7108,6 +7315,58 @@
       "issues": []
     },
     {
+      "id": "cargo:windows-implement@0.52.0",
+      "ecosystem": "cargo",
+      "name": "windows-implement",
+      "version": "0.52.0",
+      "license": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/microsoft/windows-rs",
+      "revision": "3a605cba064b26f2a198ac58085f8c8836f47c38",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "license-apache-2.0",
+          "file": "licenses/c16f8dcf1a368b83be78d826ea23de4079fe1b4469a0ab9ee20563f37ff3d44b.txt",
+          "sha256": "c16f8dcf1a368b83be78d826ea23de4079fe1b4469a0ab9ee20563f37ff3d44b"
+        },
+        {
+          "name": "license-mit",
+          "file": "licenses/c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383.txt",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+        }
+      ],
+      "issues": []
+    },
+    {
+      "id": "cargo:windows-implement@0.58.0",
+      "ecosystem": "cargo",
+      "name": "windows-implement",
+      "version": "0.58.0",
+      "license": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/microsoft/windows-rs",
+      "revision": "db06b51c2ebb743efb544d40e3064efa49f28d38",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "license-apache-2.0",
+          "file": "licenses/c16f8dcf1a368b83be78d826ea23de4079fe1b4469a0ab9ee20563f37ff3d44b.txt",
+          "sha256": "c16f8dcf1a368b83be78d826ea23de4079fe1b4469a0ab9ee20563f37ff3d44b"
+        },
+        {
+          "name": "license-mit",
+          "file": "licenses/c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383.txt",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+        }
+      ],
+      "issues": []
+    },
+    {
       "id": "cargo:windows-implement@0.60.2",
       "ecosystem": "cargo",
       "name": "windows-implement",
@@ -7116,6 +7375,58 @@
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "repository": "https://github.com/microsoft/windows-rs",
       "revision": "32c3144490c016fe496a0aed769bce60987a2e9d",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "license-apache-2.0",
+          "file": "licenses/c16f8dcf1a368b83be78d826ea23de4079fe1b4469a0ab9ee20563f37ff3d44b.txt",
+          "sha256": "c16f8dcf1a368b83be78d826ea23de4079fe1b4469a0ab9ee20563f37ff3d44b"
+        },
+        {
+          "name": "license-mit",
+          "file": "licenses/c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383.txt",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+        }
+      ],
+      "issues": []
+    },
+    {
+      "id": "cargo:windows-interface@0.52.0",
+      "ecosystem": "cargo",
+      "name": "windows-interface",
+      "version": "0.52.0",
+      "license": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/microsoft/windows-rs",
+      "revision": "3a605cba064b26f2a198ac58085f8c8836f47c38",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "license-apache-2.0",
+          "file": "licenses/c16f8dcf1a368b83be78d826ea23de4079fe1b4469a0ab9ee20563f37ff3d44b.txt",
+          "sha256": "c16f8dcf1a368b83be78d826ea23de4079fe1b4469a0ab9ee20563f37ff3d44b"
+        },
+        {
+          "name": "license-mit",
+          "file": "licenses/c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383.txt",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+        }
+      ],
+      "issues": []
+    },
+    {
+      "id": "cargo:windows-interface@0.58.0",
+      "ecosystem": "cargo",
+      "name": "windows-interface",
+      "version": "0.58.0",
+      "license": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/microsoft/windows-rs",
+      "revision": "db06b51c2ebb743efb544d40e3064efa49f28d38",
       "targets": [
         "x86_64-pc-windows-msvc"
       ],
@@ -7238,6 +7549,32 @@
       "issues": []
     },
     {
+      "id": "cargo:windows-result@0.2.0",
+      "ecosystem": "cargo",
+      "name": "windows-result",
+      "version": "0.2.0",
+      "license": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/microsoft/windows-rs",
+      "revision": "db06b51c2ebb743efb544d40e3064efa49f28d38",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "license-apache-2.0",
+          "file": "licenses/c16f8dcf1a368b83be78d826ea23de4079fe1b4469a0ab9ee20563f37ff3d44b.txt",
+          "sha256": "c16f8dcf1a368b83be78d826ea23de4079fe1b4469a0ab9ee20563f37ff3d44b"
+        },
+        {
+          "name": "license-mit",
+          "file": "licenses/c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383.txt",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+        }
+      ],
+      "issues": []
+    },
+    {
       "id": "cargo:windows-result@0.4.1",
       "ecosystem": "cargo",
       "name": "windows-result",
@@ -7246,6 +7583,32 @@
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "repository": "https://github.com/microsoft/windows-rs",
       "revision": "32c3144490c016fe496a0aed769bce60987a2e9d",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "license-apache-2.0",
+          "file": "licenses/c16f8dcf1a368b83be78d826ea23de4079fe1b4469a0ab9ee20563f37ff3d44b.txt",
+          "sha256": "c16f8dcf1a368b83be78d826ea23de4079fe1b4469a0ab9ee20563f37ff3d44b"
+        },
+        {
+          "name": "license-mit",
+          "file": "licenses/c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383.txt",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+        }
+      ],
+      "issues": []
+    },
+    {
+      "id": "cargo:windows-strings@0.1.0",
+      "ecosystem": "cargo",
+      "name": "windows-strings",
+      "version": "0.1.0",
+      "license": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/microsoft/windows-rs",
+      "revision": "db06b51c2ebb743efb544d40e3064efa49f28d38",
       "targets": [
         "x86_64-pc-windows-msvc"
       ],
@@ -7316,6 +7679,32 @@
       "issues": []
     },
     {
+      "id": "cargo:windows-targets@0.52.6",
+      "ecosystem": "cargo",
+      "name": "windows-targets",
+      "version": "0.52.6",
+      "license": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/microsoft/windows-rs",
+      "revision": "db06b51c2ebb743efb544d40e3064efa49f28d38",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "license-apache-2.0",
+          "file": "licenses/c16f8dcf1a368b83be78d826ea23de4079fe1b4469a0ab9ee20563f37ff3d44b.txt",
+          "sha256": "c16f8dcf1a368b83be78d826ea23de4079fe1b4469a0ab9ee20563f37ff3d44b"
+        },
+        {
+          "name": "license-mit",
+          "file": "licenses/c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383.txt",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+        }
+      ],
+      "issues": []
+    },
+    {
       "id": "cargo:windows-threading@0.2.1",
       "ecosystem": "cargo",
       "name": "windows-threading",
@@ -7368,6 +7757,32 @@
       "issues": []
     },
     {
+      "id": "cargo:windows@0.52.0",
+      "ecosystem": "cargo",
+      "name": "windows",
+      "version": "0.52.0",
+      "license": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/microsoft/windows-rs",
+      "revision": "3a605cba064b26f2a198ac58085f8c8836f47c38",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "license-apache-2.0",
+          "file": "licenses/c16f8dcf1a368b83be78d826ea23de4079fe1b4469a0ab9ee20563f37ff3d44b.txt",
+          "sha256": "c16f8dcf1a368b83be78d826ea23de4079fe1b4469a0ab9ee20563f37ff3d44b"
+        },
+        {
+          "name": "license-mit",
+          "file": "licenses/c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383.txt",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+        }
+      ],
+      "issues": []
+    },
+    {
       "id": "cargo:windows@0.62.2",
       "ecosystem": "cargo",
       "name": "windows",
@@ -7376,6 +7791,32 @@
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "repository": "https://github.com/microsoft/windows-rs",
       "revision": "32c3144490c016fe496a0aed769bce60987a2e9d",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ],
+      "files": [
+        {
+          "name": "license-apache-2.0",
+          "file": "licenses/c16f8dcf1a368b83be78d826ea23de4079fe1b4469a0ab9ee20563f37ff3d44b.txt",
+          "sha256": "c16f8dcf1a368b83be78d826ea23de4079fe1b4469a0ab9ee20563f37ff3d44b"
+        },
+        {
+          "name": "license-mit",
+          "file": "licenses/c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383.txt",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+        }
+      ],
+      "issues": []
+    },
+    {
+      "id": "cargo:windows_x86_64_msvc@0.52.6",
+      "ecosystem": "cargo",
+      "name": "windows_x86_64_msvc",
+      "version": "0.52.6",
+      "license": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "repository": "https://github.com/microsoft/windows-rs",
+      "revision": "db06b51c2ebb743efb544d40e3064efa49f28d38",
       "targets": [
         "x86_64-pc-windows-msvc"
       ],

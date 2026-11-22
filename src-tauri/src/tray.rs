@@ -11,6 +11,7 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
     let preferences_separator = PredefinedMenuItem::separator(app)?;
     let focus = MenuItem::with_id(app, "focus", "Focus timer…", true, None::<&str>)?;
     let clipboard = MenuItem::with_id(app, "clipboard", "Open clipboard…", true, None::<&str>)?;
+    let files = MenuItem::with_id(app, "files", "File pouch…", true, None::<&str>)?;
     let agents = MenuItem::with_id(app, "agents", "AI agents…", true, None::<&str>)?;
     let utilities_separator = PredefinedMenuItem::separator(app)?;
     let show = MenuItem::with_id(app, "show", "Show spirit", true, None::<&str>)?;
@@ -26,6 +27,7 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
             &preferences_separator,
             &focus,
             &clipboard,
+            &files,
             &agents,
             &utilities_separator,
             &show,
@@ -56,7 +58,10 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
             }
         })
         .on_menu_event(|app, event| {
-            if matches!(event.id.as_ref(), "focus" | "clipboard" | "agents") {
+            if matches!(
+                event.id.as_ref(),
+                "focus" | "clipboard" | "files" | "agents"
+            ) {
                 crate::panel::request_open(app, event.id.as_ref());
                 return;
             }
