@@ -1,0 +1,138 @@
+/* Surface, accent, and a low-contrast instrument pattern shared by the pocket and habitat. */
+[data-pocket-theme='ember'] {
+  --pocket-base: #251913;
+  --pocket-color: #ffba78;
+  --pocket-trim: #df784f;
+  --pocket-pattern: repeating-radial-gradient(
+    ellipse at 98% 130%,
+    transparent 0 9px,
+    #ffc28b24 10px 11px,
+    transparent 12px 17px
+  );
+}
+[data-pocket-theme='moon'] {
+  --pocket-base: #1c1a32;
+  --pocket-color: #d1c0ff;
+  --pocket-trim: #9c92d5;
+  --pocket-pattern:
+    radial-gradient(circle at 5px 7px, #ffe6be88 0 1px, transparent 1.4px) 0 0 /
+      29px 22px,
+    radial-gradient(circle at 14px 3px, #c6baff66 0 1px, transparent 1.4px) 0
+      0 / 37px 27px;
+}
+[data-pocket-theme='moss'] {
+  --pocket-base: #19291e;
+  --pocket-color: #c1e998;
+  --pocket-trim: #79a76e;
+  --pocket-pattern:
+    repeating-linear-gradient(
+      144deg,
+      transparent 0 10px,
+      #badc952a 11px 12px,
+      transparent 13px 17px
+    ),
+    repeating-linear-gradient(
+      42deg,
+      transparent 0 15px,
+      #a8db9820 16px 17px,
+      transparent 18px 26px
+    );
+}
+[data-pocket-theme='spider-man'] {
+  --pocket-base: #171e32;
+  --pocket-color: #ff99a2;
+  --pocket-trim: #668ed5;
+  --pocket-pattern:
+    repeating-radial-gradient(
+      ellipse at 103% -10%,
+      transparent 0 12px,
+      #d9e9ff45 12.5px 13px,
+      transparent 14px 19px
+    ),
+    repeating-conic-gradient(
+      from 10deg at 103% -10%,
+      transparent 0deg 18deg,
+      #d9e9ff48 19deg 20deg,
+      transparent 21deg 31deg
+    );
+}
+[data-pocket-theme='iron-man'] {
+  --pocket-base: #10272e;
+  --pocket-color: #86f0ef;
+  --pocket-trim: #bd8450;
+  --pocket-pattern:
+    repeating-radial-gradient(
+      circle at 91% 48%,
+      transparent 0 7px,
+      #98fffa50 8px 9px,
+      transparent 10px 14px
+    ),
+    linear-gradient(#81fbff12 1px, transparent 1px) 0 0 / 8px 8px;
+}
+[data-pocket-theme='thor'] {
+  --pocket-base: #22203b;
+  --pocket-color: #c6ceff;
+  --pocket-trim: #b299ed;
+  --pocket-pattern:
+    repeating-linear-gradient(
+      122deg,
+      transparent 0 9px,
+      #bdb6ff38 10px 12px,
+      transparent 13px 19px
+    ),
+    linear-gradient(52deg, transparent 55%, #a79ad82b 56% 65%, transparent 66%);
+}
+[data-pocket-theme='hulk'] {
+  --pocket-base: #1d2920;
+  --pocket-color: #adf477;
+  --pocket-trim: #9b88b0;
+  --pocket-pattern: repeating-linear-gradient(
+    -50deg,
+    transparent 0 9px,
+    #a9ed7328 10px 15px,
+    transparent 16px 22px
+  );
+}
+[data-pocket-theme='captain-america'] {
+  --pocket-base: #172539;
+  --pocket-color: #b0d9ff;
+  --pocket-trim: #db8e89;
+  --pocket-pattern: repeating-radial-gradient(
+    circle at 100% 100%,
+    transparent 0 7px,
+    #d584852e 8px 12px,
+    #c9dded36 13px 15px,
+    transparent 16px 21px
+  );
+}
+[data-pocket-theme='black-widow'] {
+  --pocket-base: #291820;
+  --pocket-color: #ffa1b8;
+  --pocket-trim: #c26382;
+  --pocket-pattern: repeating-conic-gradient(
+      from 45deg at 50% 50%,
+      #df688328 0deg 90deg,
+      transparent 90deg 180deg
+    )
+    0 0 / 21px 15px;
+}
+[data-pocket-theme='hawkeye'] {
+  --pocket-base: #231b30;
+  --pocket-color: #ddb3ff;
+  --pocket-trim: #b39b66;
+  --pocket-pattern:
+    repeating-linear-gradient(
+        35deg,
+        transparent 0 9px,
+        #e3b6ff38 10px 11px,
+        transparent 12px 16px
+      )
+      top / 100% 50% no-repeat,
+    repeating-linear-gradient(
+        145deg,
+        transparent 0 9px,
+        #e3b6ff38 10px 11px,
+        transparent 12px 16px
+      )
+      bottom / 100% 50% no-repeat;
+}

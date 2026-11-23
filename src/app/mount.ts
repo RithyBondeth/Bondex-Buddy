@@ -1,6 +1,7 @@
 import { FOCUS_MS, SpiritEngine, formatCountdown } from '../engine/spirit';
 import type { Mood } from '../engine/spirit';
 import { awardCompletions, canEquip, canWear } from '../engine/progress';
+import { companionNames, isCompanion } from '../engine/companions';
 import { creditTask, dueReminders, type FocusTask } from '../engine/tasks';
 import { WaterSchedule, isWaterInterval } from '../engine/water';
 import { openProgressStore } from '../platform/progress-store';
@@ -65,14 +66,9 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   const pet = document.createElement('button');
   pet.className = 'pet';
   pet.type = 'button';
-  pet.setAttribute('aria-label', 'Ember fox · open your thought');
   pet.setAttribute('aria-expanded', 'false');
   pet.setAttribute('aria-controls', 'ember-pocket');
-  pet.title = 'Click Ember to open a thought. Right-click for clipboard.';
-  pet.setAttribute(
-    'aria-description',
-    'Drag Ember or use the arrow keys to move. Right-click or press U for clipboard.',
-  );
+  pet.setAttribute('aria-haspopup', 'dialog');
   pet.addEventListener('contextmenu', (event) => {
     event.preventDefault();
     void openBuddyPanel().catch(console.error);
@@ -113,6 +109,8 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   };
   const moodLabel = document.createElement('p');
   moodLabel.className = 'mood-label';
+  const moodText = document.createElement('span');
+  moodLabel.append(icon('pocket'), moodText);
   const waterCue = document.createElement('div');
   waterCue.className = 'water-break-cue';
   waterCue.setAttribute('aria-hidden', 'true');
@@ -128,17 +126,8 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   const announcement = document.createElement('span');
   announcement.className = 'sr-only';
   announcement.setAttribute('role', 'status');
-  const handle = document.createElement('button');
-  handle.className = 'drag-handle';
-  handle.type = 'button';
-  handle.setAttribute(
-    'aria-label',
-    'Move habitat: drag shelf or use arrow keys',
-  );
-  handle.title = 'Drag the shelf to move. Arrow keys move by 24 pixels.';
   habitat.append(
     pet,
-    handle,
     moodLabel,
     waterCue,
     pouchCue,
@@ -194,6 +183,11 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       showAgentSignals(latestSnapshot);
       render();
     },
+    async replayAbility() {
+      if (pocketBusy) return;
+      await changePocket(false);
+      if (!companionOpen) replayAbility();
+    },
     water(action) {
       if (pocketBusy) return;
       if (!previewingWater) waterSchedule.respond(action, Date.now());
@@ -203,6 +197,23 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     },
   });
   habitat.append(pocket.sheet);
+  function updateCompanion() {
+    const id = progress.companion;
+    const name = companionNames[id];
+    pet.setAttribute(
+      'aria-label',
+      `${id === 'ember' ? 'Ember fox' : name} · pocket`,
+    );
+    pet.title = `Click ${name} to open the pocket. Right-click for clipboard.`;
+    pet.setAttribute(
+      'aria-description',
+      `Drag ${name} or use the arrow keys to move. Press P to play the signature ability. Right-click or press U for clipboard.`,
+    );
+    habitat.dataset.companion = id;
+    habitat.dataset.pocketTheme = id;
+    pocket.setCompanion(id);
+  }
+  updateCompanion();
   async function changePocket(
     open: boolean,
     tab: PocketTab = 'focus',
@@ -235,7 +246,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     } catch (error) {
       habitat.classList.toggle('companion-open', companionOpen);
       pocket.sheet.inert = !companionOpen;
-      moodLabel.textContent = 'The thought could not open. Try again.';
+      moodText.textContent = 'The pocket could not open. Try again.';
       console.error('Pocket update failed:', error);
     } finally {
       pocketBusy = false;
@@ -256,6 +267,10 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
   });
 
   const renderer = await createHabitatRenderer(canvas);
+  function replayAbility() {
+    renderer.replayAbility();
+    redrawAppearance();
+  }
   let press: { x: number; y: number } | undefined;
   let dragged = false;
   pet.addEventListener('pointerdown', (event) => {
@@ -454,9 +469,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     const duration = timer?.phase === 'Break' ? 5 * 60_000 : FOCUS_MS;
     pocket.update(
       formatCountdown(timer?.remainingMs ?? FOCUS_MS),
-      timer
-        ? `${timer.phase === 'Break' ? 'A well-earned break' : 'Focus time'}${timer.status === 'paused' ? ' · paused' : ''}`
-        : 'Ready when you are',
+      timer?.phase ?? 'Focus',
       Math.max(0, Math.min(1, 1 - (timer?.remainingMs ?? duration) / duration)),
       timer?.status ?? 'ready',
       task,
@@ -491,11 +504,11 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       hide: 'Hide and seek',
       peek: 'Peekaboo',
     };
-    moodLabel.textContent = nextReminder
+    moodText.textContent = nextReminder
       ? `Reminder · ${nextReminder.title}`
       : play.roaming
         ? playLabels[play.action]
-        : `${snapshot.mood}${timer?.status === 'paused' ? ' · paused' : ''}`;
+        : `${snapshot.mood === 'TeaBreak' ? 'Tea break' : snapshot.mood}${timer?.status === 'paused' ? ' · paused' : ''}`;
     moodLabel.title = snapshot.activityAvailable
       ? 'System idle time is available; no input content is collected.'
       : 'System activity unavailable. Manual focus sessions still work.';
@@ -507,7 +520,9 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
           : waterBeat === 'offer'
             ? 'Time for a water break'
             : agentAnnouncement ||
-              (play.roaming ? 'Ember is playing' : snapshot.mood));
+              (play.roaming
+                ? `${companionNames[progress.companion]} is playing`
+                : snapshot.mood));
     const message = `${thought}. ${timer ? `${timer.phase} ${timer.status}.` : 'No focus session running.'}`;
     if (message !== lastAnnouncement) {
       announcement.textContent = message;
@@ -559,12 +574,14 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
       },
       outfit: progress.outfit,
       decor: progress.decor,
+      companion: progress.companion,
       night: progress.lighting === 'auto' && (hour >= 18 || hour < 6),
     };
   };
   const reportSettings = (error: string | null = null) => {
     const {
       version,
+      companion,
       outfit,
       ghost,
       completedFocusSessions,
@@ -575,6 +592,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     const snapshot = {
       progress: {
         version,
+        companion,
         outfit,
         ghost,
         completedFocusSessions,
@@ -595,7 +613,6 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     play = snapshot;
     playReceivedAt = performance.now();
     playStartedAt = playReceivedAt - snapshot.elapsedMs;
-    habitat.classList.toggle('free-roam', snapshot.roaming);
     if (waterChanged && habitatVisible) render();
     if (changed) reportSettings();
   });
@@ -730,31 +747,43 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     lastMask = mask;
     enqueue(() => updateHitMask(mask));
   };
-  handle.addEventListener('pointerdown', (event) => {
-    if (event.button !== 0 || !isDesktop()) return;
-    event.preventDefault();
-    void beginDrag().catch(console.error);
-  });
-  const moveWithArrows = (event: KeyboardEvent) => {
+  pet.addEventListener('keydown', (event) => {
     const delta: Record<string, [number, number]> = {
       ArrowLeft: [-24, 0],
       ArrowRight: [24, 0],
       ArrowUp: [0, -24],
       ArrowDown: [0, 24],
     };
+    if (
+      event.key.toLowerCase() === 'p' &&
+      !event.repeat &&
+      !event.ctrlKey &&
+      !event.altKey &&
+      !event.metaKey
+    ) {
+      event.preventDefault();
+      replayAbility();
+    }
     if (delta[event.key]) {
       event.preventDefault();
       void nudgeHabitat(...delta[event.key]).catch(console.error);
     }
-  };
-  pet.addEventListener('keydown', moveWithArrows);
-  handle.addEventListener('keydown', moveWithArrows);
+  });
   let settingsUpdates = Promise.resolve();
   const unsubscribeSettings = await observeHabitatSettings((change) => {
     settingsUpdates = settingsUpdates
       .then(async () => {
         if (disposed) return;
         switch (change.setting) {
+          case 'companion':
+            if (!isCompanion(change.value))
+              throw new Error('That companion is unavailable.');
+            progress = { ...progress, companion: change.value };
+            updateCompanion();
+            renderer.replayAbility();
+            render();
+            void persist();
+            return;
           case 'waterMinutes':
             if (!isWaterInterval(change.value)) return;
             progress = { ...progress, waterMinutes: change.value };
@@ -764,7 +793,7 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
           case 'waterPreview':
             if (!(await beginWater(true)))
               throw new Error(
-                'Close Ember’s thought and try the water preview again.',
+                'Close the companion pocket and try the water preview again.',
               );
             break;
           case 'sound':

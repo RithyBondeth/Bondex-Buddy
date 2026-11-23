@@ -44,8 +44,8 @@ export async function setCompanionOpen(
   if (isTauri()) return invoke('set_companion_open', { open });
   return open
     ? {
-        width: Math.max(220, Math.min(264, innerWidth)),
-        height: Math.max(200, Math.min(256, innerHeight)),
+        width: Math.max(220, Math.min(300, innerWidth)),
+        height: Math.max(200, Math.min(300, innerHeight)),
       }
     : { width: 220, height: 200 };
 }

@@ -66,7 +66,7 @@ function sessionCard(agent: AgentKind) {
   const activity = element('p', 'session-activity');
   const footer = element('summary', 'session-metrics');
   const requests = element('span', 'session-requests');
-  requests.title = 'Requests observed by Ember in this session';
+  requests.title = 'Requests observed in this session';
   const elapsed = element('span', 'session-elapsed');
   footer.append(
     requests,
@@ -145,7 +145,7 @@ function agentUsagePanel() {
       panel.replaceChildren(
         emptyState(
           'Agent usage is unavailable',
-          'Ember will check again in a moment.',
+          'Buddy will check again in a moment.',
         ),
       );
     },
@@ -161,7 +161,7 @@ function agentUsagePanel() {
         element(
           'p',
           'agent-token-note',
-          'Counters cover sessions Ember observed. Token totals refer to the last session that reported them.',
+          'Counters cover sessions Buddy observed. Token totals refer to the last session that reported them.',
         ),
         ...snapshot.connections.map(({ agent, installed }) => {
           const card = element('article', 'provider-usage');
@@ -267,7 +267,7 @@ export function agentsView(
   );
   const unavailable = emptyState(
     'Agent activity is unavailable',
-    'Ember will check again in a moment.',
+    'Buddy will check again in a moment.',
   );
   section.append(heading, handoffButton, sessions, usage.panel, handoffs.panel);
 

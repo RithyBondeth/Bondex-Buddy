@@ -38,7 +38,7 @@ export function pouchView(announce: Announce) {
     'p',
     'pouch-empty',
     native
-      ? 'Drop files onto Ember. Temporary copies stay for 24 hours.'
+      ? 'Drop files onto your companion. Temporary copies stay for 24 hours.'
       : 'File drops are available in the desktop app.',
   );
   const entries = element('ul', 'pouch-files');

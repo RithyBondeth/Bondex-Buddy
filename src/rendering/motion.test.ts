@@ -86,7 +86,7 @@ describe('pixel deformation geometry', () => {
 });
 
 describe('natural motion sampling', () => {
-  it('lands both arcs at the shelf, with a smaller second hop and no repeated jumps', () => {
+  it('lands both arcs at the baseline, with a smaller second hop and no repeated jumps', () => {
     for (const time of [200, 650, 810, 1190, 2000, 60000])
       expect(motionAt('Happy', time).lift).toBe(0);
     expect(motionAt('Happy', 425).lift).toBe(9);

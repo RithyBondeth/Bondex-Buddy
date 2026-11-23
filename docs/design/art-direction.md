@@ -10,7 +10,7 @@ The concept PNGs are large generated previews, not grid-accurate runtime sprite 
 
 ## Production guidelines
 
-- Compose the character on its maximum 48 × 48 source grid, then reduce the assembled pose to half size with nearest-neighbor sampling. The 110 × 100 habitat Canvas is displayed at 2×. The 16-color body/blanket palette is defined in `src/rendering/palette.ts`; props and UI have separate palettes.
+- Compose the character on its maximum 48 × 48 source grid, then scale the assembled pose to 60% with nearest-neighbor sampling. The 110 × 100 habitat Canvas is displayed at 2×. The 16-color body/blanket palette is defined in `src/rendering/palette.ts`; props and UI have separate palettes.
 - Use crisp square pixels, a consistent outline weight, and a small documented palette.
 - Use flat color clusters; avoid gradients, blur, antialiasing, and texture noise.
 - Keep facial expressions readable at the intended desktop size.

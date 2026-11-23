@@ -117,7 +117,7 @@ export interface SpriteBand {
   destinationHeight: number;
 }
 
-/** Integer-only row bands. Grounded poses keep the feet on the shelf. */
+/** Integer-only row bands. Grounded poses keep the feet at the baseline. */
 export function spriteBands(
   height: number,
   pose: Pose,

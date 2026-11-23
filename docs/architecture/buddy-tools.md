@@ -4,7 +4,7 @@ Click Ember to open a compact thought bubble with **Focus**, **Clips**, **Files*
 
 On macOS, click the Bondex Buddy menu bar icon and choose **Settings…**. Settings holds decor, outfits, lighting, sound, Ghost Mode, playful roaming, launch at login, clipboard capture, and agent connections. On Windows, open Settings from the tray menu. Launch at login is available in release builds.
 
-The native window grows from 220 × 200 to at most 264 × 256 logical pixels within the display’s work area. The extra area appears above and to the left of the pet. Drag Ember or the shelf to move it. Arrow keys also move the pet when it has focus. Closing the bubble keeps the latest position. Roaming pauses while the bubble is open and retains its enabled preference. The rounded bubble and pet silhouette receive clicks. The decorative dots and surrounding transparent areas pass clicks through. Longer lists scroll inside the bubble.
+The native window grows from 220 × 200 to at most 300 × 300 logical pixels within the display’s work area. The extra area appears above and to the left of the pet. Drag Ember to move it. Arrow keys also move the pet when it has focus. Closing the bubble keeps the latest position. Roaming pauses while the bubble is open and retains its enabled preference. The rounded bubble and pet silhouette receive clicks. The decorative dots and surrounding transparent areas pass clicks through. Longer lists scroll inside the bubble.
 
 ## Clipboard
 

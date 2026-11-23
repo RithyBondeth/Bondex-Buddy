@@ -25,8 +25,8 @@ html.browser-preview,
 html.browser-preview.pocket-expanded,
 .browser-preview.pocket-expanded body,
 .browser-preview.pocket-expanded #app {
-  width: min(264px, 100vw);
-  height: min(256px, 100vh);
+  width: min(300px, 100vw);
+  height: min(300px, 100vh);
 }
 
 .habitat {
@@ -54,10 +54,10 @@ html.browser-preview.pocket-expanded,
 .pet:focus-visible::after {
   content: '';
   position: absolute;
-  right: 81px;
-  bottom: 7px;
-  width: 58px;
-  height: 58px;
+  right: 74px;
+  bottom: 6px;
+  width: 72px;
+  height: 64px;
   border-radius: 8px;
   outline: 2px dashed var(--peach);
   pointer-events: none;
@@ -75,16 +75,20 @@ canvas {
   position: absolute;
   bottom: 76px;
   right: 110px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 176px;
   transform: translate(50%, 3px);
   margin: 0;
-  padding: 4px 9px;
-  border-radius: 6px;
-  color: var(--ink);
-  background: var(--surface);
-  box-shadow: inset 0 0 0 1px var(--line);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
+  padding: 4px 7px;
+  border: 1px solid #745442;
+  border-radius: 5px;
+  color: #fff0df;
+  background: #211813;
+  box-shadow: 0 2px #120d0a;
+  font-size: 11px;
+  font-weight: 650;
   white-space: nowrap;
   pointer-events: none;
   visibility: hidden;
@@ -93,6 +97,16 @@ canvas {
     opacity 220ms var(--ease-out),
     transform 220ms var(--ease-out),
     visibility 220ms;
+}
+.mood-label svg {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  color: #ffc390;
+}
+.mood-label span {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .show-thought .mood-label {
   visibility: visible;
@@ -262,13 +276,9 @@ canvas {
 .has-task-reminder:not(.companion-open) .mood-label {
   visibility: visible;
   opacity: 1;
-  max-width: 165px;
-  overflow: hidden;
-  text-overflow: ellipsis;
   transform: translate(50%, 0);
-  box-shadow: inset 0 0 0 1px #73533e;
-  background: #211912;
-  color: var(--peach);
+  border-color: #a77855;
+  color: #ffc390;
 }
 .water-break-cue {
   position: absolute;
@@ -400,22 +410,6 @@ canvas {
   display: none;
 }
 
-.drag-handle {
-  all: unset;
-  position: absolute;
-  right: 42px;
-  bottom: 0;
-  width: 136px;
-  height: 12px;
-  cursor: grab;
-}
-.drag-handle:active {
-  cursor: grabbing;
-}
-.drag-handle:focus-visible {
-  outline: 1px dashed var(--accent);
-  outline-offset: -2px;
-}
 .ghosted canvas {
   opacity: 0.3;
 }
@@ -446,11 +440,4 @@ canvas {
     transition: none !important;
     animation: none !important;
   }
-}
-
-.free-roam .drag-handle {
-  right: 68px;
-  bottom: 12px;
-  width: 84px;
-  height: 8px;
 }

@@ -2,6 +2,7 @@ export type Decor = 'none' | 'plant' | 'lantern';
 export type Outfit = 'none' | 'beanie' | 'scarf';
 export interface Progress {
   version: 2;
+  companion: CompanionId;
   outfit: Outfit;
   ghost: boolean;
   completedFocusSessions: number;
@@ -12,6 +13,7 @@ export interface Progress {
 }
 export const freshProgress = (): Progress => ({
   version: 2,
+  companion: 'ember',
   outfit: 'none',
   ghost: false,
   completedFocusSessions: 0,
@@ -67,6 +69,7 @@ export function decodeProgress(raw: string | null): Progress {
     throw new Error('Invalid wardrobe preferences');
   const result: Progress = {
     version: 2,
+    companion: isCompanion(p.companion) ? p.companion : 'ember',
     outfit: p.version === 1 ? 'none' : (p.outfit as Outfit),
     ghost: p.version === 1 ? false : (p.ghost as boolean),
     completedFocusSessions: p.completedFocusSessions as number,
@@ -92,3 +95,4 @@ export function awardCompletions(progress: Progress, count: number): Progress {
 }
 import { decodeTasks, type FocusTask } from './tasks';
 import { isWaterInterval, type WaterInterval } from './water';
+import { isCompanion, type CompanionId } from './companions';

@@ -47,7 +47,7 @@ Acceptance: verify transitions from activity, idle duration, local time, timer c
 - [x] Decorative steam, hearts, and sleep particles with stable interactive hit masks.
 - [x] Muted-by-default procedural rain/chimes and a keyboard-accessible sound toggle.
 - [ ] Approved final Foley/ambient audio assets.
-- [x] Implement shelf dragging, edge snapping, and optional Ghost Mode.
+- [x] Implement pet dragging, edge snapping, and optional Ghost Mode.
 - [ ] Complete native placement and Ghost Mode acceptance.
 - [x] Reduced-motion support and hidden-window animation/audio suspension.
 - [ ] Profile total native + WebView CPU and memory on both platforms.
