@@ -11,14 +11,18 @@ import {
 } from 'motion/react';
 import { HabitatAmbience } from '@/components/habitat-ambience';
 import { LivingPet } from '@/components/ui/living-pet';
-import { companions } from '@/lib/companions';
+import type { Companion } from '@/lib/companions';
 import { easeInOut } from '@/lib/motion';
 import { useCalmMotion } from '@/components/motion-preferences';
 
 export const HABITAT_SIZES =
-  '(max-width: 477px) 88vw, (max-width: 767px) 460px, (max-width: 1160px) 46vw, 520px';
+  '(max-width: 523px) 88vw, (max-width: 767px) 460px, (max-width: 1340px) 42vw, 590px';
 
-type Companion = (typeof companions)[number];
+export function habitatDimensions(habitat: Companion['habitat']) {
+  return 'width' in habitat
+    ? { width: habitat.width, height: habitat.height }
+    : { width: 1536, height: 1024 };
+}
 
 function HabitatLayer({
   companion,
@@ -29,12 +33,18 @@ function HabitatLayer({
 }) {
   const present = useIsPresent();
   const layer = useRef<HTMLDivElement>(null);
+  const hero = 'kind' in companion;
+  const petWidth = hero ? 27 : 33;
+  const ground = hero ? companion.habitat.ground : undefined;
   const offset = useMotionValue(0);
   const shadowX = useTransform(
     offset,
     (distance) => `${(distance / 18) * 100}%`,
   );
-  const petX = useTransform(offset, (distance) => `${(distance / 33) * 100}%`);
+  const petX = useTransform(
+    offset,
+    (distance) => `${(distance / petWidth) * 100}%`,
+  );
   const moveBy = (distance: number) => {
     const width = layer.current?.getBoundingClientRect().width;
     if (width)
@@ -65,24 +75,33 @@ function HabitatLayer({
         className="habitat-island"
         src={companion.habitat.image}
         alt=""
-        width={1536}
-        height={1024}
+        {...habitatDimensions(companion.habitat)}
         sizes={HABITAT_SIZES}
         loading="eager"
       />
       <motion.div
         className="habitat-ground-shadow"
         aria-hidden="true"
-        style={{ x: shadowX }}
+        style={{
+          x: shadowX,
+          bottom: ground === undefined ? undefined : `${ground - 1.5}%`,
+        }}
       />
       <motion.div
         className="habitat-pet"
         data-companion={companion.id}
-        style={{ x: petX }}
+        style={{
+          x: petX,
+          width: `${petWidth}%`,
+          left: `${(100 - petWidth) / 2}%`,
+          // The sprite has transparent padding below its feet.
+          bottom: ground === undefined ? undefined : `${ground - 4.5}%`,
+        }}
       >
         <div className="main-pet">
           <LivingPet
-            kind={companion.id}
+            kind={hero ? companion.kind : companion.id}
+            hero={hero ? companion.id : undefined}
             name={companion.name}
             image={companion.image}
             eager
@@ -91,7 +110,9 @@ function HabitatLayer({
           />
         </div>
       </motion.div>
-      <HabitatAmbience habitat={companion.habitat.id} active={present} />
+      {!hero && (
+        <HabitatAmbience habitat={companion.habitat.id} active={present} />
+      )}
     </motion.div>
   );
 }
@@ -109,6 +130,7 @@ export function CompanionHabitat({
     <div
       className="habitat-scene"
       data-active-habitat={companion.habitat.id}
+      data-roster={'kind' in companion ? 'avengers' : undefined}
       aria-busy={loading}
     >
       <div className="habitat-sky" aria-hidden="true" />

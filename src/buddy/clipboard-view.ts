@@ -156,7 +156,7 @@ export function clipboardView(
             void run(async () => {
               if (!(await addTask(entry.text)))
                 throw new Error(
-                  'Task is in Ember’s list. Open Tasks to retry saving.',
+                  'Task is in your list. Open Tasks to retry saving.',
                 );
               announce('Added to Tasks.');
             }),
@@ -182,7 +182,7 @@ export function clipboardView(
                 : onlyPinned
                   ? 'Pin a clip to keep it here after you quit.'
                   : snapshot.enabled
-                    ? 'Copy some text in any app. Ember will keep it here.'
+                    ? 'Copy some text in any app to keep it here.'
                     : 'Enable clipboard capture in menu bar Settings.',
             ),
           ]),

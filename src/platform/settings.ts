@@ -12,7 +12,7 @@ export interface HabitatSettings {
 
 type Preferences = Pick<
   Progress,
-  'decor' | 'outfit' | 'lighting' | 'ghost' | 'waterMinutes'
+  'companion' | 'decor' | 'outfit' | 'lighting' | 'ghost' | 'waterMinutes'
 > & {
   roaming: boolean;
   sound: boolean;

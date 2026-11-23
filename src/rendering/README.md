@@ -2,11 +2,11 @@
 
 `habitat.ts` renders a 110 × 100 Canvas at 2×, with image smoothing disabled. The character remains on its integer pixel grid. Source artwork is cropped into a maximum 48 × 48 body and normalized to the shared 16-color palette and binary alpha. Original PNGs remain untouched.
 
-`motion.ts` samples slow breathing and reading/sipping poses. Happy has one two-second choreography: anticipation, extension, a nine-pixel ballistic hop, landing compression, a smaller four-pixel hop, and rest. Grounded poses keep their bottom edge on the shelf. Wardrobe anchors follow the same breathing deformation and jump translation. The grounded shadow narrows during a hop.
+`motion.ts` samples slow breathing and reading/sipping poses. Happy has one two-second choreography: anticipation, extension, a nine-pixel ballistic hop, landing compression, a smaller four-pixel hop, and rest. Grounded poses keep their bottom edge at the baseline. Wardrobe anchors follow the same breathing deformation and jump translation. The grounded shadow narrows during a hop.
 
 `life.ts` supplies independent secondary gestures: brief blinks, occasional double blinks, an ear flick, tail swishes, and curious glances. A deterministic twelve-second window varies their timing across cycles. Sleeping and TeaBreak keep their own calm poses and breathing rather than inheriting upright gestures. The Idle face has open highlighted eyes that close during a blink. Pointer position is used transiently to ease the Idle head toward a nearby pointer; it is never recorded. Reduced motion renders a neutral, static pose without pointer tracking or particles.
 
-The renderer caches both articulated sprites (up to 120) and assembled frames (up to 240). Each assembled frame has an alpha mask; identical silhouettes share a mask reference, so native updates happen only when the interactive silhouette changes. Pixel readback happens only on a cache miss. The shelf and decor remain stationary while the character and wardrobe animate. Decorative steam, hearts, and sleep glyphs never intercept clicks.
+The renderer caches both articulated sprites (up to 120) and assembled frames (up to 240). Each assembled frame has an alpha mask; identical silhouettes share a mask reference, so native updates happen only when the interactive silhouette changes. Pixel readback happens only on a cache miss. Decor remains stationary while the character and wardrobe animate. Decorative steam, hearts, and sleep glyphs never intercept clicks.
 
 `AnimationClock` caps rendering at 60 fps with cadence correction for different display refresh rates. It cancels its RAF loop while hidden or when reduced motion is requested. Rendering consumes mood state; it does not decide focus, break, or progression rules.
 

@@ -2,6 +2,7 @@ import { invoke, isTauri } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { button, element, errorMessage, type Announce } from '../buddy/dom';
 import { canEquip, canWear, freshProgress } from '../engine/progress';
+import { companionNames, isCompanion } from '../engine/companions';
 import { WATER_INTERVALS, isWaterInterval } from '../engine/water';
 import type { HabitatChange, HabitatSettings } from '../platform/settings';
 
@@ -41,6 +42,7 @@ export function settingsGroup(title: string) {
 export function habitatSettings(announce: Announce) {
   const section = element('div', 'settings-pane');
   const appearance = settingsGroup('Appearance');
+  const companion = settingSelect(Object.entries(companionNames));
   const decor = settingSelect([
     ['none', 'Bare desk'],
     ['plant', 'Plant · 1 focus'],
@@ -57,6 +59,7 @@ export function habitatSettings(announce: Announce) {
   ]);
   const progressNote = element('p', 'settings-note');
   appearance.append(
+    settingRow('Desktop companion', companion),
     settingRow('Desk decor', decor),
     settingRow('Outfit', outfit),
     settingRow('Lighting', lighting),
@@ -68,8 +71,16 @@ export function habitatSettings(announce: Announce) {
   const ghost = settingSwitch();
   const sound = settingSwitch();
   behavior.append(
-    settingRow('Playful roaming', roam, 'Let Ember explore the desktop.'),
-    settingRow('Ghost Mode', ghost, 'During work, clicks pass through Ember.'),
+    settingRow(
+      'Playful roaming',
+      roam,
+      'Let your companion explore the desktop.',
+    ),
+    settingRow(
+      'Ghost Mode',
+      ghost,
+      'During work, clicks pass through your companion.',
+    ),
     settingRow('Sound', sound, 'Quiet rain ambience and gentle chimes.'),
   );
   const water = settingsGroup('Water breaks');
@@ -88,7 +99,7 @@ export function habitatSettings(announce: Announce) {
     settingRow(
       'Reminder',
       waterMinutes,
-      'Ember takes a short walk to remind you.',
+      'Your companion takes a short walk to remind you.',
     ),
     previewWater,
   );
@@ -105,6 +116,7 @@ export function habitatSettings(announce: Announce) {
   section.append(appearance, behavior, water, startup);
 
   const controls = [
+    companion,
     decor,
     outfit,
     lighting,
@@ -135,6 +147,7 @@ export function habitatSettings(announce: Announce) {
         option.value as HabitatSettings['progress']['outfit'],
       );
     decor.value = snapshot.progress.decor;
+    companion.value = snapshot.progress.companion;
     outfit.value = snapshot.progress.outfit;
     lighting.value = snapshot.progress.lighting;
     ghost.checked = snapshot.progress.ghost;
@@ -163,7 +176,7 @@ export function habitatSettings(announce: Announce) {
     for (const control of controls) control.disabled = true;
     pending = setTimeout(() => {
       if (latest) render(latest);
-      announce('Ember did not respond. Try the setting again.', true);
+      announce('Your companion did not respond. Try the setting again.', true);
       void refreshHabitat().catch((error: unknown) =>
         announce(errorMessage(error), true),
       );
@@ -192,6 +205,10 @@ export function habitatSettings(announce: Announce) {
       loginHint.textContent = 'Available in the installed app.';
   }
 
+  companion.addEventListener('change', () => {
+    if (isCompanion(companion.value))
+      void change({ setting: 'companion', value: companion.value });
+  });
   decor.addEventListener(
     'change',
     () =>

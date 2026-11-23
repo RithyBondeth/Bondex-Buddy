@@ -5,7 +5,7 @@ import './globals.css';
 import { MotionPreferences } from '@/components/motion-preferences';
 
 export const metadata: Metadata = {
-  title: 'Bondex Buddy | Small friends. Big comfort.',
+  title: 'Bondex Buddy | A pixel pet for your desktop',
   description:
     'Meet Ember fox, Moon cat, and Moss bunny. Tiny pixel companions for a cozier desktop, with focus time, gentle breaks, and a little company.',
 };

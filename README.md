@@ -28,6 +28,8 @@ npm run desktop:dev
 
 For the Canvas preview in a browser, run `npm run dev`. Open `/motion-review.html` on that server to review all five animations and preview cosmetics without altering saved progress. Native placement, transparency, tray, idle observation, and click-through must be checked in the Tauri app. Use the menu bar/system tray icon to **Show spirit**, **Hide spirit**, **Reset to bottom right**, **Move to next display**, or **Quit Tiny Desk Spirit**. On macOS, click the Bondex Buddy menu bar icon and choose **Settings…** for pet preferences, clipboard capture, agent connections, and launch at login.
 
+Open **Settings → Companion → Desktop companion** to choose Ember, Moon, Moss, or one of the seven Avengers. Each has a themed pocket and a signature ability. Play it from the Focus tab or press **P** with the desktop pet focused. Your choice is saved on this device. Switching companions keeps the current focus session, tasks, and progress.
+
 Click Ember or press **Enter** while Ember has keyboard focus to open the thought bubble. The **Focus** tab holds the timer and reset control. Completing a focus session starts a five-minute break, then Ember returns to idle. Reset cancels the current session without recording a completion. Drag Ember or use the arrow keys to move the pet. Browser previews support the timer without simulating OS activity.
 
 Open **Tasks** in the Focus tab to add a to-do. Choose **Focus** beside it to start a 25-minute session and see the task next to the timer. Ember counts completed focus sessions per task. Check off work when it’s done, and open **Completed** to restore or remove it. Tasks are saved on this device.
@@ -40,7 +42,7 @@ Drop files from Finder or File Explorer onto Ember or the open thought bubble. O
 
 Set a **Water breaks** interval or try **Preview water walk** in menu bar Settings. Ember walks with a pixel droplet, stops to offer a water break, then returns to its starting spot. Click Ember during the visit for **Drank water**, **Snooze 10m**, or **Skip**. Scheduled visits wait for a running focus session to reach its break. With reduced motion, Ember offers the reminder in place.
 
-Sound starts muted on each launch. Turn it on in **Settings → Ember** for quiet rain and gentle chimes. Hidden habitats suspend audio and animation. The OS reduced-motion preference disables the animation loop and floating particles while keeping state changes and timer controls functional.
+Sound starts muted on each launch. Turn it on in **Settings → Companion** for quiet rain and gentle chimes. Hidden habitats suspend audio and animation. The OS reduced-motion preference disables the animation loop and floating particles while keeping state changes and timer controls functional.
 
 ## Commands
 

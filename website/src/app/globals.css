@@ -1,17 +1,17 @@
 @import 'tailwindcss';
 
 :root {
-  color-scheme: dark;
-  --background: #060606;
-  --foreground: #f7f7f5;
-  --muted-foreground: #adadad;
-  --border: #272727;
-  --line-strong: #3e3e3e;
-  --primary: #f3efe8;
-  --primary-foreground: #101010;
-  --surface: #111111;
-  --peach: #ffd1a1;
-  --raised: #1d1d1d;
+  color-scheme: light;
+  --background: #fcf6eb;
+  --foreground: #30221a;
+  --muted-foreground: #6f594b;
+  --border: #e3d3bf;
+  --line-strong: #c9ae94;
+  --primary: #74361f;
+  --primary-foreground: #fff6e6;
+  --surface: #fffaf1;
+  --peach: #994520;
+  --raised: #f0e2cf;
   --pixel-radius: 2px;
   --font-pixel: 'Pixelify Sans Variable', ui-monospace, monospace;
   --radius: 0.75rem;
@@ -53,12 +53,12 @@ a {
 }
 a:focus-visible,
 button:focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--peach);
   outline-offset: 5px;
 }
 ::selection {
-  background: #f3efe8;
-  color: #101010;
+  background: #efc6a3;
+  color: #30221a;
 }
 .skip-link {
   position: fixed;
@@ -75,8 +75,8 @@ button:focus-visible {
 }
 .site-header {
   max-width: 1440px;
-  min-height: 83px;
-  padding: 0 5%;
+  min-height: 74px;
+  padding: 0 6%;
   margin: auto;
   display: flex;
   align-items: center;
@@ -153,7 +153,7 @@ button:focus-visible {
   min-height: 46px;
   padding: 7px 14px 7px 17px;
   border: 1px solid var(--line-strong);
-  border-radius: 999px;
+  border-radius: 10px;
   background: var(--surface);
   box-shadow: inset 0 1px #ffffff0d;
   font-size: 13px;
@@ -168,7 +168,7 @@ button:focus-visible {
 }
 .button:hover {
   background: var(--raised);
-  border-color: #666;
+  border-color: var(--peach);
 }
 .button:active {
   transform: scale(0.975);
@@ -181,29 +181,24 @@ button:focus-visible {
   color: var(--primary-foreground);
   border-color: var(--primary);
   background: var(--primary);
-  box-shadow:
-    0 8px 24px #0007,
-    inset 0 1px #fff;
+  box-shadow: 0 3px 0 #4f2317;
 }
 .button-primary:hover {
-  border-color: #fff;
-  background: #fff;
-  box-shadow:
-    0 10px 30px #ffffff14,
-    inset 0 1px #fff;
+  border-color: #954a29;
+  background: #954a29;
 }
 .button-arrow {
   display: grid;
   place-items: center;
   width: 28px;
   height: 28px;
-  border-radius: 50%;
-  background: #ffffff0d;
+  border-radius: 5px;
+  background: #74361f12;
   font-weight: 450;
   transition: transform 250ms var(--ease-out);
 }
 .button-primary .button-arrow {
-  background: #1414140c;
+  background: #fff6e624;
 }
 .button:hover .button-arrow {
   transform: translate(1px, -1px);
@@ -238,14 +233,6 @@ button:focus-visible {
 .text-link:hover {
   text-decoration: underline;
 }
-.section-label {
-  color: var(--muted-foreground);
-  margin-bottom: 20px;
-  font-size: 11px;
-  font-weight: 650;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
 h2 {
   font-size: clamp(36px, 4.8vw, 68px);
   font-weight: 500;
@@ -258,45 +245,61 @@ h2 {
   color: var(--peach);
   letter-spacing: -0.04em;
 }
-.manifesto-section {
-  position: relative;
-  max-width: 1600px;
-  padding: 110px 6% 100px;
+.tools-section {
+  max-width: 1440px;
   margin: auto;
-  display: grid;
-  grid-template-columns: 1.3fr 1fr;
-  align-items: center;
-  gap: 40px;
-  border-block: 1px solid var(--border);
+  padding: 46px 6% 72px;
 }
-.manifesto-section h2 {
-  font-size: clamp(30px, 3.3vw, 48px);
-}
-.manifesto-section p:last-child {
-  color: var(--muted-foreground);
-  font-size: 14px;
-  line-height: 1.8;
-  margin-top: 24px;
-}
-.manifesto-pets {
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
-.manifesto-pets > div {
-  margin-left: -8px;
-}
-.manifesto-pets > div:nth-child(2) {
+.tools-section h2 {
+  font-size: clamp(29px, 4vw, 43px);
+  font-weight: 650;
   margin-bottom: 20px;
 }
-.manifesto-pets img {
-  object-fit: contain;
-  image-rendering: pixelated;
+.tool-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.tool-cards > div {
+  padding: clamp(16px, 2vw, 25px);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.tool-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  margin-bottom: 15px;
+  border-radius: 8px;
+  color: #77371e;
+  background: #f7dbc3;
+  font-size: 24px;
+  line-height: 1;
+}
+.tool-cards > div:nth-child(2) .tool-icon {
+  color: #354632;
+  background: #e3ead7;
+}
+.tool-cards > div:nth-child(3) .tool-icon {
+  color: #574364;
+  background: #ede2ef;
+}
+.tool-cards h3 {
+  font-size: 16px;
+  font-weight: 700;
+}
+.tool-cards p {
+  margin-top: 5px;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  line-height: 1.55;
 }
 .companions-intro {
   max-width: 1600px;
   margin: auto;
-  padding: 110px 6% 65px;
+  padding: 84px 6% 46px;
   display: flex;
   flex-wrap: wrap;
   gap: 32px;
@@ -305,9 +308,10 @@ h2 {
 }
 .companions-intro p,
 .ritual-section > div:first-child p {
-  margin-top: 24px;
+  max-width: 46ch;
+  margin-top: 18px;
   color: var(--muted-foreground);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.8;
 }
 .companions-intro .text-link {
@@ -318,7 +322,7 @@ h2 {
 }
 .sc-artwork {
   position: relative;
-  background: radial-gradient(circle, #f3efe826 1px, transparent 1px)
+  background: radial-gradient(circle, #74361f25 1px, transparent 1px)
     var(--raised) 0 0 / 16px 16px;
 }
 .sc-artwork canvas {
@@ -361,10 +365,14 @@ h2 {
   text-decoration-thickness: 2px;
 }
 .ritual-section {
-  border-top: 1px solid var(--border);
-  padding: 88px 6% 70px;
-  max-width: 1440px;
+  overflow: clip;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 44px clamp(24px, 5vw, 76px) 34px;
+  max-width: 1268px;
+  width: 88%;
   margin: auto;
+  background: #f3e5d1;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr);
   align-items: center;
@@ -376,12 +384,20 @@ h2 {
 }
 .ritual-thought {
   position: relative;
-  width: min(100%, 246px);
+  --foreground: #fff0df;
+  --muted-foreground: #ccb4a1;
+  --border: #594134;
+  --surface: #211813;
+  --raised: #493328;
+  --peach: #ffc390;
+  --primary: #ffc390;
+  --primary-foreground: #28170f;
+  width: min(100%, 275px);
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: linear-gradient(#161616, var(--surface) 56%);
+  background: var(--surface);
   box-shadow:
-    0 20px 48px #0009,
+    0 8px 26px #49311e45,
     inset 0 1px #ffffff14;
 }
 .ritual-thought::before,
@@ -449,7 +465,7 @@ h2 {
   display: block;
   margin-bottom: 10px;
   color: var(--primary);
-  font: 550 36px/1 var(--font-pixel);
+  font: 550 43px/1 var(--font-pixel);
   letter-spacing: -0.02em;
 }
 .demo-controls {
@@ -474,7 +490,7 @@ h2 {
   transition: background 220ms var(--ease-out);
 }
 .reset-timer:hover {
-  background: #2b2b2b;
+  background: #49342a;
 }
 .ritual-art {
   width: 112px;
@@ -489,7 +505,7 @@ h2 {
 .values-section {
   max-width: 1600px;
   margin: auto;
-  padding: 30px 6% 110px;
+  padding: 55px 6% 85px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 70px;
@@ -519,11 +535,7 @@ h2 {
   overflow: hidden;
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
-  background: radial-gradient(
-    ellipse at 50% 21%,
-    #161411,
-    var(--background) 66%
-  );
+  background: radial-gradient(ellipse at 50% 30%, #f5dbc2, #f4e8d6 71%);
 }
 .download-content {
   position: relative;
@@ -547,7 +559,7 @@ h2 {
   transform: translateY(-16px);
 }
 .download-content h2 {
-  font-size: clamp(42px, 5.8vw, 84px);
+  font-size: clamp(39px, 5.4vw, 73px);
 }
 .download-content h2 + p {
   font-size: 14px;
@@ -560,13 +572,13 @@ h2 {
 }
 .release-note {
   color: var(--muted-foreground);
-  font-size: 10px;
-  margin-top: 20px;
+  font-size: 13px;
+  margin-top: 18px;
 }
 .site-footer {
   max-width: 1600px;
   margin: auto;
-  padding: 45px 5% 25px;
+  padding: 31px 6%;
   overflow: hidden;
 }
 .footer-top {
@@ -579,10 +591,6 @@ h2 {
 .footer-top .brand {
   font-size: 21px;
 }
-.footer-top p {
-  font-size: 12px;
-  color: var(--muted-foreground);
-}
 .footer-top > div {
   display: flex;
   gap: 25px;
@@ -593,17 +601,6 @@ h2 {
 }
 .footer-top a:hover {
   text-decoration: underline;
-}
-.footer-bottom {
-  margin-top: 30px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  justify-content: space-between;
-  border-top: 1px solid var(--border);
-  padding-top: 20px;
-  font-size: 10px;
-  color: var(--muted-foreground);
 }
 [data-motion-paused='true'] *,
 [data-motion-paused='true'] *::before,
@@ -657,23 +654,24 @@ html:has([data-motion-paused='true']) {
     font-size: 11px;
     gap: 14px;
   }
-  .manifesto-section {
-    padding: 65px 6%;
+  .tools-section {
+    padding: 34px 6% 46px;
+  }
+  .tool-cards {
     grid-template-columns: 1fr;
-    gap: 35px;
+    gap: 8px;
   }
-  .manifesto-pets {
-    justify-content: flex-start;
+  .tool-cards > div {
+    display: grid;
+    grid-template-columns: 38px 1fr;
+    column-gap: 13px;
   }
-  .manifesto-pets img {
-    width: 100px;
-    height: 100px;
+  .tool-icon {
+    grid-row: span 2;
+    margin-bottom: 0;
   }
-  .manifesto-section h2 {
-    font-size: 34px;
-  }
-  .manifesto-section p:last-child {
-    font-size: 13px;
+  .tool-cards p {
+    margin-top: 3px;
   }
   .companions-intro {
     padding: 65px 6% 40px;
@@ -682,18 +680,15 @@ html:has([data-motion-paused='true']) {
   .ritual-section > div:first-child p {
     font-size: 14px;
   }
-  .desktop-break {
-    display: none;
-  }
   .ritual-section {
-    padding: 65px 6% 50px;
+    padding: 36px 6% 28px;
     grid-template-columns: minmax(0, 1fr);
     gap: 28px;
   }
   .values-section {
     grid-template-columns: 1fr;
     gap: 35px;
-    padding: 0 6% 65px;
+    padding: 30px 6% 50px;
   }
   .values-section > div {
     display: grid;
@@ -722,8 +717,8 @@ html:has([data-motion-paused='true']) {
     font-size: clamp(38px, 10.5vw, 60px);
   }
   .release-note {
-    font-size: 9px;
-    line-height: 1.8;
+    font-size: 12px;
+    line-height: 1.55;
     max-width: 280px;
     margin-inline: auto;
   }
@@ -733,20 +728,9 @@ html:has([data-motion-paused='true']) {
   .footer-top {
     gap: 20px;
   }
-  .footer-top p {
-    font-size: 10px;
-  }
   .footer-top > div {
     width: 100%;
     gap: 25px;
-  }
-  .footer-bottom {
-    font-size: 9px;
-    align-items: flex-start;
-    line-height: 1.7;
-  }
-  .footer-bottom span:last-child {
-    text-align: right;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -840,6 +824,11 @@ html:has([data-motion-paused='true']) {
   image-rendering: pixelated;
 }
 .living-pet-button > canvas {
+  inset: -100%;
+  width: 300%;
+  height: 300%;
+  max-width: none;
+  pointer-events: none;
   visibility: hidden;
   object-fit: contain;
   filter: drop-shadow(0 5px 0 #10101008);
@@ -880,55 +869,6 @@ html:has([data-motion-paused='true']) {
   border-top: 1px solid var(--border);
   border-left: 1px solid var(--border);
   transform: rotate(45deg);
-}
-.pet-hearts {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-.pet-heart {
-  position: absolute;
-  left: 45%;
-  top: 26%;
-  opacity: 0;
-  color: var(--peach);
-  font-size: 19px;
-  line-height: 1;
-  animation: pet-love 1100ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
-}
-.pet-heart:nth-child(2) {
-  left: 62%;
-  top: 31%;
-  font-size: 13px;
-  animation-delay: 100ms;
-}
-.pet-heart:nth-child(3) {
-  left: 29%;
-  top: 33%;
-  font-size: 15px;
-  animation-delay: 220ms;
-}
-@keyframes pet-love {
-  0% {
-    opacity: 0;
-    transform: translateY(5px) scale(0.6);
-  }
-  20% {
-    opacity: 1;
-  }
-  75% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-32px) scale(1.05);
-  }
-}
-.living-pet[data-calm='true'] .pet-heart {
-  animation: none;
-}
-.living-pet[data-calm='true'] .pet-heart:first-child {
-  opacity: 1;
 }
 .ritual-art .living-pet-button > canvas {
   filter: none;

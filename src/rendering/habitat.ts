@@ -11,7 +11,32 @@ import {
   type MotionFrame,
 } from './motion';
 import type { Mood } from '../engine/spirit';
+import type { CompanionId } from '../engine/companions';
+import { companionArt } from './companion-art';
+import {
+  drawHero,
+  HERO_BASELINE,
+  HERO_GRID,
+  heroPose,
+  isHero,
+  type HeroAction,
+  type HeroPose,
+} from '../../website/shared/hero-motion';
 import type { Decor, Outfit } from '../engine/progress';
+import {
+  ABILITY_MS,
+  abilityTime,
+  abilityPose,
+  placeBody,
+  type AbilityPose,
+} from '../../website/shared/abilities';
+import { createHeroRig } from '../../website/shared/hero-rig';
+import { drawAbility } from '../../website/shared/ability-effects';
+import {
+  createPetRenderer,
+  PET_RESOLUTION,
+} from '../../website/src/lib/pet-renderer';
+import { petPose, type PetPose } from '../../website/src/lib/pet-animation';
 import { drawParticles } from './particles';
 import { lifeAt, type LifeFrame } from './life';
 import {
@@ -19,7 +44,31 @@ import {
   spriteForPlay,
   loadPlayFrames,
   type PetPlay,
+  type PlayAction,
 } from './playful';
+
+const heroMoods: Record<Mood, HeroAction> = {
+  Idle: 'idle',
+  Working: 'working',
+  Sleeping: 'rest',
+  TeaBreak: 'break',
+  Happy: 'greet',
+};
+const heroRoaming: Record<PlayAction, HeroAction> = {
+  rest: 'idle',
+  walk: 'walk',
+  run: 'run',
+  pounce: 'greet',
+  hide: 'crouch',
+  peek: 'idle',
+};
+
+type GardenFrame = {
+  id: 'moon' | 'moss';
+  paint: NonNullable<ReturnType<typeof createPetRenderer>>;
+  pose: PetPose;
+};
+type HeroFrame = { id: CompanionId; image: HTMLImageElement; pose: HeroPose };
 
 /** Crop transparent padding at render time; source artwork stays untouched. */
 function opaqueBounds(
@@ -52,6 +101,7 @@ function opaqueBounds(
 export async function createHabitatRenderer(
   canvas: HTMLCanvasElement,
 ): Promise<{
+  replayAbility: () => void;
   setAttention: (horizontal: number | null) => void;
   draw: (
     mood: Mood,
@@ -61,6 +111,7 @@ export async function createHabitatRenderer(
       decor: Decor;
       night: boolean;
       outfit?: Outfit;
+      companion?: CompanionId;
       play?: PetPlay;
     },
   ) => number[];
@@ -73,7 +124,7 @@ export async function createHabitatRenderer(
   const petContext = petLayer.getContext('2d');
   if (!petContext) throw new Error('Canvas is unavailable.');
   petContext.imageSmoothingEnabled = false;
-  const petScale = 1 / 2;
+  const petScale = 0.6;
   const baseline = 94;
   const petWidth = Math.round(petLayer.width * petScale);
   const petHeight = Math.round(petLayer.height * petScale);
@@ -108,7 +159,31 @@ export async function createHabitatRenderer(
     }),
   );
 
-  const playFrames = await loadPlayFrames();
+  const heroImages = new Map<CompanionId, HTMLImageElement>();
+  const heroRigs = new Map<CompanionId, ReturnType<typeof createHeroRig>>();
+  const gardenPets = new Map<'moon' | 'moss', GardenFrame['paint']>();
+  const gardenSprite = document.createElement('canvas');
+  gardenSprite.width = gardenSprite.height = PET_RESOLUTION;
+  const gardenPen = gardenSprite.getContext('2d')!;
+  const [playFrames] = await Promise.all([
+    loadPlayFrames(),
+    Promise.all(
+      Object.entries(companionArt).map(async ([id, url]) => {
+        if (id === 'ember') return;
+        const image = new Image();
+        image.src = url;
+        await image.decode();
+        if (id === 'moon' || id === 'moss') {
+          const paint = createPetRenderer(image, id, 'idle');
+          if (!paint) throw new Error('Canvas is unavailable.');
+          gardenPets.set(id, paint);
+        } else if (isHero(id)) {
+          heroImages.set(id, image);
+          heroRigs.set(id, createHeroRig(id, image));
+        }
+      }),
+    ),
+  ]);
   const rigs = new Map<string, HTMLCanvasElement>();
   const rigFor = (source: HTMLCanvasElement, mood: Mood, life: LifeFrame) => {
     if (mood === 'Sleeping' || mood === 'TeaBreak') return source;
@@ -192,6 +267,7 @@ export async function createHabitatRenderer(
   let lastCanvas: HTMLCanvasElement | undefined;
   let lastHadParticles = false;
   let lastNight = false;
+  let replayAt = -Infinity;
   let attention: number | null = null;
   let gaze = 0;
   let lastElapsed = 0;
@@ -202,9 +278,18 @@ export async function createHabitatRenderer(
     outfit: Outfit,
     life: LifeFrame,
     play: ReturnType<typeof playPose>,
+    hero?: HeroFrame,
+    garden?: GardenFrame,
+    acting?: AbilityPose,
+    cell?: number,
   ) => {
     const { pose, x: sway, lift, breath } = motion;
-    const key = `${mood}:${pose}:${sway}:${lift}:${breath}:${decor}:${outfit}:${life.blink}:${life.ear}:${life.tail}:${life.look}:${play.sheet}:${play.frame}:${play.facing}:${play.free}`;
+    const baseKey = hero
+      ? `${hero.id}:${mood}:${decor}:${outfit}:${JSON.stringify(hero.pose)}:${play.facing}:${play.free}`
+      : garden
+        ? `${garden.id}:${mood}:${JSON.stringify(garden.pose)}:${decor}:${outfit}:${play.facing}:${play.free}`
+        : `${mood}:${pose}:${sway}:${lift}:${breath}:${decor}:${outfit}:${life.blink}:${life.ear}:${life.tail}:${life.look}:${play.sheet}:${play.frame}:${play.facing}:${play.free}`;
+    const key = cell !== undefined ? baseKey + ':ability:' + cell : baseKey;
     const cached = frames.get(key);
     if (cached) return cached;
     const frame = document.createElement('canvas');
@@ -213,70 +298,136 @@ export async function createHabitatRenderer(
     const context = frame.getContext('2d', { willReadFrequently: true });
     if (!context) throw new Error('Canvas is unavailable.');
     context.imageSmoothingEnabled = false;
-    const original = sprites.get(mood)!;
-    let sprite = rigFor(original, mood, life);
-    if (play.frame >= 0) {
-      const key = `${play.sheet}:${play.frame}:${outfit}`;
-      let runner = runners.get(key);
-      if (!runner) {
-        runner = spriteForPlay(play.frame, play.sheet, outfit, playFrames);
-        runners.set(key, runner);
-      }
-      sprite = runner;
-    }
-    const x = Math.floor((110 - sprite.width) / 2);
-    const y = baseline - sprite.height;
-    // The shadow stays grounded while the character and wardrobe travel together.
-    petContext.clearRect(0, 0, petLayer.width, petLayer.height);
-    petContext.fillStyle = '#383532';
-    petContext.fillRect(
-      39 + Math.min(lift, 5),
+    const shadowWidth = hero ? 15 : 19;
+    const shadow = Math.max(
+      4,
+      Math.round(
+        shadowWidth - Math.min(acting?.lift ?? hero?.pose.lift ?? 0, 10) * 0.6,
+      ),
+    );
+    context.fillStyle = hero ? '#42313b' : '#4d3025';
+    context.fillRect(
+      Math.round((canvas.width - shadow) / 2),
       baseline - 1,
-      32 - Math.min(lift, 5) * 2,
+      shadow,
       1,
     );
-    petContext.save();
-    petContext.translate(sway, -lift);
-    if (play.facing === -1) {
-      petContext.translate(110, 0);
-      petContext.scale(-1, 1);
-    }
-    for (const band of spriteBands(sprite.height, pose, breath)) {
-      petContext.drawImage(
-        sprite,
-        0,
-        band.sourceY,
-        sprite.width,
-        band.sourceHeight,
-        x,
-        y + band.destinationY,
-        sprite.width,
-        band.destinationHeight,
+    context.save();
+    if (acting)
+      placeBody(context, acting, canvas.width / 2, baseline, 1, play.facing);
+    if (hero) {
+      const left = Math.floor((canvas.width - HERO_GRID) / 2);
+      const top = baseline - HERO_BASELINE;
+      const rig = heroRigs.get(hero.id);
+      if (rig && cell !== undefined)
+        rig(context, cell / 40, left, top, HERO_GRID, play.facing);
+      else
+        drawHero(
+          context,
+          hero.image,
+          hero.pose,
+          left,
+          top,
+          HERO_GRID,
+          play.facing,
+        );
+      const offset = hero.pose.headX * play.facing;
+      const head = top + hero.pose.headY - hero.pose.lift;
+      const center = left + HERO_GRID / 2;
+      if (mood !== 'Sleeping' && outfit === 'beanie') {
+        context.fillStyle = '#708b9a';
+        context.fillRect(center - 8 + offset, head + 3, 16, 3);
+        context.fillRect(center - 6 + offset, head + 1, 12, 2);
+      } else if (mood !== 'Sleeping' && outfit === 'scarf') {
+        context.fillStyle = '#c67557';
+        context.fillRect(center - 6, top + 20 - hero.pose.lift, 12, 2);
+      }
+      if (mood === 'Working' && !acting) {
+        const deskY = top + 24 - hero.pose.lift;
+        context.fillStyle = '#594435';
+        context.fillRect(center - 5, deskY, 10, 4);
+        context.fillStyle = '#e8d1b2';
+        context.fillRect(center - 4, deskY, 8, 2);
+        context.fillStyle = '#aa866b';
+        context.fillRect(center, deskY, 1, 2);
+      }
+    } else if (garden) {
+      garden.paint(gardenPen, garden.pose);
+      context.translate(canvas.width / 2, baseline);
+      context.scale(play.facing, 1);
+      const feet = garden.id === 'moon' ? 34 : 35;
+      context.drawImage(gardenSprite, -18, -feet, 36, 36);
+      const dy = (-garden.pose.lift * 36) / PET_RESOLUTION;
+      if (mood !== 'Sleeping' && outfit === 'beanie') {
+        const hat = (garden.id === 'moon' ? -29 : -25) + dy;
+        context.fillStyle = '#708b9a';
+        context.fillRect(-7, hat, 13, 3);
+        context.fillRect(-5, hat - 2, 9, 2);
+      } else if (mood !== 'Sleeping' && outfit === 'scarf') {
+        context.fillStyle = '#c67557';
+        context.fillRect(-6, -12 + dy, 12, 2);
+        context.fillRect(-4, -11 + dy, 3, 4);
+      }
+    } else {
+      const original = sprites.get(mood)!;
+      let sprite = rigFor(original, mood, life);
+      if (play.frame >= 0) {
+        const key = `${play.sheet}:${play.frame}:${outfit}`;
+        let runner = runners.get(key);
+        if (!runner) {
+          runner = spriteForPlay(play.frame, play.sheet, outfit, playFrames);
+          runners.set(key, runner);
+        }
+        sprite = runner;
+      }
+      const x = Math.floor((110 - sprite.width) / 2);
+      const y = baseline - sprite.height;
+      // The shadow stays grounded while the character and wardrobe travel together.
+      petContext.clearRect(0, 0, petLayer.width, petLayer.height);
+      petContext.save();
+      petContext.translate(sway, -lift);
+      if (play.facing === -1) {
+        petContext.translate(110, 0);
+        petContext.scale(-1, 1);
+      }
+      for (const band of spriteBands(sprite.height, pose, breath)) {
+        petContext.drawImage(
+          sprite,
+          0,
+          band.sourceY,
+          sprite.width,
+          band.sourceHeight,
+          x,
+          y + band.destinationY,
+          sprite.width,
+          band.destinationHeight,
+        );
+      }
+      const head = anchorOffset(sprite.height, 0, pose, breath);
+      const collar = anchorOffset(
+        sprite.height,
+        Math.min(sprite.height - 1, 76 - y),
+        pose,
+        breath,
       );
+      petContext.translate(life.look, 0);
+      if (play.frame < 0 && mood !== 'Sleeping' && outfit === 'beanie') {
+        petContext.fillStyle = '#6c8390';
+        petContext.fillRect(38, 49 + head, 31, 5);
+        petContext.fillRect(42, 46 + head, 23, 4);
+        petContext.fillRect(51, 43 + head, 5, 3);
+        petContext.fillStyle = '#b9c6cb';
+        petContext.fillRect(38, 53 + head, 31, 2);
+      } else if (play.frame < 0 && mood !== 'Sleeping' && outfit === 'scarf') {
+        petContext.fillStyle = '#b65e50';
+        petContext.fillRect(42, 76 + collar, 23, 3);
+        petContext.fillRect(43, 79 + collar, 5, 9);
+      }
+      petContext.restore();
+      // Resize the assembled pose once to keep the wardrobe and animation bands aligned.
+      context.drawImage(petLayer, petLeft, petTop, petWidth, petHeight);
     }
-    const head = anchorOffset(sprite.height, 0, pose, breath);
-    const collar = anchorOffset(
-      sprite.height,
-      Math.min(sprite.height - 1, 76 - y),
-      pose,
-      breath,
-    );
-    petContext.translate(life.look, 0);
-    if (play.frame < 0 && mood !== 'Sleeping' && outfit === 'beanie') {
-      petContext.fillStyle = '#6c8390';
-      petContext.fillRect(38, 49 + head, 31, 5);
-      petContext.fillRect(42, 46 + head, 23, 4);
-      petContext.fillRect(51, 43 + head, 5, 3);
-      petContext.fillStyle = '#b9c6cb';
-      petContext.fillRect(38, 53 + head, 31, 2);
-    } else if (play.frame < 0 && mood !== 'Sleeping' && outfit === 'scarf') {
-      petContext.fillStyle = '#b65e50';
-      petContext.fillRect(42, 76 + collar, 23, 3);
-      petContext.fillRect(43, 79 + collar, 5, 9);
-    }
-    petContext.restore();
-    // Resize the assembled pose once to keep the wardrobe and animation bands aligned.
-    context.drawImage(petLayer, petLeft, petTop, petWidth, petHeight);
+    context.restore();
     if (!play.free && decor === 'plant') {
       context.fillStyle = '#77513c';
       context.fillRect(23, 86, 12, 8);
@@ -292,15 +443,6 @@ export async function createHabitatRenderer(
       context.fillRect(27, 77, 5, 3);
       context.fillStyle = '#edc574';
       context.fillRect(26, 82, 7, 9);
-    }
-    if (!play.free) {
-      // The pixel ledge anchors the character and doubles as its drag handle.
-      context.fillStyle = '#191919';
-      context.fillRect(21, 94, 68, 3);
-      context.fillStyle = '#646460';
-      context.fillRect(22, 94, 66, 1);
-      context.fillStyle = '#101010';
-      context.fillRect(25, 97, 60, 3);
     }
     // Read pixels only when a cached pose is created, never on every RAF frame.
     const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
@@ -330,6 +472,9 @@ export async function createHabitatRenderer(
   };
 
   return {
+    replayAbility() {
+      replayAt = performance.now();
+    },
     setAttention(horizontal) {
       attention =
         horizontal === null || !Number.isFinite(horizontal)
@@ -363,6 +508,79 @@ export async function createHabitatRenderer(
         (attention !== null || Math.abs(gaze) > 0.1)
       )
         life.look = Math.round(gaze);
+      const id = appearance.companion ?? 'ember';
+      const image = id && heroImages.get(id);
+      const excursion = play.free ? appearance.play : undefined;
+      const manualAge = performance.now() - replayAt;
+      const reactionAge =
+        manualAge < ABILITY_MS
+          ? manualAge
+          : displayMood === 'Happy'
+            ? elapsed
+            : excursion?.action === 'pounce'
+              ? excursion.elapsedMs
+              : manualAge;
+      const t = abilityTime(
+        elapsed,
+        reactionAge,
+        !play.free && displayMood === 'Idle',
+        reduced,
+      );
+      // Cache silhouettes at animation-cell cadence. The light and particle passes still run at display cadence.
+      const cell = t === null ? undefined : Math.floor(t * 40);
+      const acting =
+        cell === undefined ? undefined : abilityPose(id, cell / 40);
+      const gardenPaint =
+        id === 'moon' || id === 'moss' ? gardenPets.get(id) : undefined;
+      let garden: GardenFrame | undefined;
+      if (gardenPaint && (id === 'moon' || id === 'moss')) {
+        const petMood =
+          displayMood === 'Sleeping'
+            ? 'sleeping'
+            : displayMood === 'Working'
+              ? 'working'
+              : displayMood === 'TeaBreak'
+                ? 'break'
+                : 'idle';
+        const pose = petPose({
+          kind: id,
+          mood: petMood,
+          elapsed,
+          curious: attention !== null,
+          look: gaze,
+          reduced,
+        });
+        // The face renderer uses five discrete eyelid heights.
+        pose.eyes = Math.round(pose.eyes * 5) / 5;
+        if (excursion?.action === 'walk' || excursion?.action === 'run') {
+          const gait =
+            (excursion.gaitMs ?? excursion.elapsedMs) /
+            (excursion.action === 'run' ? 90 : 145);
+          pose.lift = Math.round(
+            Math.abs(Math.sin(gait)) * (id === 'moss' ? 10 : 5),
+          );
+          pose.lean = Math.round(Math.cos(gait) * 3);
+        } else if (excursion?.action === 'hide') pose.inhale = -4;
+        garden = { id, paint: gardenPaint, pose };
+      }
+      const hero =
+        isHero(id) && image
+          ? {
+              id,
+              image,
+              pose: heroPose(
+                id,
+                acting
+                  ? 'idle'
+                  : excursion
+                    ? heroRoaming[excursion.action]
+                    : heroMoods[displayMood],
+                excursion ? (excursion.gaitMs ?? excursion.elapsedMs) : elapsed,
+                reduced,
+                gaze,
+              ),
+            }
+          : undefined;
       const frame = frameFor(
         displayMood,
         motion,
@@ -370,21 +588,49 @@ export async function createHabitatRenderer(
         appearance.outfit ?? 'none',
         life,
         play,
+        hero,
+        garden,
+        acting,
+        cell,
       );
       const particles =
-        !reduced &&
-        (displayMood === 'TeaBreak' ||
-          displayMood === 'Sleeping' ||
-          displayMood === 'Happy');
+        !reduced && (displayMood === 'TeaBreak' || displayMood === 'Sleeping');
       if (
         lastCanvas !== frame.canvas ||
         particles ||
+        acting ||
         lastHadParticles ||
         lastNight !== appearance.night
       ) {
         output.clearRect(0, 0, canvas.width, canvas.height);
         output.imageSmoothingEnabled = false;
+        if (acting && t !== null)
+          drawAbility(
+            output,
+            id,
+            t,
+            acting,
+            canvas.width / 2,
+            baseline,
+            1,
+            play.facing,
+            false,
+            cell! / 40,
+          );
         output.drawImage(frame.canvas, 0, 0);
+        if (acting && t !== null)
+          drawAbility(
+            output,
+            id,
+            t,
+            acting,
+            canvas.width / 2,
+            baseline,
+            1,
+            play.facing,
+            true,
+            cell! / 40,
+          );
         if (particles) drawParticles(output, displayMood, elapsed);
         if (appearance.night) {
           output.save();
@@ -395,7 +641,7 @@ export async function createHabitatRenderer(
         }
       }
       lastCanvas = frame.canvas;
-      lastHadParticles = particles;
+      lastHadParticles = particles || !!acting;
       lastNight = appearance.night;
       // Particles remain decorative and click-through, even where visibly painted.
       return frame.mask;

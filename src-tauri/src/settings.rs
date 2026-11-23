@@ -29,6 +29,7 @@ pub fn is_focused(app: &AppHandle) -> bool {
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(tag = "setting", content = "value", rename_all = "camelCase")]
 pub enum HabitatChange {
+    Companion(String),
     Decor(String),
     Outfit(String),
     Lighting(Lighting),
@@ -116,7 +117,7 @@ pub fn change_habitat_setting(
 ) -> Result<(), String> {
     require_settings(&window)?;
     if state.snapshot.lock().map_err(|e| e.to_string())?.is_none() {
-        return Err("Ember is still getting ready.".into());
+        return Err("Your companion is still getting ready.".into());
     }
     window
         .emit_to("main", "habitat-setting-changed", change)

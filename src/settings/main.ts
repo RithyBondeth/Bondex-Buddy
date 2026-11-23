@@ -34,7 +34,7 @@ const panes = [habitat, integrations];
 const body = element('main', 'settings-body');
 let selected = 0;
 
-const tabButtons = ['Ember', 'Clipboard & agents'].map((label, index) => {
+const tabButtons = ['Companion', 'Clipboard & agents'].map((label, index) => {
   const pane = panes[index].section;
   const tab = button(label, 'panel-tab');
   tab.id = `settings-tab-${index}`;

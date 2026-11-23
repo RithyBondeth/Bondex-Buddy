@@ -12,19 +12,32 @@ import { companions, repository } from '@/lib/companions';
 const stories: SplitCanvasItem[] = companions.map((pet, i) => ({
   image: pet.image,
   label: pet.species,
-  title:
-    i === 0
-      ? 'A small spark.\nA warm presence.'
-      : i === 1
-        ? 'For dreamers.\nAnd night thinkers.'
-        : 'A slower pace.\nA greener space.',
+  title: pet.name,
   description: pet.description,
-  action: {
-    label:
-      i === 0 ? 'Try a little focus time' : `${pet.name} is in development`,
-    href: i === 0 ? '#how-it-works' : '#get-the-app',
-  },
+  action:
+    i === 0
+      ? { label: 'Try the focus timer', href: '#how-it-works' }
+      : undefined,
 }));
+
+const tools = [
+  {
+    icon: '◷',
+    title: 'Focus & tasks',
+    description: 'Start a focus session, track your to-dos, and set reminders.',
+  },
+  {
+    icon: '▤',
+    title: 'Clips & files',
+    description:
+      'Find a recent clip or tuck a temporary copy into the File Pouch.',
+  },
+  {
+    icon: '✦',
+    title: 'Breaks & handoffs',
+    description: 'Take a water break or see when a coding agent needs you.',
+  },
+] as const;
 
 export default function Home() {
   return (
@@ -38,11 +51,11 @@ export default function Home() {
           bondex<span className="brand-light">buddy</span>
         </a>
         <nav aria-label="Main navigation">
-          <a href="#companions">The companions</a>
-          <a href="#how-it-works">Little rituals</a>
+          <a href="#desktop-tools">Desktop tools</a>
+          <a href="#companions">Companions</a>
           <MotionToggle />
           <a className="button button-small" href="#get-the-app">
-            Get the app{' '}
+            Release status{' '}
             <span className="button-arrow" aria-hidden="true">
               ↗
             </span>
@@ -52,35 +65,42 @@ export default function Home() {
       <main id="main-content">
         <CompanionHero />
         <section
-          className="manifesto-section"
-          aria-labelledby="manifesto-heading"
+          className="tools-section"
+          id="desktop-tools"
+          aria-labelledby="tools-heading"
         >
           <Reveal>
-            <p className="section-label">Not another thing to keep up with.</p>
-            <h2 id="manifesto-heading">
-              Less noise.
-              <br />
-              More <span className="pixel-accent">nice to have you here.</span>
-            </h2>
-            <p>
-              Some days need a productivity system.
-              <br />
-              Other days just need a little company.
-            </p>
+            <h2 id="tools-heading">Inside Ember’s pocket</h2>
           </Reveal>
-          <div className="manifesto-pets" aria-hidden="true">
-            {companions.map((pet, i) => (
-              <Reveal key={pet.id} delay={i * 0.12}>
-                <Image
-                  src={pet.image}
-                  alt=""
-                  width={130}
-                  height={130}
-                  unoptimized
-                />
+          <div className="tool-cards">
+            {tools.map((tool, i) => (
+              <Reveal key={tool.title} delay={i * 0.07}>
+                <span className="tool-icon" aria-hidden="true">
+                  {tool.icon}
+                </span>
+                <h3>{tool.title}</h3>
+                <p>{tool.description}</p>
               </Reveal>
             ))}
           </div>
+        </section>
+        <section
+          id="how-it-works"
+          className="ritual-section"
+          aria-labelledby="ritual-heading"
+        >
+          <Reveal>
+            <h2 id="ritual-heading">
+              A timer with <span className="pixel-accent">company.</span>
+            </h2>
+            <p>
+              Try a 25-minute focus session or take a five-minute break. Ember
+              changes pose to match what you’re doing.
+            </p>
+          </Reveal>
+          <Reveal delay={0.1}>
+            <FocusPlayground />
+          </Reveal>
         </section>
         <section
           className="companions-intro"
@@ -88,20 +108,16 @@ export default function Home() {
           aria-labelledby="companions-heading"
         >
           <Reveal>
-            <div className="section-label">Find your kind of company</div>
             <h2 id="companions-heading">
-              Tiny spirits.
-              <br />
-              <span className="pixel-accent">Their own little worlds.</span>
+              Meet the <span className="pixel-accent">companions.</span>
             </h2>
             <p>
-              Meet the family we’re bringing to life. Ember leads the way;
-              <br className="desktop-break" /> Moon and Moss are growing from
-              our first character concepts.
+              Try Ember, Moon, Moss, or one of the seven Avengers. Each brings a
+              signature ability and a matching desktop pocket.
             </p>
           </Reveal>
-          <a className="text-link" href="#get-the-app">
-            Follow their journey <span aria-hidden="true">↗</span>
+          <a className="text-link" href="#habitat-preview">
+            Back to the habitat <span aria-hidden="true">↑</span>
           </a>
         </section>
         <div id="meet-ember">
@@ -114,28 +130,6 @@ export default function Home() {
             className="companion-story"
           />
         </div>
-        <section
-          id="how-it-works"
-          className="ritual-section"
-          aria-labelledby="ritual-heading"
-        >
-          <Reveal>
-            <div className="section-label">A rhythm that feels like you</div>
-            <h2 id="ritual-heading">
-              Work a little.
-              <br />
-              <span className="pixel-accent">Live a little.</span>
-            </h2>
-            <p>
-              A focus buddy, a break companion, or just a familiar face.
-              <br className="desktop-break" /> No pressure to be anything more
-              productive than yourself.
-            </p>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <FocusPlayground />
-          </Reveal>
-        </section>
         <section className="values-section" aria-label="Made with care">
           <Reveal>
             <span className="value-mark" aria-hidden="true">
@@ -188,16 +182,12 @@ export default function Home() {
                   />
                 ))}
               </div>
-              <p className="section-label" data-grid-avoid>
-                A cozier desktop is taking shape.
-              </p>
               <h2 id="download-heading" data-grid-avoid>
-                Room for one
-                <br />
-                <span className="pixel-accent">more little friend?</span>
+                Bring Ember to{' '}
+                <span className="pixel-accent">your desktop.</span>
               </h2>
               <p data-grid-avoid>
-                Follow the journey from the first pixels to the first release.
+                Bondex Buddy is in development for macOS and Windows.
               </p>
               <a
                 className="button button-primary"
@@ -210,8 +200,7 @@ export default function Home() {
                 </span>
               </a>
               <p className="release-note" data-grid-avoid>
-                In development for macOS & Windows. Public downloads coming
-                later.
+                Public downloads are planned for a future release.
               </p>
             </Reveal>
           </div>
@@ -220,18 +209,14 @@ export default function Home() {
       <footer className="site-footer">
         <div className="footer-top">
           <a href="#" className="brand">
+            <span className="brand-symbol" aria-hidden="true" />
             bondex<span className="brand-light">buddy</span>
           </a>
-          <p>Little company. Big difference.</p>
           <div>
             <a href={`${repository}/blob/develop/PRIVACY.md`}>Privacy</a>
             <a href={repository}>GitHub ↗</a>
             <a href="#main-content">Back to top ↑</a>
           </div>
-        </div>
-        <div className="footer-bottom">
-          <span>A tiny desk spirit project.</span>
-          <span>Made with care. And a few pixels.</span>
         </div>
       </footer>
     </>

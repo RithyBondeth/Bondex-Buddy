@@ -7,20 +7,18 @@ import { REACTION_MS, type PetKind, type PetMood } from '@/lib/pet-animation';
 import { PET_RESOLUTION } from '@/lib/pet-renderer';
 import { cn } from '@/lib/utils';
 import { usePetCanvas } from './use-pet-canvas';
+import { abilityNames } from '../../../shared/abilities';
+import type { HeroId } from '../../../shared/hero-motion';
 
 const greetings: Record<PetKind, string> = {
   ember: 'Oh, hello! A little head pat?',
   moon: 'A sleepy hello, just for you.',
   moss: 'You made a little friend.',
+  hero: 'Ready when you are.',
 };
-const reactions: Record<PetKind, string> = {
-  ember: 'Ember loves a little head pat.',
-  moon: 'A slow blink. Cat for “I like you.”',
-  moss: 'A tiny hop. A very happy bunny.',
-};
-
 export function LivingPet({
   kind,
+  hero,
   name,
   image,
   mood = 'idle',
@@ -30,6 +28,7 @@ export function LivingPet({
   moveBy,
 }: {
   kind: PetKind;
+  hero?: HeroId;
   name: string;
   image: string;
   mood?: PetMood;
@@ -46,10 +45,13 @@ export function LivingPet({
     getBehavior,
     setCuriosity,
     contains,
+    lookAt,
+    setDragging: setSpriteDragging,
+    step,
     startReaction,
-    endReaction,
   } = usePetCanvas({
     kind,
+    hero,
     image,
     mood,
     calm,
@@ -59,7 +61,7 @@ export function LivingPet({
   const greeting = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dismiss = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [curious, setCurious] = useState(false);
-  const [reaction, setReaction] = useState(0);
+  const ability = abilityNames[hero ?? (kind === 'hero' ? 'ember' : kind)];
   const [celebrating, setCelebrating] = useState(false);
   const press = useRef<{ id: number; x: number } | null>(null);
   const moved = useRef(false);
@@ -80,7 +82,7 @@ export function LivingPet({
       active
         ? mood === 'sleeping'
           ? 'Shh. Cozy dreams.'
-          : reactions[kind]
+          : ability
         : getBehavior().curious
           ? greetings[kind]
           : '',
@@ -115,6 +117,7 @@ export function LivingPet({
         if (!moved.current) {
           moved.current = true;
           setDragging(true);
+          setSpriteDragging(true);
           hovered.current = false;
           engage();
         }
@@ -125,6 +128,10 @@ export function LivingPet({
     }
     if (event.pointerType === 'touch') return;
     const inside = isOnPet(event);
+    if (hero && inside) {
+      const bounds = event.currentTarget.getBoundingClientRect();
+      lookAt(((event.clientX - bounds.left) / bounds.width - 0.5) * 4);
+    }
     if (inside !== hovered.current) {
       hovered.current = inside;
       engage();
@@ -132,22 +139,20 @@ export function LivingPet({
   };
   const pet = () => {
     startReaction();
-    setReaction((count) => count + 1);
     setCelebrating(true);
     notify();
     drawOnce.current?.();
     if (dismiss.current) clearTimeout(dismiss.current);
     dismiss.current = setTimeout(() => {
       setCelebrating(false);
-      endReaction();
-      notify();
+      onMessage?.(getBehavior().curious ? greetings[kind] : '');
       dismiss.current = null;
     }, REACTION_MS);
   };
   const feedback = celebrating
     ? mood === 'sleeping'
       ? 'Shh. Cozy dreams.'
-      : reactions[kind]
+      : ability
     : curious
       ? greetings[kind]
       : '';
@@ -180,11 +185,13 @@ export function LivingPet({
         onLostPointerCapture={() => {
           press.current = null;
           setDragging(false);
+          setSpriteDragging(false);
         }}
         onKeyDown={(event) => {
           if (!moveBy || !['ArrowLeft', 'ArrowRight'].includes(event.key))
             return;
           event.preventDefault();
+          step();
           moveBy(event.key === 'ArrowLeft' ? -16 : 16);
         }}
         onPointerEnter={trackPointer}
@@ -216,23 +223,13 @@ export function LivingPet({
         />
         <canvas
           ref={canvas}
-          width={PET_RESOLUTION}
-          height={PET_RESOLUTION}
+          width={PET_RESOLUTION * 3}
+          height={PET_RESOLUTION * 3}
           aria-hidden="true"
         />
-        {celebrating && (
-          <span className="pet-hearts" aria-hidden="true" key={reaction}>
-            {[0, 1, 2].map((i) => (
-              <span className="pet-heart" key={i}>
-                ♥
-              </span>
-            ))}
-          </span>
-        )}
       </button>
       <span className="sr-only" id={hintId}>
-        Hover or focus to say hello. Click, tap, or press Enter or Space for a
-        little love.{' '}
+        Click, tap, or press Enter or Space to play {ability}.{' '}
         {moveBy && 'Drag or use the left and right arrow keys to move.'}
       </span>
       {!onMessage && (

@@ -1,4 +1,4 @@
-export type PetKind = 'ember' | 'moon' | 'moss';
+export type PetKind = 'ember' | 'moon' | 'moss' | 'hero';
 export type PetMood = 'idle' | 'working' | 'break' | 'sleeping';
 
 export interface PetPose {
@@ -16,6 +16,7 @@ const rhythms = {
   ember: { breath: 4200, blink: 4700 },
   moon: { breath: 5200, blink: 6100 },
   moss: { breath: 3800, blink: 4100 },
+  hero: { breath: 4400, blink: 5200 },
 };
 
 /** A brief close, hold, and reopen. No blink outside this small window. */

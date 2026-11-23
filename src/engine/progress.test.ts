@@ -34,6 +34,7 @@ it('unlocks permanent decor from completed focus sessions only', () => {
 it('round-trips progress, equipment, and preferences and strips unrelated fields', () => {
   const data = {
     ...freshProgress(),
+    companion: 'iron-man',
     completedFocusSessions: 3,
     decor: 'lantern',
     lighting: 'day',
@@ -41,6 +42,7 @@ it('round-trips progress, equipment, and preferences and strips unrelated fields
   };
   expect(decodeProgress(JSON.stringify(data))).toEqual({
     version: 2,
+    companion: 'iron-man',
     outfit: 'none',
     ghost: false,
     completedFocusSessions: 3,
@@ -49,6 +51,14 @@ it('round-trips progress, equipment, and preferences and strips unrelated fields
     tasks: [],
     waterMinutes: 0,
   });
+});
+it('defaults to Ember for older saves and unrecognized companions', () => {
+  const legacy = { ...freshProgress(), companion: undefined };
+  expect(decodeProgress(JSON.stringify(legacy)).companion).toBe('ember');
+  expect(
+    decodeProgress(JSON.stringify({ ...legacy, companion: 'unknown' }))
+      .companion,
+  ).toBe('ember');
 });
 it('loads old saves without tasks and preserves saved tasks and earned sessions', () => {
   expect(

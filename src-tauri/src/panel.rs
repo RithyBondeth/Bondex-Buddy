@@ -17,8 +17,8 @@ pub struct PocketSize {
 }
 fn expanded_size(work_width: f64, work_height: f64) -> PocketSize {
     PocketSize {
-        width: work_width.clamp(220.0, 264.0),
-        height: work_height.clamp(200.0, 256.0),
+        width: work_width.clamp(220.0, 300.0),
+        height: work_height.clamp(200.0, 300.0),
     }
 }
 pub fn request_open(app: &tauri::AppHandle, tab: &str) {
@@ -127,7 +127,7 @@ mod tests {
     #[test]
     fn pocket_fits_small_and_scaled_work_areas() {
         let regular = expanded_size(1440.0, 816.0);
-        assert_eq!((regular.width, regular.height), (264.0, 256.0));
+        assert_eq!((regular.width, regular.height), (300.0, 300.0));
         let small = expanded_size(240.0, 250.0);
         assert_eq!((small.width, small.height), (240.0, 250.0));
     }

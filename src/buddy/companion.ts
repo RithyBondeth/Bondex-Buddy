@@ -4,14 +4,25 @@ import { button, element, errorMessage } from './dom';
 import { icon } from './icons';
 import type { AgentSession, AgentSnapshot } from './model';
 import type { FocusTask } from '../engine/tasks';
+import type { TimerPhase } from '../engine/spirit';
 import type { WaterAction } from '../engine/water';
+import { companionNames, type CompanionId } from '../engine/companions';
+import { companionArt } from '../rendering/companion-art';
 import { tasksView, type TaskControls } from './tasks-view';
 import { pouchView } from './pouch-view';
+import { abilityNames } from '../../website/shared/abilities';
+import '../../website/shared/pocket-themes.css';
 import './panel.css';
 import './companion.css';
 
 export type PocketTab = 'focus' | 'clipboard' | 'files' | 'agents';
 export type PocketView = 'reminder' | 'handoffs' | 'water';
+
+const timerLabels = {
+  ready: 'Ready',
+  paused: 'Paused',
+  running: 'In progress',
+};
 
 export function createCompanionPocket(
   close: () => void,
@@ -20,25 +31,32 @@ export function createCompanionPocket(
     reset: HTMLButtonElement;
     tasks: TaskControls;
     dismissHandoff(item: AgentSession): void;
+    replayAbility(): void;
     water(action: WaterAction): void;
   },
 ) {
   const sheet = element('section', 'buddy-surface companion-sheet');
   sheet.id = 'ember-pocket';
   sheet.inert = true;
-  sheet.setAttribute('aria-label', 'Ember’s thought');
+  sheet.setAttribute('role', 'dialog');
+  sheet.setAttribute('aria-labelledby', 'pocket-title');
   const bar = element('header', 'pocket-bar');
+  const titlebar = element('div', 'pocket-titlebar');
+  const portrait = element('img', 'pocket-portrait');
+  portrait.alt = '';
+  portrait.width = portrait.height = 24;
+  const title = element('h2', 'pocket-title');
+  title.id = 'pocket-title';
   const tabs = element('nav', 'pocket-tabs');
   tabs.setAttribute('role', 'tablist');
-  tabs.setAttribute('aria-label', 'Ember’s tools');
   const indicator = element('span', 'pocket-tab-indicator');
   indicator.setAttribute('aria-hidden', 'true');
   tabs.append(indicator);
   const closeButton = button('', 'pocket-close');
   closeButton.append(icon('close'));
-  closeButton.setAttribute('aria-label', 'Close Ember’s thought');
   closeButton.addEventListener('click', close);
-  bar.append(tabs, closeButton);
+  titlebar.append(portrait, title, closeButton);
+  bar.append(titlebar, tabs);
   const notice = element('p', 'panel-notice');
   notice.hidden = true;
   notice.setAttribute('role', 'status');
@@ -55,10 +73,20 @@ export function createCompanionPocket(
   focus.setAttribute('role', 'tabpanel');
   focus.setAttribute('aria-labelledby', 'focus-tab');
   const timerView = element('div', 'focus-timer');
+  const timerCard = element('div', 'focus-card');
   const clock = element('div', 'focus-clock', '25:00');
-  const phase = element('p', 'focus-phase', 'Ready when you are');
+  const abilityButton = button('', 'pocket-ability');
+  const playMark = element('span', '', '▶');
+  playMark.setAttribute('aria-hidden', 'true');
+  const abilityLabel = element('span');
+  abilityButton.append(playMark, abilityLabel);
+  abilityButton.addEventListener('click', controls.replayAbility);
+  const clockRow = element('div', 'focus-clock-row');
+  clockRow.append(clock, abilityButton);
+  const phase = element('h2', 'focus-phase', 'Focus session');
+  const status = element('span', 'focus-status', 'Ready');
   const readout = element('div', 'focus-readout');
-  readout.append(clock, phase);
+  readout.append(phase, status);
   const track = element('div', 'focus-track');
   const fill = element('div');
   track.setAttribute('aria-hidden', 'true');
@@ -84,7 +112,8 @@ export function createCompanionPocket(
   skip.addEventListener('click', () => controls.water('skip'));
   waterActions.append(drank, snooze, skip);
   water.append(waterHeading, waterActions);
-  timerView.append(readout, track, focusActions);
+  timerCard.append(readout, clockRow, track);
+  timerView.append(timerCard, focusActions);
   focus.append(timerView, tasks.section, water);
   const body = element('div', 'pocket-body');
   const sections = {
@@ -214,6 +243,16 @@ export function createCompanionPocket(
   select('focus');
   return {
     sheet,
+    setCompanion(id: CompanionId) {
+      const name = companionNames[id];
+      abilityLabel.textContent = abilityNames[id];
+      abilityButton.setAttribute('aria-label', `Play ${abilityNames[id]}`);
+      abilityButton.title = `Close the pocket and play ${abilityNames[id]}`;
+      portrait.src = companionArt[id];
+      title.textContent = `${name}’s pocket`;
+      tabs.setAttribute('aria-label', `${name}’s tools`);
+      closeButton.setAttribute('aria-label', `Close ${name}’s pocket`);
+    },
     pouchChanged(added: number, error: string | null) {
       if (opened && active === 'files') {
         if (error) announce(error, true);
@@ -247,16 +286,19 @@ export function createCompanionPocket(
     },
     update(
       time: string,
-      status: string,
+      timerPhase: TimerPhase,
       progress: number,
       state: 'ready' | 'paused' | 'running',
       task: FocusTask | undefined,
     ) {
       clock.textContent = time;
-      phase.textContent = task?.title ?? status;
-      phase.title = task ? `${status} · ${task.title}` : '';
-      phase.classList.toggle('is-task', !!task);
+      const phaseLabel =
+        timerPhase === 'Break' ? 'Break time' : 'Focus session';
+      phase.textContent = task?.title ?? phaseLabel;
+      phase.title = task ? `${phaseLabel} · ${task.title}` : '';
+      status.textContent = timerLabels[state];
       focus.dataset.state = state;
+      focus.dataset.phase = timerPhase.toLowerCase();
       fill.style.transform = `scaleX(${progress})`;
     },
     setTasks(

@@ -1,4 +1,5 @@
 import type { PetKind, PetMood, PetPose } from './pet-animation';
+import { drawHero, type HeroPose } from '../../shared/hero-motion';
 
 export const PET_RESOLUTION = 128;
 
@@ -10,7 +11,7 @@ type Eye = {
   center: number;
 };
 // Coordinates are on the 128 × 128 preview grid, not the source image resolution.
-const faces: Record<PetKind, { eyes: Eye[]; ink: string }> = {
+const faces: Partial<Record<PetKind, { eyes: Eye[]; ink: string }>> = {
   ember: {
     ink: '#4e2f24',
     eyes: [
@@ -47,7 +48,7 @@ export function createPetRenderer(
   context.imageSmoothingEnabled = false;
   context.drawImage(image, 0, 0, PET_RESOLUTION, PET_RESOLUTION);
   const face = faces[kind];
-  if (mood === 'idle') {
+  if (mood === 'idle' && face) {
     const frame = context.getImageData(0, 0, PET_RESOLUTION, PET_RESOLUTION);
     for (const eye of face.eyes) {
       for (let y = eye.y; y < eye.y + eye.height; y++) {
@@ -81,10 +82,19 @@ export function createPetRenderer(
     PET_RESOLUTION,
     PET_RESOLUTION,
   ).data;
-  const draw = (output: CanvasRenderingContext2D, pose: PetPose) => {
+  const draw = (
+    output: CanvasRenderingContext2D,
+    pose: PetPose,
+    hero?: HeroPose,
+  ) => {
+    output.clearRect(0, 0, PET_RESOLUTION, PET_RESOLUTION);
+    if (hero) {
+      drawHero(output, image, hero, 0, 0, PET_RESOLUTION);
+      return;
+    }
     pen.clearRect(0, 0, PET_RESOLUTION, PET_RESOLUTION);
     pen.drawImage(base, 0, 0);
-    if (mood === 'idle') {
+    if (mood === 'idle' && face) {
       for (const eye of face.eyes) {
         const x = eye.center + pose.look;
         const y = eye.y + 1;
@@ -107,7 +117,6 @@ export function createPetRenderer(
       }
     }
     output.imageSmoothingEnabled = false;
-    output.clearRect(0, 0, PET_RESOLUTION, PET_RESOLUTION);
     const split = kind === 'moss' ? 85 : 72;
     // Move the head/shoulders up a pixel; stretch the chest back to the feet.
     output.drawImage(
