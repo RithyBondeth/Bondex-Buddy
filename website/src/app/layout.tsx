@@ -5,9 +5,9 @@ import './globals.css';
 import { MotionPreferences } from '@/components/motion-preferences';
 
 export const metadata: Metadata = {
-  title: 'Bondex Buddy | A pixel pet for your desktop',
+  title: 'Bondex Buddy | Pixel companions for your desktop',
   description:
-    'Meet Ember fox, Moon cat, and Moss bunny. Tiny pixel companions for a cozier desktop, with focus time, gentle breaks, and a little company.',
+    'Meet ten animated desktop companions. Explore their habitats, try the focus timer, and discover the pocket for tasks, clipboard history, files, and agent handoffs.',
 };
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
