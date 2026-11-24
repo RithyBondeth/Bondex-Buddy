@@ -156,10 +156,6 @@ export function CompanionHero() {
           }}
         >
           <div className="habitat-shell">
-            <div className="habitat-heading">
-              <span className="habitat-title">{companion.habitat.label}</span>
-              <span className="habitat-light">{companion.habitat.light}</span>
-            </div>
             <div className="habitat-preloads" aria-hidden="true">
               {roster.map((pet, index) => {
                 if (index !== habitat.requested) return null;
@@ -189,11 +185,17 @@ export function CompanionHero() {
                 );
               })}
             </div>
-            <CompanionHabitat
-              companion={companion}
-              loading={loading}
-              onMessage={(pet, text) => setPetMessage({ pet, text })}
-            />
+            <div className="habitat-screen">
+              <div className="habitat-location">
+                <span className="habitat-light">{companion.habitat.light}</span>
+                <span className="habitat-title">{companion.habitat.label}</span>
+              </div>
+              <CompanionHabitat
+                companion={companion}
+                loading={loading}
+                onMessage={(pet, text) => setPetMessage({ pet, text })}
+              />
+            </div>
             <div className="habitat-meta">
               <div className="stage-name" aria-live="polite">
                 <motion.div
@@ -204,7 +206,6 @@ export function CompanionHero() {
                 >
                   <div className="companion-name">
                     <span>{companion.name}</span>
-                    <span className="companion-status">{companion.status}</span>
                   </div>
                   <small>
                     {petMessage?.pet === companion.id && petMessage.text
@@ -252,6 +253,7 @@ export function CompanionHero() {
                         ? `${pet.name}, ${pet.species}`
                         : pet.name
                     }
+                    data-pocket-theme={pet.id}
                     onClick={() => choose(firstChoice + i)}
                     className="pet-choice"
                   >
@@ -281,13 +283,14 @@ export function CompanionHero() {
                   ? `${roster[habitat.error].name}’s scene couldn’t load. Choose them again to retry.`
                   : loading
                     ? `Getting ${roster[habitat.requested].name}’s habitat ready…`
-                    : `Click to play ${abilityNames[companion.id]} · Drag to move`}
+                    : `Tap pet for ${abilityNames[companion.id]} · Drag to move`}
               </p>
             </div>
           </div>
         </motion.div>
       </section>
       <AvengersLineup
+        active={companion.id}
         onChoose={(index) => {
           setShowAvengers(true);
           choose(index);

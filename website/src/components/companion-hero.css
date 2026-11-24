@@ -90,61 +90,68 @@
   width: min(100%, 590px);
   min-width: 0;
   justify-self: end;
-  padding: 6px;
+  padding: clamp(8px, 1vw, 14px);
   border: 1px solid var(--line-strong);
-  border-radius: 20px;
-  background: var(--raised);
   color: var(--foreground);
+  background:
+    repeating-linear-gradient(135deg, transparent 0 4px, #ffffff06 4px 5px),
+    var(--surface);
   box-shadow:
-    0 22px 48px #633b2836,
-    0 5px 0 var(--line-strong),
-    inset 0 1px #ffffff24;
+    5px 5px 0 #0e0c16,
+    6px 6px 0 var(--line-strong);
 }
 .habitat-shell {
   position: relative;
   container-type: inline-size;
-  border: 1px solid var(--border);
-  border-radius: 15px;
-  background: var(--surface);
 }
-.habitat-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 11px 14px;
-  border-bottom: 1px solid var(--border);
-  font-size: 13px;
-  font-weight: 620;
+.habitat-screen {
+  position: relative;
+  border: 1px solid var(--pocket-trim);
+  background: #10101c;
+}
+.habitat-screen::after {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--peach), var(--peach)) left bottom / 14px 2px,
+    linear-gradient(var(--peach), var(--peach)) left bottom / 2px 14px,
+    linear-gradient(var(--peach), var(--peach)) right top / 14px 2px,
+    linear-gradient(var(--peach), var(--peach)) right top / 2px 14px;
+  background-repeat: no-repeat;
+}
+.habitat-location {
+  position: absolute;
+  z-index: 2;
+  top: clamp(8px, 3cqw, 16px);
+  left: clamp(8px, 3cqw, 16px);
+  display: grid;
+  gap: 4px;
+  max-width: calc(100% - 28px);
+  padding-left: 8px;
+  border-left: 2px solid var(--peach);
+  color: #fff5ea;
+  text-shadow:
+    0 2px #10101c,
+    0 0 7px #10101c;
+  pointer-events: none;
 }
 .habitat-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.habitat-title::before {
-  content: '';
-  width: 5px;
-  height: 5px;
-  background: var(--peach);
-  box-shadow: 0 0 8px var(--peach);
-  flex: none;
+  font: 600 clamp(14px, 4cqw, 25px)/1 var(--font-pixel);
+  letter-spacing: -0.025em;
 }
 .habitat-light {
-  color: var(--muted-foreground);
-  font-size: 11px;
-  font-weight: 500;
-  text-align: right;
+  color: var(--peach);
+  font: 500 10px/1 var(--field-mono, monospace);
 }
 .habitat-scene {
   position: relative;
   aspect-ratio: 1.49;
   isolation: isolate;
   overflow: hidden;
-  background: #19120f;
-}
-.habitat-scene[data-roster='avengers'] {
-  background: #151722;
+  background: #10101c;
 }
 .habitat-sky,
 .habitat-world,
@@ -155,14 +162,11 @@
 }
 .habitat-sky {
   z-index: -1;
-  background-image: radial-gradient(circle, #ffffff26 1px, transparent 1px);
-  background-size: 19px 19px;
-  mask-image: radial-gradient(
-    ellipse at 50% 57%,
-    #000,
-    #0007 62%,
-    transparent 88%
-  );
+  background:
+    radial-gradient(ellipse at 50% 87%, var(--surface), transparent 72%),
+    repeating-linear-gradient(90deg, #cdc9e012 0 1px, transparent 1px 23px),
+    repeating-linear-gradient(0deg, #cdc9e012 0 1px, transparent 1px 23px);
+  mask-image: linear-gradient(transparent, #000a 44%, #000 75%);
 }
 .habitat-glow {
   opacity: 0.7;
@@ -232,8 +236,7 @@
   grid-template-columns: 1fr auto;
   align-items: center;
   gap: 12px;
-  padding: 12px 15px 0;
-  border-top: 1px solid var(--border);
+  padding: 14px 0 12px;
 }
 .stage-name {
   min-width: 0;
@@ -248,14 +251,12 @@
   font: 550 27px/1.05 var(--font-pixel);
   letter-spacing: -0.02em;
 }
-.companion-status,
 .stage-name small {
   color: var(--muted-foreground);
   font-size: 11px;
 }
 .stage-name small {
   display: block;
-  min-height: 29px;
   margin-top: 5px;
   line-height: 1.4;
   text-wrap: pretty;
@@ -263,16 +264,14 @@
 .roster-switch {
   display: flex;
   gap: 2px;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  padding: 2px;
+  border: 1px solid var(--line-strong);
   background: color-mix(in srgb, var(--surface) 72%, black);
 }
 .roster-switch button {
   min-height: 32px;
   padding-inline: 8px;
   border: 1px solid transparent;
-  border-radius: 5px;
   color: var(--muted-foreground);
   font-size: 11px;
   font-weight: 650;
@@ -290,16 +289,12 @@
   outline-offset: -1px;
 }
 .habitat-controls {
-  padding: 6px 15px 11px;
+  padding-top: 1px;
 }
 .pet-picker {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 3px;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: 11px;
-  background: color-mix(in srgb, var(--surface) 72%, black);
+  gap: 4px;
 }
 .avengers-picker {
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -317,7 +312,8 @@
   justify-items: center;
   min-width: 0;
   padding: 4px 3px 6px;
-  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: #0c091350;
   color: var(--muted-foreground);
   font-size: 10px;
   line-height: 1.15;
@@ -345,17 +341,17 @@
   position: absolute;
   inset: 0;
   z-index: -1;
-  border: 1px solid var(--pocket-trim);
-  border-radius: inherit;
-  background: var(--raised);
+  border: 1px solid var(--pocket-color);
+  border-bottom-width: 3px;
+  background: color-mix(in srgb, var(--pocket-base) 75%, var(--pocket-color));
   pointer-events: none;
 }
 .pet-interaction-hint {
   min-height: 16px;
   margin-top: 7px;
   color: var(--muted-foreground);
-  font-size: 11px;
-  text-align: right;
+  font: 500 10px/1.4 var(--field-mono, monospace);
+  text-align: center;
 }
 .habitat-preloads {
   position: absolute;
@@ -402,23 +398,11 @@
   .hero-showcase {
     max-width: 460px;
     justify-self: center;
-    padding: 4px;
-    border-radius: 16px;
+    padding: 8px;
   }
   .companion-name {
     display: grid;
     gap: 2px;
-  }
-  .habitat-shell {
-    border-radius: 12px;
-  }
-  .habitat-heading,
-  .habitat-meta,
-  .habitat-controls {
-    padding-inline: 10px;
-  }
-  .pet-interaction-hint {
-    text-align: left;
   }
 }
 @media (max-width: 359px) {
@@ -445,19 +429,4 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-}
-
-.habitat-heading {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-}
-.habitat-heading::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background: var(--pocket-pattern);
-  mask-image: linear-gradient(90deg, transparent 23%, #0008 76%, transparent);
 }
