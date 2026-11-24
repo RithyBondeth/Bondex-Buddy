@@ -15,7 +15,8 @@ import {
 import { avengers, companions } from '@/lib/companions';
 import { easeOut } from '@/lib/motion';
 import { useCalmMotion } from '@/components/motion-preferences';
-import { GridPulse } from '@/components/ui/grid-pulse';
+import { AvengersLineup } from './avengers-lineup';
+import { AsciiLandscape } from './ascii-landscape';
 import '../../shared/pocket-themes.css';
 import { abilityNames } from '../../shared/abilities';
 import './companion-hero.css';
@@ -33,7 +34,7 @@ const entranceGroup: Variants = {
   visible: { transition: { staggerChildren: 0.075 } },
 };
 
-const roster = [...companions, ...avengers];
+const roster = [...avengers, ...companions];
 
 export function CompanionHero() {
   const [habitat, dispatch] = useReducer(
@@ -43,8 +44,8 @@ export function CompanionHero() {
   );
   const selected = habitat.current;
   const loading = habitat.requested !== selected;
-  const [showAvengers, setShowAvengers] = useState(false);
-  const firstChoice = showAvengers ? companions.length : 0;
+  const [showAvengers, setShowAvengers] = useState(true);
+  const firstChoice = showAvengers ? 0 : avengers.length;
   const choices = showAvengers ? avengers : companions;
   const [petMessage, setPetMessage] = useState<{
     pet: string;
@@ -59,218 +60,239 @@ export function CompanionHero() {
   const switchRoster = (heroes: boolean) => {
     if (heroes === showAvengers) return;
     setShowAvengers(heroes);
-    choose(heroes ? companions.length : 0);
+    choose(heroes ? 0 : avengers.length);
   };
 
   return (
-    <section className="hero" aria-labelledby="hero-heading">
-      <GridPulse cell={32} ambient={2} />
-      <motion.div
-        className="hero-copy"
-        data-reveal
-        initial={reduce ? false : 'hidden'}
-        animate="visible"
-        variants={reduce ? undefined : entranceGroup}
-      >
+    <>
+      <section className="hero" aria-labelledby="hero-heading">
+        <AsciiLandscape />
         <motion.div
-          className="hero-eyebrow"
-          data-grid-avoid
+          className="hero-copy"
           data-reveal
-          variants={reduce ? stillEntrance : entrance}
+          initial={reduce ? false : 'hidden'}
+          animate="visible"
+          variants={reduce ? undefined : entranceGroup}
         >
-          <span className="tiny-pixels" aria-hidden="true" /> Pixel pets for
-          your desktop
-        </motion.div>
-        <motion.h1
-          id="hero-heading"
-          data-grid-avoid
-          data-reveal
-          variants={reduce ? stillEntrance : entrance}
-        >
-          Your desktop,
-          <br />
-          <span>a little cozier.</span>
-        </motion.h1>
-        <motion.p
-          data-grid-avoid
-          data-reveal
-          variants={reduce ? stillEntrance : entrance}
-        >
-          Meet Ember, a pixel fox who keeps you company while you work, reminds
-          you to take breaks, and keeps your everyday tools close.
-        </motion.p>
-        <motion.div
-          className="hero-actions"
-          data-reveal
-          variants={reduce ? stillEntrance : entrance}
-        >
-          <a
-            className="button button-primary"
-            href="#how-it-works"
+          <motion.div
+            className="hero-eyebrow"
             data-grid-avoid
+            data-reveal
+            variants={reduce ? stillEntrance : entrance}
           >
-            Try the focus timer{' '}
-            <span className="button-arrow" aria-hidden="true">
-              ↓
+            <span className="tiny-pixels" aria-hidden="true" /> Desktop
+            companions
+          </motion.div>
+          <motion.h1
+            id="hero-heading"
+            data-grid-avoid
+            data-reveal
+            variants={reduce ? stillEntrance : entrance}
+          >
+            A little life
+            <br />
+            <span className="pixel-headline">
+              <span className="sr-only">on your desk.</span>
+              <span aria-hidden="true">
+                {Array.from('on your desk.').map((letter, i) => (
+                  <i key={i} style={{ animationDelay: `${120 + i * 32}ms` }}>
+                    {letter === ' ' ? ' ' : letter}
+                  </i>
+                ))}
+              </span>
             </span>
-          </a>
-          <a className="text-link" href="#companions" data-grid-avoid>
-            Meet the companions <span aria-hidden="true">↗</span>
-          </a>
+          </motion.h1>
+          <motion.p
+            data-grid-avoid
+            data-reveal
+            variants={reduce ? stillEntrance : entrance}
+          >
+            Take Spider-Man from the rooftops to your desktop. Seven Avengers
+            and three desk spirits can keep your focus timer, tasks, and files
+            close at hand.
+          </motion.p>
+          <motion.div
+            className="hero-actions"
+            data-reveal
+            variants={reduce ? stillEntrance : entrance}
+          >
+            <a
+              className="button button-primary"
+              href="#avengers"
+              data-grid-avoid
+            >
+              Meet the Avengers{' '}
+              <span className="button-arrow" aria-hidden="true">
+                ↓
+              </span>
+            </a>
+            <a className="text-link" href="#how-it-works" data-grid-avoid>
+              Try a focus session <span aria-hidden="true">↗</span>
+            </a>
+          </motion.div>
+          <motion.p
+            className="platforms"
+            data-grid-avoid
+            data-reveal
+            variants={reduce ? stillEntrance : entrance}
+          >
+            For macOS and Windows
+          </motion.p>
         </motion.div>
-        <motion.p
-          className="platforms"
-          data-grid-avoid
+        <motion.div
+          id="habitat-preview"
+          role="region"
+          tabIndex={-1}
+          className="hero-showcase"
+          data-pocket-theme={companion.id}
+          aria-label="Interactive companion habitat"
           data-reveal
-          variants={reduce ? stillEntrance : entrance}
+          initial={reduce ? false : { opacity: 0, y: 14, scale: 0.985 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{
+            duration: reduce ? 0 : 0.86,
+            delay: reduce ? 0 : 0.1,
+            ease: easeOut,
+          }}
         >
-          For macOS and Windows
-        </motion.p>
-      </motion.div>
-      <motion.div
-        id="habitat-preview"
-        className="hero-showcase"
-        data-pocket-theme={companion.id}
-        aria-label="Interactive companion habitat"
-        data-reveal
-        initial={reduce ? false : { opacity: 0, y: 14, scale: 0.985 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{
-          duration: reduce ? 0 : 0.86,
-          delay: reduce ? 0 : 0.1,
-          ease: easeOut,
-        }}
-      >
-        <div className="habitat-shell">
-          <div className="habitat-heading">
-            <span className="habitat-title">{companion.habitat.label}</span>
-            <span className="habitat-light">{companion.habitat.light}</span>
-          </div>
-          <div className="habitat-preloads" aria-hidden="true">
-            {roster.map((pet, index) => {
-              if (index >= companions.length && index !== habitat.requested)
-                return null;
-              return (
-                <Image
-                  key={`${pet.id}-${habitat.attempts[index]}`}
-                  src={pet.habitat.image}
-                  alt=""
-                  {...habitatDimensions(pet.habitat)}
-                  sizes={HABITAT_SIZES}
-                  loading="eager"
-                  onLoad={() =>
-                    dispatch({
-                      type: 'loaded',
-                      index,
-                      attempt: habitat.attempts[index],
-                    })
-                  }
-                  onError={() =>
-                    dispatch({
-                      type: 'failed',
-                      index,
-                      attempt: habitat.attempts[index],
-                    })
-                  }
-                />
-              );
-            })}
-          </div>
-          <CompanionHabitat
-            companion={companion}
-            loading={loading}
-            onMessage={(pet, text) => setPetMessage({ pet, text })}
-          />
-          <div className="habitat-meta">
-            <div className="stage-name" aria-live="polite">
-              <motion.div
-                key={companion.id}
-                initial={reduce ? false : { opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: reduce ? 0 : 0.3, ease: easeOut }}
-              >
-                <div className="companion-name">
-                  <span>{companion.name}</span>
-                  <span className="companion-status">{companion.status}</span>
-                </div>
-                <small>
-                  {petMessage?.pet === companion.id && petMessage.text
-                    ? petMessage.text
-                    : companion.trait}
-                </small>
-              </motion.div>
+          <div className="habitat-shell">
+            <div className="habitat-heading">
+              <span className="habitat-title">{companion.habitat.label}</span>
+              <span className="habitat-light">{companion.habitat.light}</span>
             </div>
-            <div
-              className="roster-switch"
-              role="group"
-              aria-label="Companion roster"
-            >
-              <button
-                type="button"
-                aria-pressed={!showAvengers}
-                onClick={() => switchRoster(false)}
-              >
-                Desk spirits
-              </button>
-              <button
-                type="button"
-                aria-pressed={showAvengers}
-                onClick={() => switchRoster(true)}
-              >
-                Avengers
-              </button>
-            </div>
-          </div>
-          <div className="habitat-controls">
-            <div
-              className={
-                showAvengers ? 'pet-picker avengers-picker' : 'pet-picker'
-              }
-              role="group"
-              aria-label="Preview a companion"
-            >
-              {choices.map((pet, i) => (
-                <button
-                  key={pet.id}
-                  type="button"
-                  aria-pressed={habitat.requested === firstChoice + i}
-                  aria-label={
-                    'species' in pet ? `${pet.name}, ${pet.species}` : pet.name
-                  }
-                  onClick={() => choose(firstChoice + i)}
-                  className="pet-choice"
-                >
+            <div className="habitat-preloads" aria-hidden="true">
+              {roster.map((pet, index) => {
+                if (index !== habitat.requested) return null;
+                return (
                   <Image
-                    src={pet.image}
+                    key={`${pet.id}-${habitat.attempts[index]}`}
+                    src={pet.habitat.image}
                     alt=""
-                    width={40}
-                    height={40}
-                    unoptimized
+                    {...habitatDimensions(pet.habitat)}
+                    sizes={HABITAT_SIZES}
+                    loading="eager"
+                    onLoad={() =>
+                      dispatch({
+                        type: 'loaded',
+                        index,
+                        attempt: habitat.attempts[index],
+                      })
+                    }
+                    onError={() =>
+                      dispatch({
+                        type: 'failed',
+                        index,
+                        attempt: habitat.attempts[index],
+                      })
+                    }
                   />
-                  <span>{pet.name}</span>
-                  {habitat.requested === firstChoice + i && (
-                    <motion.span
-                      className="choice-indicator"
-                      layoutId="pet-choice-indicator"
-                      transition={{
-                        duration: reduce ? 0 : 0.38,
-                        ease: easeOut,
-                      }}
-                    />
-                  )}
-                </button>
-              ))}
+                );
+              })}
             </div>
-            <p className="pet-interaction-hint" role="status">
-              {habitat.error !== null
-                ? `${roster[habitat.error].name}’s scene couldn’t load. Choose them again to retry.`
-                : loading
-                  ? `Getting ${roster[habitat.requested].name}’s habitat ready…`
-                  : `Click to play ${abilityNames[companion.id]} · Drag to move`}
-            </p>
+            <CompanionHabitat
+              companion={companion}
+              loading={loading}
+              onMessage={(pet, text) => setPetMessage({ pet, text })}
+            />
+            <div className="habitat-meta">
+              <div className="stage-name" aria-live="polite">
+                <motion.div
+                  key={companion.id}
+                  initial={reduce ? false : { opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: reduce ? 0 : 0.3, ease: easeOut }}
+                >
+                  <div className="companion-name">
+                    <span>{companion.name}</span>
+                    <span className="companion-status">{companion.status}</span>
+                  </div>
+                  <small>
+                    {petMessage?.pet === companion.id && petMessage.text
+                      ? petMessage.text
+                      : companion.trait}
+                  </small>
+                </motion.div>
+              </div>
+              <div
+                className="roster-switch"
+                role="group"
+                aria-label="Companion roster"
+              >
+                <button
+                  type="button"
+                  aria-pressed={!showAvengers}
+                  onClick={() => switchRoster(false)}
+                >
+                  Desk spirits
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={showAvengers}
+                  onClick={() => switchRoster(true)}
+                >
+                  Avengers
+                </button>
+              </div>
+            </div>
+            <div className="habitat-controls">
+              <div
+                className={
+                  showAvengers ? 'pet-picker avengers-picker' : 'pet-picker'
+                }
+                role="group"
+                aria-label="Preview a companion"
+              >
+                {choices.map((pet, i) => (
+                  <button
+                    key={pet.id}
+                    type="button"
+                    aria-pressed={habitat.requested === firstChoice + i}
+                    aria-label={
+                      'species' in pet
+                        ? `${pet.name}, ${pet.species}`
+                        : pet.name
+                    }
+                    onClick={() => choose(firstChoice + i)}
+                    className="pet-choice"
+                  >
+                    <Image
+                      src={pet.image}
+                      alt=""
+                      width={40}
+                      height={40}
+                      unoptimized
+                    />
+                    <span>{pet.name}</span>
+                    {habitat.requested === firstChoice + i && (
+                      <motion.span
+                        className="choice-indicator"
+                        layoutId="pet-choice-indicator"
+                        transition={{
+                          duration: reduce ? 0 : 0.38,
+                          ease: easeOut,
+                        }}
+                      />
+                    )}
+                  </button>
+                ))}
+              </div>
+              <p className="pet-interaction-hint" role="status">
+                {habitat.error !== null
+                  ? `${roster[habitat.error].name}’s scene couldn’t load. Choose them again to retry.`
+                  : loading
+                    ? `Getting ${roster[habitat.requested].name}’s habitat ready…`
+                    : `Click to play ${abilityNames[companion.id]} · Drag to move`}
+              </p>
+            </div>
           </div>
-        </div>
-      </motion.div>
-    </section>
+        </motion.div>
+      </section>
+      <AvengersLineup
+        onChoose={(index) => {
+          setShowAvengers(true);
+          choose(index);
+        }}
+      />
+    </>
   );
 }

@@ -2,223 +2,242 @@ import Image from 'next/image';
 import { CompanionHero } from '@/components/companion-hero';
 import { FocusPlayground } from '@/components/focus-playground';
 import { MotionToggle } from '@/components/motion-preferences';
-import { GridPulse } from '@/components/ui/grid-pulse';
 import { Reveal } from '@/components/ui/reveal';
-import SplitCanvas, {
-  type SplitCanvasItem,
-} from '@/components/ui/split-canvas';
-import { companions, repository } from '@/lib/companions';
+import { PocketGuide } from '@/components/pocket-guide';
+import { avengers, companions, repository } from '@/lib/companions';
+import './field-guide.css';
 
-const stories: SplitCanvasItem[] = companions.map((pet, i) => ({
-  image: pet.image,
-  label: pet.species,
-  title: pet.name,
-  description: pet.description,
-  action:
-    i === 0
-      ? { label: 'Try the focus timer', href: '#how-it-works' }
-      : undefined,
-}));
-
-const tools = [
-  {
-    icon: '◷',
-    title: 'Focus & tasks',
-    description: 'Start a focus session, track your to-dos, and set reminders.',
-  },
-  {
-    icon: '▤',
-    title: 'Clips & files',
-    description:
-      'Find a recent clip or tuck a temporary copy into the File Pouch.',
-  },
-  {
-    icon: '✦',
-    title: 'Breaks & handoffs',
-    description: 'Take a water break or see when a coding agent needs you.',
-  },
+const habits = [
+  [
+    'Ember',
+    'A fox on the move',
+    'Ember pads across the desktop, picks up speed, and braces its paws to climb. Click the fox to open its pocket.',
+  ],
+  [
+    'Moon',
+    'A softer footfall',
+    'Moon takes low, measured steps. In the habitat, click the cat to trace a constellation and send a comet across it.',
+  ],
+  [
+    'Moss',
+    'A little spring',
+    'Moss gathers its hind legs before each hop. Its signature bloom sends butterflies up through a patch of wildflowers.',
+  ],
 ] as const;
+const questions = [
+  [
+    'How do I choose a companion?',
+    'Open Settings → Companion → Desktop companion. Choose Ember, Moon, Moss, or one of seven Avengers. Your timer, tasks, and progress carry over when you switch.',
+  ],
+  [
+    'Can my pet stay still?',
+    'Turn off Playful roaming in Companion settings to park your pet. Roaming also pauses during focus sessions. The desktop app follows your system’s reduced-motion preference, and sound starts muted.',
+  ],
+  [
+    'What stays on my device?',
+    'Tasks, companion preferences, progress, and captured clipboard history live on your device. Clipboard capture is optional. The File Pouch stores temporary local copies, which expire after 24 hours by default.',
+  ],
+  [
+    'How do water breaks work?',
+    'Choose a reminder interval in Companion settings. Your pet visits with a water droplet when a break is due. Open its pocket to mark a drink, snooze for ten minutes, or skip the reminder.',
+  ],
+];
+function Brand() {
+  return (
+    <a
+      className="field-brand"
+      href="#main-content"
+      aria-label="Bondex Buddy home"
+    >
+      <Image src="/pets/idle.png" alt="" width={36} height={36} unoptimized />
+      Bondex<span>Buddy</span>
+    </a>
+  );
+}
 
 export default function Home() {
   return (
-    <>
+    <div className="field-site">
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
       <header className="site-header">
-        <a href="#" className="brand" aria-label="Bondex Buddy home">
-          <span className="brand-symbol" aria-hidden="true" />
-          bondex<span className="brand-light">buddy</span>
-        </a>
+        <Brand />
         <nav aria-label="Main navigation">
-          <a href="#desktop-tools">Desktop tools</a>
+          <a href="#avengers">Avengers</a>
+          <a href="#desktop-tools">Pocket tools</a>
           <a href="#companions">Companions</a>
           <MotionToggle />
           <a className="button button-small" href="#get-the-app">
-            Release status{' '}
-            <span className="button-arrow" aria-hidden="true">
-              ↗
-            </span>
+            Get the app ↗
           </a>
         </nav>
       </header>
       <main id="main-content">
         <CompanionHero />
         <section
-          className="tools-section"
+          className="field-section toolkit"
           id="desktop-tools"
-          aria-labelledby="tools-heading"
+          aria-labelledby="toolkit-title"
         >
           <Reveal>
-            <h2 id="tools-heading">Inside Ember’s pocket</h2>
-          </Reveal>
-          <div className="tool-cards">
-            {tools.map((tool, i) => (
-              <Reveal key={tool.title} delay={i * 0.07}>
-                <span className="tool-icon" aria-hidden="true">
-                  {tool.icon}
-                </span>
-                <h3>{tool.title}</h3>
-                <p>{tool.description}</p>
-              </Reveal>
-            ))}
-          </div>
-        </section>
-        <section
-          id="how-it-works"
-          className="ritual-section"
-          aria-labelledby="ritual-heading"
-        >
-          <Reveal>
-            <h2 id="ritual-heading">
-              A timer with <span className="pixel-accent">company.</span>
+            <p className="field-label">The pocket</p>
+            <h2 id="toolkit-title">
+              Small window.
+              <br />
+              <em>Useful things.</em>
             </h2>
             <p>
-              Try a 25-minute focus session or take a five-minute break. Ember
-              changes pose to match what you’re doing.
+              Click your desktop pet or press Enter while it has focus. Four
+              tabs keep everyday tools within reach. Explore each one here.
             </p>
           </Reveal>
-          <Reveal delay={0.1}>
+          <PocketGuide />
+        </section>
+        <section
+          className="field-section focus-lab"
+          id="how-it-works"
+          aria-labelledby="focus-title"
+        >
+          <Reveal>
+            <p className="field-label">Interactive timer</p>
+            <h2 id="focus-title">
+              Find your <em>focus.</em>
+            </h2>
+            <p>
+              Try the timer here. Ember settles into work for a focus session
+              and changes pose for a break. In the desktop app, you can attach
+              the session to a task and keep a count of completed rounds.
+            </p>
+          </Reveal>
+          <Reveal>
             <FocusPlayground />
           </Reveal>
         </section>
         <section
-          className="companions-intro"
+          className="field-section bestiary"
           id="companions"
-          aria-labelledby="companions-heading"
+          aria-labelledby="pets-title"
         >
           <Reveal>
-            <h2 id="companions-heading">
-              Meet the <span className="pixel-accent">companions.</span>
+            <p className="field-label">Companion field guide</p>
+            <h2 id="pets-title">
+              Meet the <em>desk spirits.</em>
             </h2>
             <p>
-              Try Ember, Moon, Moss, or one of the seven Avengers. Each brings a
-              signature ability and a matching desktop pocket.
+              Watch them stroll to the screen edge, climb, pause for a grip, and
+              find their way down. Each has its own gait, habitat, and pocket
+              colors.
             </p>
           </Reveal>
-          <a className="text-link" href="#habitat-preview">
-            Back to the habitat <span aria-hidden="true">↑</span>
-          </a>
-        </section>
-        <div id="meet-ember">
-          <SplitCanvas
-            items={stories}
-            gridSize={10}
-            numSlices={36}
-            canvasSize={560}
-            gridOpacity={0.08}
-            className="companion-story"
-          />
-        </div>
-        <section className="values-section" aria-label="Made with care">
-          <Reveal>
-            <span className="value-mark" aria-hidden="true">
-              ↙
-            </span>
-            <h3>At home on your desktop.</h3>
-            <p>
-              A small habitat in the corner. Your work keeps the rest of the
-              screen.
-            </p>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <span className="value-mark" aria-hidden="true">
-              ⌂
-            </span>
-            <h3>Your little world stays yours.</h3>
-            <p>
-              Local progress. No accounts, tracking, or cloud saves in the
-              desktop app.
-            </p>
-          </Reveal>
-          <Reveal delay={0.2}>
-            <span className="value-mark" aria-hidden="true">
-              ♪
-            </span>
-            <h3>Quiet is the default.</h3>
-            <p>
-              Sound starts muted. Gentle rain and chimes are there when you want
-              them.
-            </p>
-          </Reveal>
+          <div className="specimen-grid">
+            {companions.map((pet, i) => (
+              <Reveal key={pet.id} delay={i * 0.06}>
+                <article className={'specimen specimen-' + pet.id}>
+                  <div className="specimen-scene">
+                    <Image
+                      src={pet.habitat.image}
+                      alt=""
+                      fill
+                      sizes="(max-width:700px) 90vw, 30vw"
+                    />
+                    <Image
+                      className="specimen-pet"
+                      src={pet.image}
+                      alt=""
+                      width={110}
+                      height={110}
+                      unoptimized
+                    />
+                  </div>
+                  <div>
+                    <small>
+                      {pet.name} / {habits[i][1]}
+                    </small>
+                    <h3>{pet.species.replace(/^The /, '')}</h3>
+                    <p>{habits[i][2]}</p>
+                  </div>
+                </article>
+              </Reveal>
+            ))}
+          </div>
+          <p className="roster-note">
+            Prefer a superhero? The Avengers roster adds seven companions, from
+            Spider-Man’s web swing to Thor’s thunder call.{' '}
+            <a href="#avengers">Meet the team ↑</a>
+          </p>
         </section>
         <section
-          id="get-the-app"
-          className="download-section"
-          aria-labelledby="download-heading"
+          className="field-section field-faq"
+          aria-labelledby="guide-title"
         >
-          <GridPulse cell={32} ambient={2} />
-          <div className="download-content">
-            <Reveal>
-              <div className="download-pets" aria-hidden="true" data-grid-avoid>
-                {companions.map((pet) => (
-                  <Image
-                    key={pet.id}
-                    src={pet.image}
-                    alt=""
-                    width={140}
-                    height={140}
-                    unoptimized
-                  />
-                ))}
-              </div>
-              <h2 id="download-heading" data-grid-avoid>
-                Bring Ember to{' '}
-                <span className="pixel-accent">your desktop.</span>
-              </h2>
-              <p data-grid-avoid>
-                Bondex Buddy is in development for macOS and Windows.
-              </p>
-              <a
-                className="button button-primary"
-                href={repository}
-                data-grid-avoid
-              >
-                Follow on GitHub{' '}
-                <span className="button-arrow" aria-hidden="true">
-                  ↗
-                </span>
-              </a>
-              <p className="release-note" data-grid-avoid>
-                Public downloads are planned for a future release.
-              </p>
-            </Reveal>
+          <Reveal>
+            <p className="field-label">Desktop guide</p>
+            <h2 id="guide-title">
+              Make it <em>yours.</em>
+            </h2>
+          </Reveal>
+          <div>
+            {questions.map(([q, a]) => (
+              <details key={q}>
+                <summary>{q}</summary>
+                <p>{a}</p>
+              </details>
+            ))}
           </div>
         </section>
-      </main>
-      <footer className="site-footer">
-        <div className="footer-top">
-          <a href="#" className="brand">
-            <span className="brand-symbol" aria-hidden="true" />
-            bondex<span className="brand-light">buddy</span>
-          </a>
+        <section
+          className="field-release"
+          id="get-the-app"
+          aria-labelledby="release-title"
+        >
           <div>
-            <a href={`${repository}/blob/develop/PRIVACY.md`}>Privacy</a>
-            <a href={repository}>GitHub ↗</a>
-            <a href="#main-content">Back to top ↑</a>
+            <p className="field-label">macOS + Windows</p>
+            <h2 id="release-title">
+              Bring a buddy <em>home.</em>
+            </h2>
+            <p>
+              Bondex Buddy is in development. Public downloads are planned for a
+              future release. Follow the project or build the desktop app from
+              source.
+            </p>
+            <a className="button button-primary" href={repository}>
+              View on GitHub ↗
+            </a>
+            <a
+              className="text-link"
+              href={repository + '/tree/develop#start-developing'}
+            >
+              Build from source →
+            </a>
           </div>
+          <a href="#avengers" className="release-team">
+            <span className="release-portraits" aria-hidden="true">
+              {avengers.map((pet) => (
+                <Image
+                  key={pet.id}
+                  src={pet.image}
+                  alt=""
+                  width={60}
+                  height={60}
+                  unoptimized
+                />
+              ))}
+            </span>
+            <span>
+              Explore the Avengers <span aria-hidden="true">↑</span>
+            </span>
+          </a>
+        </section>
+      </main>
+      <footer className="field-footer">
+        <Brand />
+        <div>
+          <a href={repository + '/blob/develop/PRIVACY.md'}>Privacy</a>
+          <a href={repository}>GitHub ↗</a>
+          <a href="#main-content">Back to top ↑</a>
         </div>
       </footer>
-    </>
+    </div>
   );
 }
