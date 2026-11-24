@@ -1,10 +1,11 @@
 import Image from 'next/image';
 import { CompanionHero } from '@/components/companion-hero';
 import { FocusPlayground } from '@/components/focus-playground';
+import { FieldBackground } from '@/components/field-background';
 import { MotionToggle } from '@/components/motion-preferences';
 import { Reveal } from '@/components/ui/reveal';
 import { PocketGuide } from '@/components/pocket-guide';
-import { avengers, companions, repository } from '@/lib/companions';
+import { companions, repository } from '@/lib/companions';
 import './field-guide.css';
 
 const habits = [
@@ -57,7 +58,7 @@ function Brand() {
 
 export default function Home() {
   return (
-    <div className="field-site">
+    <FieldBackground>
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
@@ -201,33 +202,18 @@ export default function Home() {
               future release. Follow the project or build the desktop app from
               source.
             </p>
-            <a className="button button-primary" href={repository}>
-              View on GitHub ↗
-            </a>
-            <a
-              className="text-link"
-              href={repository + '/tree/develop#start-developing'}
-            >
-              Build from source →
-            </a>
+            <div className="field-release-actions">
+              <a className="button button-primary" href={repository}>
+                View on GitHub ↗
+              </a>
+              <a
+                className="text-link"
+                href={repository + '/tree/develop#start-developing'}
+              >
+                Build from source →
+              </a>
+            </div>
           </div>
-          <a href="#avengers" className="release-team">
-            <span className="release-portraits" aria-hidden="true">
-              {avengers.map((pet) => (
-                <Image
-                  key={pet.id}
-                  src={pet.image}
-                  alt=""
-                  width={60}
-                  height={60}
-                  unoptimized
-                />
-              ))}
-            </span>
-            <span>
-              Explore the Avengers <span aria-hidden="true">↑</span>
-            </span>
-          </a>
         </section>
       </main>
       <footer className="field-footer">
@@ -238,6 +224,6 @@ export default function Home() {
           <a href="#main-content">Back to top ↑</a>
         </div>
       </footer>
-    </div>
+    </FieldBackground>
   );
 }
