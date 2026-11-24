@@ -4,7 +4,16 @@ import runUrl from '../../assets/pets/ember-fox/artwork/run-cycle-v1.png';
 import playUrl from '../../assets/pets/ember-fox/artwork/play-cycle-v1.png';
 import { normalizeFoxPixels } from './palette';
 
-export type PlayAction = 'rest' | 'walk' | 'run' | 'pounce' | 'hide' | 'peek';
+export type PlayAction =
+  | 'rest'
+  | 'walk'
+  | 'run'
+  | 'pounce'
+  | 'hide'
+  | 'peek'
+  | 'climbUp'
+  | 'climbDown'
+  | 'cling';
 export type PlaySheet = 'walk' | 'run' | 'play';
 export const POUNCE_BEATS = [320, 140, 90, 180, 110, 120, 200, 340] as const;
 export const POUNCE_MS = POUNCE_BEATS.reduce((sum, ms) => sum + ms, 0);
@@ -12,6 +21,7 @@ export interface PetPlay {
   action: PlayAction;
   facing: -1 | 1;
   elapsedMs: number;
+  durationMs?: number;
   roaming: boolean;
   enabled: boolean;
   gaitMs?: number;
@@ -34,11 +44,38 @@ export function playPose(play?: PetPlay, reduced = false) {
       facing: 1,
       free: false,
       sheet: 'walk' as PlaySheet,
+      wall: 0,
+      grip: 0,
+      stride: 0,
     };
   const time = safeTime(play.elapsedMs);
-  const locomotion = play.action === 'walk' || play.action === 'run';
+  const wall =
+    play.action === 'climbUp'
+      ? 1
+      : play.action === 'climbDown'
+        ? -1
+        : play.action === 'cling'
+          ? 2
+          : 0;
+  const contactTime =
+    wall === 1
+      ? time
+      : wall === -1 && play.durationMs !== undefined
+        ? play.durationMs - time
+        : 250;
+  const grip = wall
+    ? Math.round(8 * Math.min(1, Math.max(0, contactTime / 250))) / 8
+    : 0;
+  const locomotion =
+    Math.abs(wall) === 1 || play.action === 'walk' || play.action === 'run';
   const gait =
     locomotion && Number.isFinite(play.gaitMs) ? safeTime(play.gaitMs!) : time;
+  const cycle = play.action === 'run' ? 560 : 880;
+  const progress = (gait % cycle) / cycle;
+  // Reverse the footfalls on descent. Quantized contacts keep native hit masks reusable.
+  const stride = locomotion
+    ? Math.round(4 * Math.sin(progress * Math.PI * 2)) * (wall === -1 ? -1 : 1)
+    : 0;
   const sheet: PlaySheet =
     play.action === 'run'
       ? 'run'
@@ -50,6 +87,8 @@ export function playPose(play?: PetPlay, reduced = false) {
   let frame = locomotion
     ? Math.floor(gait / (play.action === 'run' ? 70 : 110)) % 8
     : 0;
+  if (wall === -1) frame = (8 - frame) % 8;
+  if (play.action === 'rest') frame = -1;
   if (play.action === 'pounce') {
     let phase = time;
     frame = 7;
@@ -70,6 +109,9 @@ export function playPose(play?: PetPlay, reduced = false) {
       play.action === 'pounce' ? Math.round(11 * 4 * flight * (1 - flight)) : 0,
     facing: play.facing === -1 ? -1 : 1,
     free: true,
+    wall,
+    grip,
+    stride,
   };
 }
 

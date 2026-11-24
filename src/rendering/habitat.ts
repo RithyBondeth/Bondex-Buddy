@@ -56,6 +56,9 @@ const heroMoods: Record<Mood, HeroAction> = {
 };
 const heroRoaming: Record<PlayAction, HeroAction> = {
   rest: 'idle',
+  climbUp: 'walk',
+  climbDown: 'walk',
+  cling: 'crouch',
   walk: 'walk',
   run: 'run',
   pounce: 'greet',
@@ -289,7 +292,20 @@ export async function createHabitatRenderer(
       : garden
         ? `${garden.id}:${mood}:${JSON.stringify(garden.pose)}:${decor}:${outfit}:${play.facing}:${play.free}`
         : `${mood}:${pose}:${sway}:${lift}:${breath}:${decor}:${outfit}:${life.blink}:${life.ear}:${life.tail}:${life.look}:${play.sheet}:${play.frame}:${play.facing}:${play.free}`;
-    const key = cell !== undefined ? baseKey + ':ability:' + cell : baseKey;
+    const gaitKey = play.free
+      ? ':' +
+        play.wall +
+        ':' +
+        play.grip +
+        ':' +
+        play.stride +
+        ':' +
+        play.sheet +
+        ':' +
+        play.frame
+      : '';
+    const key =
+      baseKey + gaitKey + (cell !== undefined ? ':ability:' + cell : '');
     const cached = frames.get(key);
     if (cached) return cached;
     const frame = document.createElement('canvas');
@@ -306,13 +322,25 @@ export async function createHabitatRenderer(
       ),
     );
     context.fillStyle = hero ? '#42313b' : '#4d3025';
-    context.fillRect(
-      Math.round((canvas.width - shadow) / 2),
-      baseline - 1,
-      shadow,
-      1,
-    );
+    if (play.grip < 0.5)
+      context.fillRect(
+        Math.round((canvas.width - shadow) / 2),
+        baseline - 1,
+        shadow,
+        1,
+      );
     context.save();
+    if (play.wall && !acting) {
+      const pivotY = baseline - 14;
+      context.translate(canvas.width / 2, pivotY);
+      const angle = hero
+        ? 12 + play.stride
+        : play.wall === -1
+          ? -37 + play.stride
+          : -58 + play.stride;
+      context.rotate((angle * play.grip * play.facing * Math.PI) / 180);
+      context.translate(-canvas.width / 2, -pivotY);
+    }
     if (acting)
       placeBody(context, acting, canvas.width / 2, baseline, 1, play.facing);
     if (hero) {
@@ -321,7 +349,17 @@ export async function createHabitatRenderer(
       const rig = heroRigs.get(hero.id);
       if (rig && cell !== undefined)
         rig(context, cell / 40, left, top, HERO_GRID, play.facing);
-      else
+      else if (
+        rig &&
+        play.free &&
+        (play.wall || (play.frame >= 0 && play.sheet !== 'play'))
+      ) {
+        rig(context, 0, left, top, HERO_GRID, play.facing, {
+          stride: play.stride,
+          wall: play.grip,
+          running: play.sheet === 'run',
+        });
+      } else
         drawHero(
           context,
           hero.image,
@@ -553,13 +591,20 @@ export async function createHabitatRenderer(
         // The face renderer uses five discrete eyelid heights.
         pose.eyes = Math.round(pose.eyes * 5) / 5;
         if (excursion?.action === 'walk' || excursion?.action === 'run') {
-          const gait =
-            (excursion.gaitMs ?? excursion.elapsedMs) /
-            (excursion.action === 'run' ? 90 : 145);
-          pose.lift = Math.round(
-            Math.abs(Math.sin(gait)) * (id === 'moss' ? 10 : 5),
-          );
-          pose.lean = Math.round(Math.cos(gait) * 3);
+          const running = excursion.action === 'run';
+          if (id === 'moss') {
+            // A rabbit gathers its hind legs, springs, then settles onto both feet.
+            pose.lift = Math.max(0, play.stride) * (running ? 3 : 2);
+            pose.inhale = Math.min(0, play.stride);
+          } else {
+            pose.lift = Math.abs(play.stride) * (running ? 1 : 0.5);
+            pose.inhale = Math.round(play.stride / 3);
+          }
+          pose.lean = Math.round(play.stride / 2);
+        } else if (play.wall) {
+          pose.lift = Math.abs(play.stride);
+          pose.lean = play.stride;
+          pose.inhale = Math.round(play.stride / 2);
         } else if (excursion?.action === 'hide') pose.inhale = -4;
         garden = { id, paint: gardenPaint, pose };
       }
@@ -575,7 +620,12 @@ export async function createHabitatRenderer(
                   : excursion
                     ? heroRoaming[excursion.action]
                     : heroMoods[displayMood],
-                excursion ? (excursion.gaitMs ?? excursion.elapsedMs) : elapsed,
+                excursion &&
+                  (excursion.action === 'walk' ||
+                    excursion.action === 'run' ||
+                    play.wall)
+                  ? (excursion.gaitMs ?? excursion.elapsedMs)
+                  : (excursion?.elapsedMs ?? elapsed),
                 reduced,
                 gaze,
               ),

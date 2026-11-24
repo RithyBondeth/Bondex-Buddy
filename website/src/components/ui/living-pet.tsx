@@ -35,7 +35,7 @@ export function LivingPet({
   className?: string;
   eager?: boolean;
   onMessage?: (message: string) => void;
-  moveBy?: (distance: number) => void;
+  moveBy?: (distance: number) => number;
 }) {
   const calm = Boolean(useCalmMotion());
   const {
@@ -122,7 +122,7 @@ export function LivingPet({
           engage();
         }
         held.x = event.clientX;
-        moveBy(distance);
+        step(moveBy(distance));
         return;
       }
     }
@@ -191,8 +191,7 @@ export function LivingPet({
           if (!moveBy || !['ArrowLeft', 'ArrowRight'].includes(event.key))
             return;
           event.preventDefault();
-          step();
-          moveBy(event.key === 'ArrowLeft' ? -16 : 16);
+          step(moveBy(event.key === 'ArrowLeft' ? -16 : 16));
         }}
         onPointerEnter={trackPointer}
         onPointerMove={trackPointer}

@@ -41,6 +41,8 @@ export function usePetCanvas({
     curious: false,
     look: 0,
     reactionAt: -Infinity,
+    distance: 0,
+    facing: 1,
     dragging: false,
     movingUntil: -Infinity,
   });
@@ -75,27 +77,34 @@ export function usePetCanvas({
       if (!paint || disposed) return;
       const state = behavior.current;
       const reactionAge = time - state.reactionAt;
-      const walking = state.dragging || time < state.movingUntil;
+      const walking = !calm && time < state.movingUntil;
+      const swing = Math.sin(state.distance * Math.PI * 4);
       const t = abilityTime(
         elapsed,
         mood === 'sleeping' ? Infinity : reactionAge,
-        mood === 'idle' && !walking,
+        mood === 'idle' && !walking && !state.dragging,
         calm,
       );
       performing = t !== null;
       const acting = t === null ? undefined : abilityPose(id, t);
-      if (!rig || t === null)
+      const pose = petPose({
+        kind,
+        mood,
+        elapsed,
+        reactionAge,
+        curious: state.curious,
+        look: state.look,
+        reduced: Boolean(calm),
+      });
+      if (walking && !hero) {
+        const hop = kind === 'moss' ? Math.max(0, swing) : Math.abs(swing);
+        pose.lift = Math.round(hop * (kind === 'moss' ? 8 : 3));
+        pose.lean = Math.round(swing * 2);
+      }
+      if (!rig || (t === null && !walking))
         paint(
           pen,
-          petPose({
-            kind,
-            mood,
-            elapsed,
-            reactionAge,
-            curious: state.curious,
-            look: state.look,
-            reduced: Boolean(calm),
-          }),
+          pose,
           hero
             ? heroPose(
                 hero,
@@ -109,6 +118,10 @@ export function usePetCanvas({
       output.clearRect(0, 0, paper.width, paper.height);
       output.save();
       output.translate(pad, pad);
+      if (!calm && state.facing < 0) {
+        output.translate(PET_RESOLUTION, 0);
+        output.scale(-1, 1);
+      }
       output.imageSmoothingEnabled = false;
       if (acting && t !== null)
         drawAbility(
@@ -124,8 +137,17 @@ export function usePetCanvas({
         );
       output.save();
       if (acting) placeBody(output, acting, PET_RESOLUTION / 2, feet, scale, 1);
-      inverse = acting ? output.getTransform().inverse() : undefined;
+      inverse =
+        acting || (!calm && state.facing < 0)
+          ? output.getTransform().inverse()
+          : undefined;
       if (rig && t !== null) rig(output, t, 0, 0, PET_RESOLUTION);
+      else if (rig && walking)
+        rig(output, 0, 0, 0, PET_RESOLUTION, 1, {
+          stride: swing * 4,
+          wall: 0,
+          running: false,
+        });
       else output.drawImage(sprite, 0, 0);
       output.restore();
       if (acting && t !== null)
@@ -225,8 +247,11 @@ export function usePetCanvas({
     setDragging: (dragging: boolean) => {
       behavior.current.dragging = dragging;
     },
-    step: () => {
-      behavior.current.movingUntil = performance.now() + 250;
+    step: (travel: number) => {
+      if (!travel) return;
+      behavior.current.distance += Math.abs(travel);
+      behavior.current.facing = Math.sign(travel);
+      behavior.current.movingUntil = performance.now() + 150;
     },
     startReaction: () => {
       behavior.current.reactionAt = performance.now();

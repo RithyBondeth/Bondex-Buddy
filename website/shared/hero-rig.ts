@@ -4,6 +4,16 @@ import type { HeroId } from './hero-motion';
 type Side = 'left' | 'right';
 type Rect = [number, number, number, number];
 const joints = { left: [11, 21], right: [25, 21] } as const;
+// Arm travel and vertical weight transfer per planted step.
+const strides: Record<HeroId, readonly [number, number]> = {
+  'spider-man': [1.15, 0.62],
+  'iron-man': [0.74, 0.62],
+  thor: [1.08, 0.98],
+  hulk: [1.28, 1.18],
+  'captain-america': [1, 0.9],
+  'black-widow': [0.82, 0.65],
+  hawkeye: [0.9, 0.85],
+};
 const rad = Math.PI / 180;
 const sweep = (t: number, start: number, peak: number, release: number) =>
   Math.sin((phase(t, start, peak) * Math.PI) / 2) *
@@ -126,20 +136,56 @@ export function createHeroRig(id: HeroId, image: HTMLImageElement) {
     y: number,
     size: number,
     facing = 1,
+    gait?: { stride: number; wall: number; running: boolean },
   ) => {
     c.save();
     c.translate(x + (facing < 0 ? size : 0), y);
     c.scale((size / 36) * facing, size / 36);
     c.imageSmoothingEnabled = false;
-    c.drawImage(core.canvas, 0, 0);
-    const angles = armAngles(id, t);
+    let angles;
+    if (gait) {
+      const [weight, bob] = strides[id];
+      const swing = gait.stride * weight;
+      const raised = -105 * gait.wall;
+      const arc = gait.wall ? 10 : gait.running ? 9 : 5;
+      angles = { left: raised + swing * arc, right: raised - swing * arc };
+      c.translate(
+        0,
+        -Math.round(Math.abs(swing) * bob * (gait.running ? 0.5 : 0.25)),
+      );
+      c.drawImage(core.canvas, 0, 0, 36, 29, 0, 0, 36, 29);
+      for (const side of [-1, 1]) {
+        const start = side < 0 ? 0 : 18;
+        const step = swing * side;
+        c.drawImage(
+          core.canvas,
+          start,
+          29,
+          18,
+          7,
+          start + Math.round(step * 0.48),
+          29 - Math.round(Math.max(0, step) * 0.55),
+          18,
+          7,
+        );
+      }
+    } else {
+      c.drawImage(core.canvas, 0, 0);
+      angles = armAngles(id, t);
+    }
     for (const side of ['left', 'right'] as const) {
       const [px, py] = joints[side];
       c.save();
       c.translate(px, py);
       c.rotate(angles[side] * rad);
       c.translate(-px, -py);
-      if (id === 'captain-america' && side === 'left' && t > 0.22 && t < 0.83) {
+      if (
+        !gait &&
+        id === 'captain-america' &&
+        side === 'left' &&
+        t > 0.22 &&
+        t < 0.83
+      ) {
         c.translate(36, 0);
         c.scale(-1, 1);
         c.drawImage(arms.right, 0, 0);
