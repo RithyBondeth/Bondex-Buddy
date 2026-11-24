@@ -84,12 +84,31 @@ describe('authored pet actions', () => {
       'pounce',
       'hide',
       'peek',
+      'climbUp',
+      'climbDown',
+      'cling',
     ] as PlayAction[]) {
       expect(playPose(active(action, 630), true)).toEqual(playPose());
       expect(playPose({ ...active(action, 630), roaming: false })).toEqual(
         playPose(),
       );
     }
+  });
+  it('reverses paw contacts on descent and releases the wall at the floor', () => {
+    const up = playPose({ ...active('climbUp', 500), gaitMs: 220 });
+    const down = playPose({
+      ...active('climbDown', 500),
+      gaitMs: 220,
+      durationMs: 1000,
+    });
+    expect(up.frame).toBe(2);
+    expect(down.frame).toBe(6);
+    expect(up.stride).toBe(-down.stride);
+    expect(down.grip).toBe(1);
+    expect(
+      playPose({ ...active('climbDown', 1000), durationMs: 1000 }).grip,
+    ).toBe(0);
+    expect(playPose(active('climbUp', 0)).grip).toBe(0);
   });
   it('sanitizes invalid times and gait values', () => {
     for (const elapsedMs of [-10, NaN, Infinity, -Infinity])

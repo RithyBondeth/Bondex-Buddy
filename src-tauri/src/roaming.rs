@@ -43,6 +43,7 @@ pub struct PlaySnapshot {
     pub action: &'static str,
     pub facing: i8,
     pub elapsed_ms: f64,
+    pub duration_ms: f64,
     pub roaming: bool,
     pub enabled: bool,
     pub gait_ms: f64,
@@ -55,6 +56,7 @@ impl Default for PlaySnapshot {
             action: "rest",
             facing: -1,
             elapsed_ms: 0.0,
+            duration_ms: 0.0,
             roaming: false,
             enabled: true,
             gait_ms: 0.0,
@@ -312,17 +314,39 @@ fn ease(t: f64) -> f64 {
     t * t * (3.0 - 2.0 * t)
 }
 
+/// Shift weight onto each grip before the next pull. The derivative drives the
+/// interpolated gait between native updates, so hands and window stay in sync.
+fn travel_curve(t: f64, distance: f64, climbing: bool) -> (f64, f64) {
+    let t = t.clamp(0.0, 1.0);
+    let position = ease(t);
+    let speed = 6.0 * t * (1.0 - t);
+    if !climbing || t == 0.0 || t == 1.0 {
+        return (position, speed);
+    }
+    let frequency = (distance / 16.0).round().max(1.0) * std::f64::consts::TAU;
+    let angle = position * frequency;
+    (
+        position - 0.42 * angle.sin() / frequency,
+        speed * (1.0 - 0.42 * angle.cos()),
+    )
+}
+
 /// Paw phase tracks the eased world distance, including acceleration and braking.
 fn gait_phase(action: &str, distance: f64, duration: f64, elapsed: f64) -> (f64, f64) {
     let (stride, cycle) = match action {
         "walk" => (48.0, 880.0),
         "run" => (84.0, 560.0),
+        "climbUp" | "climbDown" => (32.0, 880.0),
         _ => (1.0, 0.0),
     };
-    let t = (elapsed / duration).clamp(0.0, 1.0);
+    let (position, speed) = travel_curve(
+        elapsed / duration,
+        distance,
+        matches!(action, "climbUp" | "climbDown"),
+    );
     (
-        distance * ease(t) * cycle / stride,
-        distance / duration * 6.0 * t * (1.0 - t) * cycle / stride,
+        distance * position * cycle / stride,
+        distance / duration * speed * cycle / stride,
     )
 }
 
@@ -463,12 +487,42 @@ impl Default for Roamer {
         }
     }
 }
+// Wall phases share the existing rest and departure beats with the Dock route.
+const APPROACH_WALL: u8 = 12;
+const CLIMB_UP: u8 = 13;
+const HOLD_WALL: u8 = 14;
+const CLIMB_DOWN: u8 = 15;
+const LEAVE_WALL: u8 = 16;
+
 impl Roamer {
     fn enter(&mut self, phase: u8, bounds: Layout) {
         self.phase = phase;
         self.elapsed = 0.0;
         self.start = self.position.unwrap_or(bounds.dock());
         self.target = match phase {
+            APPROACH_WALL => {
+                // The transparent window is 220 points wide. Bring the sprite's
+                // outer paw (roughly 22 points from centre) to the work-area edge.
+                let left = self.start.x < (bounds.left() + bounds.right()) / 2.0;
+                Point {
+                    x: if left {
+                        bounds.left() - 88.0 * bounds.scale
+                    } else {
+                        bounds.right() + 88.0 * bounds.scale
+                    },
+                    y: self.start.y,
+                }
+            }
+            CLIMB_UP => Point {
+                x: self.start.x,
+                y: (self.start.y - (112.0 + 24.0 * f64::from(self.cycle % 3)) * bounds.scale)
+                    .max(bounds.work.y),
+            },
+            CLIMB_DOWN => Point {
+                x: self.start.x,
+                y: bounds.floor(),
+            },
+            LEAVE_WALL => bounds.excursion(self.start, self.cycle),
             1 | 10 => bounds.excursion(self.start, self.cycle),
             3 | 9 => bounds.dock(),
             4 | 7 => bounds.hidden(),
@@ -476,10 +530,17 @@ impl Roamer {
             _ => self.start,
         };
         self.duration = match phase {
-            1 | 3 | 10 => {
-                let speed = if phase == 3 { 60.0 } else { 120.0 };
+            1 | 3 | 10 | APPROACH_WALL | CLIMB_UP | CLIMB_DOWN | LEAVE_WALL => {
+                let speed = match phase {
+                    CLIMB_UP => 47.0,
+                    CLIMB_DOWN => 36.0,
+                    3 | LEAVE_WALL => 65.0,
+                    APPROACH_WALL => 84.0,
+                    _ => 120.0,
+                };
                 (self.start.distance(self.target) / (speed * bounds.scale) * 1000.0).max(700.0)
             }
+            HOLD_WALL => 780.0,
             2 => 1500.0,
             4 => 650.0,
             5 => 700.0,
@@ -528,6 +589,7 @@ impl Roamer {
             action,
             facing: self.facing,
             elapsed_ms: self.elapsed,
+            duration_ms: self.duration,
             roaming,
             enabled,
             gait_ms,
@@ -539,7 +601,8 @@ impl Roamer {
             *stored = snapshot.clone();
         }
         if self.last_action != Some(key)
-            || ((action == "run" || action == "walk") && self.elapsed - self.last_emit >= 100.0)
+            || (matches!(action, "run" | "walk" | "climbUp" | "climbDown")
+                && self.elapsed - self.last_emit >= 100.0)
         {
             self.last_emit = self.elapsed;
             self.last_action = Some(key);
@@ -605,25 +668,38 @@ impl Roamer {
     }
     fn advance(&mut self, bounds: Layout, dt: f64) {
         self.elapsed += dt;
-        if self.elapsed >= self.duration {
+        while self.elapsed >= self.duration {
+            let remainder = self.elapsed - self.duration;
             self.position = Some(self.target);
-            let next = if self.phase == 11 {
+            if self.phase == 11 {
                 self.cycle = self.cycle.wrapping_add(1);
-                1
-            } else {
-                self.phase + 1
+            }
+            let next = match self.phase {
+                0 | 11
+                    if self.cycle.is_multiple_of(2)
+                        && bounds.right() > bounds.left() + 80.0 * bounds.scale
+                        && bounds.floor() > bounds.work.y + 40.0 * bounds.scale =>
+                {
+                    APPROACH_WALL
+                }
+                11 => 1,
+                LEAVE_WALL => 11,
+                _ => self.phase + 1,
             };
             self.enter(next, bounds);
+            self.elapsed = remainder;
         }
         let travel_time = if self.phase == 6 {
             550.0
         } else {
             self.duration
         };
-        self.position = Some(
-            self.start
-                .mix(self.target, ease(self.elapsed / travel_time)),
+        let (position, _) = travel_curve(
+            self.elapsed / travel_time,
+            self.start.distance(self.target) / bounds.scale,
+            matches!(self.phase, CLIMB_UP | CLIMB_DOWN),
         );
+        self.position = Some(self.start.mix(self.target, position));
     }
     pub fn tick(
         &mut self,
@@ -710,7 +786,12 @@ impl Roamer {
                 self.position = Some(p);
                 self.enter(0, bounds);
             }
-            self.publish(window, "rest", true, enabled);
+            let waiting = if matches!(self.phase, CLIMB_UP | HOLD_WALL | CLIMB_DOWN) {
+                "cling"
+            } else {
+                "rest"
+            };
+            self.publish(window, waiting, true, enabled);
             return Ok(());
         }
         let previous = self.position.map(Point::physical);
@@ -721,6 +802,10 @@ impl Roamer {
             window.set_position(p.physical())?;
         }
         let action = match self.phase {
+            APPROACH_WALL | LEAVE_WALL => "walk",
+            CLIMB_UP => "climbUp",
+            HOLD_WALL => "cling",
+            CLIMB_DOWN => "climbDown",
             1 | 10 => "run",
             3 => "walk",
             2 => "pounce",
@@ -904,10 +989,27 @@ mod tests {
                 } else {
                     assert!(hidden_for < 6000.0);
                     hidden_for = 0.0;
-                    assert_eq!(b.fit(p), p);
+                    if (APPROACH_WALL..=LEAVE_WALL).contains(&pet.phase) {
+                        assert!(
+                            p.x >= b.left() - 88.0 * b.scale && p.x <= b.right() + 88.0 * b.scale
+                        );
+                        assert!((b.work.y..=b.floor()).contains(&p.y));
+                        if matches!(pet.phase, CLIMB_UP | CLIMB_DOWN | HOLD_WALL) {
+                            assert_eq!(p.x, pet.start.x);
+                            assert_eq!(pet.target.x, pet.start.x);
+                            if pet.phase == CLIMB_UP {
+                                assert!(pet.target.y < pet.start.y);
+                            }
+                            if pet.phase == CLIMB_DOWN {
+                                assert!(pet.target.y > pet.start.y);
+                            }
+                        }
+                    } else {
+                        assert_eq!(b.fit(p), p);
+                    }
                 }
             }
-            assert_eq!(seen.len(), 12);
+            assert_eq!(seen.len(), 17);
             assert!(pet.cycle >= 3);
         }
     }

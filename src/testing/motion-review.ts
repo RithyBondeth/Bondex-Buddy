@@ -204,7 +204,10 @@ async function start(): Promise<void> {
     );
     const actionLabels = {
       rest: 'Taking a breather',
-      walk: 'Sneaking closer',
+      walk: 'Out for a stroll',
+      climbUp: 'Climbing up',
+      cling: 'Holding on',
+      climbDown: 'Climbing down',
       run: 'A little burst of joy',
       pounce: 'Ready, set… pounce!',
       hide: 'Where did Ember go?',

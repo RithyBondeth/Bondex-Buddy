@@ -47,10 +47,14 @@ function HabitatLayer({
   );
   const moveBy = (distance: number) => {
     const width = layer.current?.getBoundingClientRect().width;
-    if (width)
-      offset.set(
-        Math.max(-23, Math.min(23, offset.get() + (100 * distance) / width)),
-      );
+    if (!width) return 0;
+    const previous = offset.get();
+    const next = Math.max(
+      -23,
+      Math.min(23, previous + (100 * distance) / width),
+    );
+    offset.set(next);
+    return (next - previous) / petWidth;
   };
   const reduce = useCalmMotion();
   return (

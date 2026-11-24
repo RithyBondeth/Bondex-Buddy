@@ -498,7 +498,10 @@ export async function mountApp(root: HTMLElement): Promise<() => void> {
     toggle.setAttribute('aria-pressed', String(timer?.status === 'running'));
     const playLabels = {
       rest: 'Taking a breather',
-      walk: 'Sneaking closer',
+      walk: 'Out for a stroll',
+      climbUp: 'Climbing up',
+      climbDown: 'Climbing down',
+      cling: 'Holding on',
       run: 'Feeling speedy',
       pounce: 'Feeling playful',
       hide: 'Hide and seek',

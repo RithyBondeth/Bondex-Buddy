@@ -57,6 +57,16 @@ function glint(c: Pen, x: number, y: number, size: number, color: string) {
   c.closePath();
   c.fill();
 }
+// A soft rim under a crisp pixel shape keeps bright effects legible on pale habitats.
+function glow(c: Pen, x: number, y: number, radius: number, color: string) {
+  if (radius < 0.1) return;
+  const light = c.createRadialGradient(x, y, 0, x, y, radius);
+  light.addColorStop(0, color + '99');
+  light.addColorStop(1, color + '00');
+  c.fillStyle = light;
+  c.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+}
+
 function motes(
   c: Pen,
   x: number,
@@ -80,6 +90,23 @@ function motes(
 }
 
 const foxfire: Effects = (c, t, _, front) => {
+  if (!front) {
+    // Small flames kindle in sequence and curl away from the tail.
+    for (let i = 0; i < 5; i++) {
+      const age = phase(t, 0.05 + i * 0.06, 0.66 + i * 0.06);
+      if (age <= 0 || age >= 1) continue;
+      const x = (i - 2) * 7,
+        h = (9 + (i % 3) * 3) * wave(age);
+      glow(c, x, -h / 2, h, '#ff8636');
+      c.beginPath();
+      c.moveTo(x - 2, 0);
+      c.quadraticCurveTo(x - 4, -h * 0.4, x + 3 * Math.sin(age * 5), -h);
+      c.quadraticCurveTo(x + 4, -h * 0.3, x + 2, 0);
+      c.fillStyle = '#f49846';
+      c.fill();
+      dot(c, x + Math.sin(age * 6) * 2, -h - 6 * age, '#ffe7a0');
+    }
+  }
   for (let i = 0; i < 3; i++) {
     const a = t * tau * 1.35 + (i * tau) / 3;
     if (Math.sin(a) > 0 !== front) continue;
@@ -91,6 +118,7 @@ const foxfire: Effects = (c, t, _, front) => {
     stroke(c, trail, '#e56a3c', 2.6);
     stroke(c, trail.slice(5), '#ffbc58', 1.6);
     const [x, y] = point(0);
+    glow(c, x, y, 5, '#ff9038');
     glint(c, x, y, 3.3, '#fff1a4');
     dot(c, x - 1, y - 4, '#ffad53');
   }
@@ -105,6 +133,17 @@ const constellation: Effects = (c, t, _, front) => {
     [26, -17],
   ];
   if (!front) {
+    const comet = phase(t, 0.4, 0.92);
+    if (comet > 0 && comet < 1) {
+      const path = (u: number): Point => [-35 + 68 * u, -32 - 15 * wave(u)];
+      const tail = Array.from({ length: 9 }, (_, i) =>
+        path(Math.max(0, comet - i * 0.018)),
+      );
+      stroke(c, tail, '#c699eb', 1.5);
+      const [x, y] = path(comet);
+      glow(c, x, y, 7, '#af9fff');
+      glint(c, x, y, 3 * wave(comet), '#fff3cd');
+    }
     const draw = phase(t, 0, 0.57) * (stars.length - 1);
     for (let i = 0; i < stars.length - 1 && i < draw; i++) {
       const [x, y] = stars[i],
@@ -127,6 +166,7 @@ const constellation: Effects = (c, t, _, front) => {
     const angle = t * tau * 0.85;
     const x = Math.cos(angle) * 21,
       y = -21 - Math.sin(angle) * 9;
+    glow(c, x, y, 7, '#eac985');
     // Two offset arcs outline the crescent without punching through the scene.
     c.beginPath();
     c.moveTo(x + 2, y - 4);
@@ -144,6 +184,33 @@ const constellation: Effects = (c, t, _, front) => {
   }
 };
 const bloom: Effects = (c, t, _, front) => {
+  if (!front) {
+    for (const side of [-1, 1]) {
+      const u = phase(t, side < 0 ? 0.25 : 0.38, 1);
+      if (!u) continue;
+      const x = side * (13 + 17 * u),
+        y = -9 - 22 * u - 3 * Math.sin(8 * u);
+      const wing =
+        (1.2 + 1.8 * Math.abs(Math.cos(u * 15))) * Math.min(1, u * 8);
+      for (const direction of [-1, 1]) {
+        c.fillStyle = side < 0 ? '#ffaec9' : '#dec0ff';
+        c.beginPath();
+        c.ellipse(
+          x + direction * wing * 0.63,
+          y - 1,
+          wing,
+          1.7,
+          direction * 0.65,
+          0,
+          tau,
+        );
+        c.fill();
+      }
+      dot(c, x, y, '#ffe6a4');
+      for (let i = 1; i < 4; i++)
+        dot(c, x - side * i * 2, y + i * 2 + Math.sin(i + u * 6), '#cbd997');
+    }
+  }
   for (let i = 0; i < 7; i++) {
     if ((i % 2 === 0) !== front) continue;
     const u = phase(t, i * 0.035, 0.64 + i * 0.035),
@@ -190,6 +257,24 @@ const bloom: Effects = (c, t, _, front) => {
 };
 const webs: Effects = (c, t, body, front, bodyTime) => {
   const hand = handPosition('spider-man', bodyTime, body, 'right', 26, 26);
+  if (front && t < 0.32) {
+    const signal = wave(phase(t, 0, 0.32));
+    for (const side of [-1, 1]) {
+      const x = body.x + side * 11,
+        y = -body.lift - 25;
+      stroke(
+        c,
+        [
+          [x, y],
+          [x + side * 3 * signal, y - 3],
+          [x + side * 4 * signal, y - 1],
+          [x + side * 7 * signal, y - 5],
+        ],
+        '#ffbc96',
+        signal * 1.4 + 0.1,
+      );
+    }
+  }
   if (!front) {
     const reach = phase(t, 0.03, 0.22),
       release = phase(t, 0.65, 0.88);
@@ -213,6 +298,16 @@ const webs: Effects = (c, t, body, front, bodyTime) => {
       '#ddf5ff',
       1.2,
     );
+    // A traveling highlight carries the tension up the line.
+    const pulse = phase(t, 0.22, 0.64);
+    if (pulse > 0 && pulse < 1)
+      glint(
+        c,
+        start[0] + (end[0] - start[0]) * pulse,
+        start[1] + (end[1] - start[1]) * pulse,
+        2,
+        '#fffaff',
+      );
     if (reach === 1) {
       const knots: Point[] = [];
       for (let i = 0; i < 7; i++) {
@@ -245,6 +340,24 @@ const webs: Effects = (c, t, body, front, bodyTime) => {
 const repulsor: Effects = (c, t, body, front, bodyTime) => {
   const y = -body.lift;
   if (!front) {
+    const scan = phase(t, 0.03, 0.59);
+    if (scan > 0 && scan < 1) {
+      const radius = 21 - 5 * scan;
+      for (let i = 0; i < 6; i++) {
+        const angle = (i * tau) / 6 + scan * 0.8;
+        ring(
+          c,
+          body.x,
+          y - 15,
+          radius,
+          radius,
+          '#61bec8',
+          0.7,
+          angle,
+          angle + 0.36,
+        );
+      }
+    }
     for (const boot of [-5, 5]) {
       const x = body.x + boot,
         length =
@@ -278,6 +391,19 @@ const repulsor: Effects = (c, t, body, front, bodyTime) => {
       const tip: Point = [x + 33 * blast, hand - 9 * blast];
       stroke(c, [[x, hand], tip], '#55cfea', 3.4 * blast);
       stroke(c, [[x, hand], tip], '#edffff', 1.3 * blast);
+      for (let i = 1; i <= 3; i++) {
+        const u = (t * 4 + i / 3) % 1;
+        ring(
+          c,
+          x + 33 * blast * u,
+          hand - 9 * blast * u,
+          0.8,
+          blast * (3 - u),
+          '#a5f4ff',
+          0.8,
+        );
+      }
+      glow(c, ...tip, blast * 6, '#4ce4ff');
       glint(c, ...tip, 3 * blast, '#c3fcff');
     }
   }
@@ -285,6 +411,27 @@ const repulsor: Effects = (c, t, body, front, bodyTime) => {
 const thunder: Effects = (c, t, body, front, bodyTime) => {
   const hammer = handPosition('thor', bodyTime, body, 'left', 6, 19);
   if (!front) {
+    // Clouds gather over the strike and rain trails behind its release.
+    const storm = wave(phase(t, 0, 0.94));
+    for (let i = 0; i < 5; i++) {
+      const x = -18 + i * 6,
+        y = -48 - (i % 3) * 2;
+      c.beginPath();
+      c.ellipse(x, y, (5 + (i % 2)) * storm, 2.6 * storm, 0, 0, tau);
+      c.fillStyle = i % 2 ? '#777896' : '#605e82';
+      c.fill();
+      const drop = phase(t, 0.3 + i * 0.055, 0.73 + i * 0.045);
+      if (drop > 0 && drop < 1)
+        stroke(
+          c,
+          [
+            [x - 1, y + 5 + 12 * drop],
+            [x - 3, y + 9 + 12 * drop],
+          ],
+          '#abbfe5',
+          0.9,
+        );
+    }
     const charge = phase(t, 0, 0.4);
     for (let i = 0; i < 3; i++)
       ring(
@@ -317,6 +464,7 @@ const thunder: Effects = (c, t, body, front, bodyTime) => {
       last[1] + (next[1] - last[1]) * (n % 1),
     ]);
     c.globalAlpha *= 1 - phase(t, 0.61, 0.83);
+    glow(c, ...bolt[bolt.length - 1], 8, '#8fb9ff');
     stroke(c, bolt, '#819dff', 3);
     stroke(c, bolt, '#f4fcff', 1.15);
     if (u > 0.62)
@@ -353,6 +501,36 @@ const gamma: Effects = (c, t, body, front) => {
       );
     }
   } else if (u > 0 && !front) {
+    for (const side of [-1, 1]) {
+      const x = side * (9 + 23 * u),
+        y = -2 - 7 * wave(u);
+      // Split slabs spin away above a rolling bank of dust.
+      c.save();
+      c.translate(x, y);
+      c.rotate(side * u * 2.7);
+      c.fillStyle = '#6b775c';
+      c.fillRect(-3, -2, 6, 4);
+      stroke(
+        c,
+        [
+          [-3, -2],
+          [0, -2],
+          [1, 0],
+          [3, 0],
+        ],
+        '#ceef96',
+        1,
+      );
+      c.restore();
+      for (let i = 0; i < 3; i++)
+        glow(
+          c,
+          side * (9 + 20 * u - i * 3),
+          -1 - (i % 2),
+          (4 + i) * wave(u),
+          '#a1b481',
+        );
+    }
     for (let i = 0; i < 2; i++) {
       const p = phase(u, i * 0.2, 1);
       if (p > 0)
@@ -381,7 +559,6 @@ const gamma: Effects = (c, t, body, front) => {
 };
 const shield: Effects = (c, t, body, front, bodyTime) => {
   const p = phase(t, 0.22, 0.83);
-  if (p <= 0 || p >= 1) return;
   const [startX, startY] = handPosition(
     'captain-america',
     bodyTime,
@@ -390,6 +567,30 @@ const shield: Effects = (c, t, body, front, bodyTime) => {
     10,
     26,
   );
+  if (p <= 0 || p >= 1) {
+    if (front && t > 0.83) {
+      const catchTime = phase(t, 0.83, 1);
+      for (let i = 0; i < 5; i++) {
+        const a = (i * tau) / 5;
+        stroke(
+          c,
+          [
+            [
+              startX + Math.cos(a) * (4 + 3 * catchTime),
+              startY + Math.sin(a) * (4 + 3 * catchTime),
+            ],
+            [
+              startX + Math.cos(a) * (5 + 7 * catchTime),
+              startY + Math.sin(a) * (5 + 7 * catchTime),
+            ],
+          ],
+          '#ffe7ba',
+          1,
+        );
+      }
+    }
+    return;
+  }
   const orbit = (v: number): Point => [
     startX + Math.sin(v * tau) * 24,
     startY - 16 * wave(v) + 4 * Math.sin(v * tau),
@@ -398,7 +599,18 @@ const shield: Effects = (c, t, body, front, bodyTime) => {
   const trail = Array.from({ length: 10 }, (_, i) =>
     orbit(Math.max(0, p - (9 - i) * 0.013)),
   );
-  stroke(c, trail, '#8ac1ed', 1.8);
+  for (const [offset, color] of [
+    [-1.7, '#df7576'],
+    [0, '#fff2df'],
+    [1.7, '#80b4eb'],
+  ] as const) {
+    stroke(
+      c,
+      trail.map(([x, y], i) => [x, y + offset * (1 - i / trail.length)]),
+      color,
+      1,
+    );
+  }
   const [x, y] = orbit(p),
     rx = 2.3 + Math.abs(Math.cos(p * tau * 2)) * 2.5;
   c.fillStyle = '#e96562';
@@ -442,6 +654,23 @@ const widow: Effects = (c, t, body, front, bodyTime) => {
       [end[0] - d * 4, end[1] - 2],
       end,
     ];
+    const lock = wave(u);
+    // Two halves of the hourglass converge at the point of contact.
+    for (const sign of [-1, 1]) {
+      const yy = end[1] + sign * (7 - 4 * lock);
+      stroke(
+        c,
+        [
+          [end[0] - 2.5, yy],
+          [end[0] + 2.5, yy],
+          [end[0], yy - sign * 3],
+          [end[0] - 2.5, yy],
+        ],
+        '#fa8b9f',
+        0.8,
+      );
+    }
+    glow(c, ...end, 6 * lock, '#809aff');
     stroke(c, arc, '#6e90ff', 2.7);
     stroke(c, arc, '#cef5ff', 1);
     glint(c, ...end, 3 * wave(u), '#edfaff');
@@ -463,6 +692,18 @@ const trickShot: Effects = (c, t, body, front, bodyTime) => {
         (i * Math.PI) / 2 + 0.15,
         (i * Math.PI) / 2 + 1.15,
       );
+    if (t < 0.49) {
+      const draw = phase(t, 0.04, 0.4);
+      for (let i = 1; i <= 6 * draw; i++) {
+        const u = i / 7;
+        dot(
+          c,
+          hand[0] + (target[0] - hand[0]) * u,
+          hand[1] + (target[1] - hand[1]) * u - 3 * wave(u),
+          '#c998cd',
+        );
+      }
+    }
     dot(c, ...target, '#f6e7ff');
     return;
   }
@@ -522,6 +763,30 @@ const trickShot: Effects = (c, t, body, front, bodyTime) => {
   } else {
     const u = phase(t, 0.72, 1);
     ring(c, ...target, 2 + u * 7, 2 + u * 7, '#efc9ff', 0.8);
+    for (const side of [-1, 1]) {
+      const x = target[0] + 9 * u,
+        y = target[1] + side * 12 * u;
+      stroke(
+        c,
+        [
+          [target[0] + 4 * u, target[1] + side * 5 * u],
+          [x, y],
+        ],
+        '#aa83cf',
+        1,
+      );
+      stroke(
+        c,
+        [
+          [x - 2, y - side * 3],
+          [x, y],
+          [x - 3, y - side],
+        ],
+        '#ffdd9d',
+        1,
+      );
+    }
+    glow(c, ...target, 7 * wave(u), '#c8a4ff');
     motes(c, ...target, u, 9, '#eac1ff', 8);
   }
 };
