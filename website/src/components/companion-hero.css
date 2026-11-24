@@ -32,12 +32,9 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.tiny-pixels {
-  width: 5px;
-  height: 5px;
-  margin: 3px;
-  background: var(--peach);
-  box-shadow: 4px -4px 0 #cc8b627d;
+.hero-brand-icon {
+  flex: none;
+  image-rendering: pixelated;
 }
 .hero h1 {
   font-size: clamp(43px, 5.9vw, 88px);
@@ -130,8 +127,9 @@
   display: grid;
   gap: 4px;
   max-width: calc(100% - 28px);
-  padding-left: 8px;
+  padding: 4px 18px 4px 8px;
   border-left: 2px solid var(--peach);
+  background: linear-gradient(90deg, #08192cd9, #08192c00);
   color: #fff5ea;
   text-shadow:
     0 2px #10101c,
@@ -153,43 +151,25 @@
   overflow: hidden;
   background: #10101c;
 }
-.habitat-sky,
 .habitat-world,
-.habitat-layer,
-.habitat-glow {
+.habitat-layer {
   position: absolute;
   inset: 0;
-}
-.habitat-sky {
-  z-index: -1;
-  background:
-    radial-gradient(ellipse at 50% 87%, var(--surface), transparent 72%),
-    repeating-linear-gradient(90deg, #cdc9e012 0 1px, transparent 1px 23px),
-    repeating-linear-gradient(0deg, #cdc9e012 0 1px, transparent 1px 23px);
-  mask-image: linear-gradient(transparent, #000a 44%, #000 75%);
-}
-.habitat-glow {
-  opacity: 0.7;
-  mask-image: radial-gradient(
-    ellipse at 50% 59%,
-    #000 2%,
-    #0007 43%,
-    transparent 74%
-  );
 }
 .habitat-layer[aria-hidden='true'] {
   pointer-events: none;
 }
-.habitat-island {
+.habitat-background {
   position: absolute;
-  bottom: 0;
-  left: 4%;
-  width: 92%;
-  height: auto;
-  object-fit: contain;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   image-rendering: pixelated;
-  filter: brightness(0.98) saturate(0.9);
   pointer-events: none;
+}
+.habitat-layer[data-habitat='tidepool'] .habitat-ground-shadow {
+  display: none;
 }
 .habitat-ground-shadow {
   position: absolute;
@@ -211,6 +191,9 @@
 }
 .habitat-pet[data-companion='moon'] {
   bottom: 21%;
+}
+.habitat-pet[data-companion='blue-jelly'] {
+  bottom: 29%;
 }
 .main-pet {
   width: 100%;
@@ -293,11 +276,8 @@
 }
 .pet-picker {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 4px;
-}
-.avengers-picker {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
 }
 @container (min-width: 480px) {
   .avengers-picker {

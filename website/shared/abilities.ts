@@ -1,12 +1,16 @@
-import { REACTION_MS as ABILITY_MS } from '../src/lib/pet-animation';
+import {
+  REACTION_MS as ABILITY_MS,
+  type DeskSpiritId,
+} from '../src/lib/pet-animation';
 import type { HeroId } from './hero-motion';
 
-export type CompanionId = HeroId | 'ember' | 'moon' | 'moss';
+export type CompanionId = HeroId | DeskSpiritId;
 
 export const abilityNames = {
   ember: 'Foxfire spiral',
   moon: 'Constellation dance',
   moss: 'Wildflower bloom',
+  'blue-jelly': 'Bubble bloom',
   'spider-man': 'Web swing',
   'iron-man': 'Repulsor flight',
   thor: 'Thunder call',
@@ -64,6 +68,14 @@ const motion: Record<CompanionId, readonly Key[]> = {
     [0.48, -3, 0, -2, 0.88],
     [0.67, 3, 5, 8, 1.04],
     [0.8, 1, 0, 2, 0.93],
+    home,
+  ],
+  'blue-jelly': [
+    still,
+    [0.18, -2, 2, -6, 0.89],
+    [0.45, 1, 10, 5, 1.1],
+    [0.68, 3, 12, 8, 1.02],
+    [0.85, 0, 5, -3, 0.96],
     home,
   ],
   'spider-man': [

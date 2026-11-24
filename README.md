@@ -85,7 +85,7 @@ src/
   testing/                 Optional native acceptance surface
 src-tauri/
   capabilities/            Explicit frontend permissions
-  icons/                   Ember fox app icons
+  icons/                   Bondex Buddy app and menu bar icons
   src/                     Native Rust entry points and OS integration
 website/                   Independent Next.js landing page package
 ```

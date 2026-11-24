@@ -42,7 +42,7 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
         .tooltip("Bondex Buddy")
         .menu(&menu)
         .show_menu_on_left_click(cfg!(target_os = "macos"));
-    let mut tray = tray
+    let tray = tray
         .on_tray_icon_event(|tray, event| {
             if !cfg!(target_os = "macos")
                 && matches!(
@@ -99,9 +99,15 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
                 eprintln!("Habitat menu action failed: {error}");
             }
         });
-    if let Some(icon) = app.default_window_icon() {
-        tray = tray.icon(icon.clone());
-    }
+    #[cfg(target_os = "macos")]
+    let tray = tray
+        .icon(tauri::include_image!("icons/menu-bar.png"))
+        .icon_as_template(true);
+    #[cfg(not(target_os = "macos"))]
+    let tray = match app.default_window_icon() {
+        Some(icon) => tray.icon(icon.clone()),
+        None => tray,
+    };
     tray.build(app)?;
     Ok(())
 }

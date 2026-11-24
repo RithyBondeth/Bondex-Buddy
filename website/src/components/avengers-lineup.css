@@ -1,9 +1,9 @@
 .avengers-lineup {
-  color: #fff3e7;
+  color: var(--foreground);
   background:
-    radial-gradient(#88709d4d 1px, transparent 1px) 0 0 / 12px 12px,
-    #1b1726;
-  border-block: 1px dashed #63536d;
+    radial-gradient(#488fc540 1px, transparent 1px) 0 0 / 12px 12px,
+    var(--jelly-surface);
+  border-block: 1px dashed var(--jelly-line);
 }
 .lineup-intro {
   display: flex;
@@ -17,11 +17,11 @@
   font-size: clamp(42px, 6.1vw, 94px);
 }
 .avengers-lineup h2 em {
-  color: #ffc39f;
+  color: var(--jelly-cyan);
 }
 .avengers-lineup .lineup-intro p {
   max-width: 34ch;
-  color: #dfd1dc;
+  color: var(--muted-foreground);
 }
 .lineup-panels {
   display: grid;

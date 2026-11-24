@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { useCalmMotion } from '@/components/motion-preferences';
 import './habitat-ambience.css';
 
-type Habitat = 'garden' | 'moonlight' | 'forest';
+type Habitat = 'garden' | 'moonlight' | 'forest' | 'tidepool';
 const W = 320;
 const H = 240;
 
@@ -76,6 +76,17 @@ function paint(ctx: CanvasRenderingContext2D, habitat: Habitat, t: number) {
       ctx.fillRect(x - 1, y - 1, 3, 3);
       ctx.fillStyle = '#fff7ca';
       ctx.fillRect(x, y, 1, 1);
+    }
+  } else if (habitat === 'tidepool') {
+    for (let i = 0; i < 8; i++) {
+      const progress = (t / (10 + (i % 3)) + i * 0.17) % 1;
+      const side = i % 2 === 0 ? 0.22 : 0.78;
+      const x = Math.round((side + Math.sin(progress * 6 + i) * 0.09) * W);
+      const y = Math.round((0.88 - progress * 0.71) * H);
+      const size = i % 3 === 0 ? 4 : 3;
+      ctx.globalAlpha = Math.min(1, progress * 5, (1 - progress) * 5) * 0.58;
+      ctx.strokeStyle = '#69def5';
+      ctx.strokeRect(x + 0.5, y + 0.5, size, size);
     }
   } else {
     for (let i = 0; i < 6; i++) {

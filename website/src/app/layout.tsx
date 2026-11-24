@@ -7,7 +7,7 @@ import { MotionPreferences } from '@/components/motion-preferences';
 export const metadata: Metadata = {
   title: 'Bondex Buddy | Pixel companions for your desktop',
   description:
-    'Meet ten animated desktop companions. Explore their habitats, try the focus timer, and discover the pocket for tasks, clipboard history, files, and agent handoffs.',
+    'Meet Blue Jelly and ten other animated desktop companions. Explore their habitats, try the focus timer, and discover the pocket for tasks, clipboard history, files, and agent handoffs.',
 };
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {

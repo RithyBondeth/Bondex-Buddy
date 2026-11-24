@@ -14,6 +14,7 @@ const greetings: Record<PetKind, string> = {
   ember: 'Oh, hello! A little head pat?',
   moon: 'A sleepy hello, just for you.',
   moss: 'You made a little friend.',
+  'blue-jelly': 'Hello from the tidepool.',
   hero: 'Ready when you are.',
 };
 export function LivingPet({

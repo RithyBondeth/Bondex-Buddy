@@ -1,5 +1,6 @@
 # Runtime assets
 
+- `brand/`: Blue Jelly platform icon and macOS menu bar artwork.
 - `pets/`: approved pet sprite sheets and animation metadata.
 - `decor/`: approved habitat, outfit, and prop sprites.
 - `audio/`: approved ambient loops and interaction sounds.

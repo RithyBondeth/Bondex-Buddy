@@ -1,4 +1,5 @@
-export type PetKind = 'ember' | 'moon' | 'moss' | 'hero';
+export type DeskSpiritId = 'ember' | 'moon' | 'moss' | 'blue-jelly';
+export type PetKind = DeskSpiritId | 'hero';
 export type PetMood = 'idle' | 'working' | 'break' | 'sleeping';
 
 export interface PetPose {
@@ -16,6 +17,7 @@ const rhythms = {
   ember: { breath: 4200, blink: 4700 },
   moon: { breath: 5200, blink: 6100 },
   moss: { breath: 3800, blink: 4100 },
+  'blue-jelly': { breath: 3600, blink: 5400 },
   hero: { breath: 4400, blink: 5200 },
 };
 
@@ -67,7 +69,10 @@ export function petPose({
     eyelid(blinkTime),
     doubleBlink ? eyelid(blinkTime - 310) : 1,
   );
-  let lift = 0;
+  let lift =
+    kind === 'blue-jelly' && mood !== 'working'
+      ? Math.round((1 - Math.cos(phase * Math.PI * 2)) * 4)
+      : 0;
   let lean = 0;
   const reacting = reactionAge >= 0 && reactionAge < REACTION_MS;
   let happy = reacting && kind !== 'moon';

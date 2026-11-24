@@ -1,6 +1,7 @@
-import ember from '../../src-tauri/icons/32x32.png';
+import ember from '../../assets/pets/ember-fox/portrait.png';
 import moon from '../../website/public/pets/moon-cat.png';
 import moss from '../../website/public/pets/moss-bunny.png';
+import blueJelly from '../../website/public/pets/blue-jelly.png';
 import spiderMan from '../../website/public/pets/avengers/spider-man.png';
 import ironMan from '../../website/public/pets/avengers/iron-man.png';
 import thor from '../../website/public/pets/avengers/thor.png';
@@ -14,6 +15,7 @@ export const companionArt: Record<CompanionId, string> = {
   ember,
   moon,
   moss,
+  'blue-jelly': blueJelly,
   'spider-man': spiderMan,
   'iron-man': ironMan,
   thor,

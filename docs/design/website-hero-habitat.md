@@ -1,8 +1,78 @@
 # Website hero habitat
 
-The landing-page hero uses three decorative transparent habitats for the live companion Canvas: `website/public/habitat/pixel-garden.png` for Ember, `pixel-moonlight.png` for Moon, and `pixel-forest.png` for Moss. The environment is illustration; the selectable pet is a separate interactive layer. These are website concepts, not screenshots or new desktop habitat features.
+The landing-page hero renders each of the eleven interactive companions over its own full-scene pixel-art environment. The guide and Avengers lineup reuse those environments. The original floating-island artwork is preserved alongside the newer scenes.
 
 Generated with OpenAI's built-in Imagegen tool on 2026-11-18. The preserved original is `exec-56611114-7044-4aef-a6d5-329a5f1638b2.png` under the session's generated-images folder. The asset was copied into the website without editing the existing pet artwork. Original transparency is preserved.
+
+## Blue Jelly’s tidepool
+
+Generated with the built-in Imagegen tool on 2026-11-24. The 1536 × 1024 original `exec-bc1af028-e9f0-40a8-99c9-f604f5934ef4.png` is preserved in the generation session. The runtime asset is a 768 × 512 lossless WebP at `website/public/habitat/blue-jelly-tidepool.webp`.
+
+Use case: stylized-concept. Asset type: an interactive game habitat background for Bondex Buddy. Draw a wide 3:2 pixel-art underwater diorama in three-quarter isometric view. A compact rock platform on a sandy seabed sits in the lower center, an open space above it is reserved for a separate small animated jellyfish sprite. Frame the rock with low sea grass, subtle coral fans and a few small shells near the sides. A few cyan sunbeams and suspended particles lead from the surface toward the platform. Use ocean navy, marine blue, cyan and touches of pale ice blue. Make it feel cozy and softly lit, with crisp deliberate pixel clusters and clear layered silhouettes like an illustrated 16-bit game environment. Keep the center calm and darker than the cyan sprite to be placed there. Full-bleed scene, no frame, no writing, no user interface, no creatures or jellyfish, no watermark.
+
+## Full-scene environments
+
+The ten new scenes were generated with the built-in Imagegen tool and exported as 768 × 512 lossless WebP files.
+
+### Ember’s cozy garden
+
+Asset: `website/public/habitat/scenes/garden.webp`
+
+Use case: stylized-concept. Asset type: Ember’s cozy garden, a website companion habitat. Create one landscape 3:2 full-bleed cozy game environment in deliberate 16-bit pixel art, with crisp visible pixel clusters, three-quarter or gently elevated perspective, foreground props at the edges, depth through layered scenery and a clear mid-value center. A warm enclosed cottage garden with a low brick wall and lush trees in back, a mossy flagstone path and low grasses in front, tiny cream flowers, an herb pot and a book with a tea cup set off to the edges. Amber sunlight, sage green leaves, honey and terracotta accents. Set the unobstructed standing plane directly below the central character slot at about 75% down the frame, measured from the top. Keep the region around the horizontal midpoint clear so a small separate sprite will read clearly. Match the finish of a detailed pixel-game diorama with one consistent pixel grid. The scene should fill the full rectangle to all four edges. No characters, animals, sprites, words, text, branding, emblems, trademarks, interface, border, frame or watermark.
+
+### Moon’s moonlit retreat
+
+Asset: `website/public/habitat/scenes/moonlight.webp`
+
+Use case: stylized-concept. Asset type: Moon’s moonlit retreat, a website companion habitat. Create one landscape 3:2 full-bleed cozy game environment in deliberate 16-bit pixel art, with crisp visible pixel clusters, three-quarter or gently elevated perspective, foreground props at the edges, depth through layered scenery and a clear mid-value center. A quiet moon garden at night with a pale crescent moon in the upper right, indigo trees and layered mist beyond a tranquil violet stone terrace, silver-blue grasses and white star flowers at the edges, and a small lamp near the left edge. Cool slate blue, lavender and restrained pale moonlight. Set the unobstructed standing plane directly below the central character slot at about 75% down the frame, measured from the top. Keep the region around the horizontal midpoint clear so a small separate sprite will read clearly. Match the finish of a detailed pixel-game diorama with one consistent pixel grid. The scene should fill the full rectangle to all four edges. No characters, animals, sprites, words, text, branding, emblems, trademarks, interface, border, frame or watermark.
+
+### Moss’s forest hideaway
+
+Asset: `website/public/habitat/scenes/forest.webp`
+
+Use case: stylized-concept. Asset type: Moss’s forest hideaway, a website companion habitat. Create one landscape 3:2 full-bleed cozy game environment in deliberate 16-bit pixel art, with crisp visible pixel clusters, three-quarter or gently elevated perspective, foreground props at the edges, depth through layered scenery and a clear mid-value center. A deep woodland clearing with tall layered tree trunks and quiet fern silhouettes, low mushrooms and tiny pale blooms at the edges, a stump to one side, and a moss-covered central clearing. Different greens from pine to soft lime, dappled daylight with warm clay accents. Set the unobstructed standing plane directly below the central character slot at about 72% down the frame, measured from the top. Keep the region around the horizontal midpoint clear so a small separate sprite will read clearly. Match the finish of a detailed pixel-game diorama with one consistent pixel grid. The scene should fill the full rectangle to all four edges. No characters, animals, sprites, words, text, branding, emblems, trademarks, interface, border, frame or watermark.
+
+### Neighborhood rooftop
+
+Asset: `website/public/habitat/scenes/neighborhood-roof.webp`
+
+Use case: stylized-concept. Asset type: Neighborhood rooftop, a website companion habitat. Create one landscape 3:2 full-bleed cozy game environment in deliberate 16-bit pixel art, with crisp visible pixel clusters, three-quarter or gently elevated perspective, foreground props at the edges, depth through layered scenery and a clear mid-value center. A generic brick neighborhood rooftop with roof vents and a water tower off to the sides, layered distant apartment buildings under rosy dusk, small square lights in windows, terracotta details and deep blue shadows. An empty middle stretch of roof is the standing area. Set the unobstructed standing plane directly below the central character slot at about 64% down the frame, measured from the top. Keep the region around the horizontal midpoint clear so a small separate sprite will read clearly. Match the finish of a detailed pixel-game diorama with one consistent pixel grid. The scene should fill the full rectangle to all four edges. No characters, animals, sprites, words, text, branding, emblems, trademarks, interface, border, frame or watermark.
+
+### Armor workshop
+
+Asset: `website/public/habitat/scenes/armor-workshop.webp`
+
+Use case: stylized-concept. Asset type: Armor workshop, a website companion habitat. Create one landscape 3:2 full-bleed cozy game environment in deliberate 16-bit pixel art, with crisp visible pixel clusters, three-quarter or gently elevated perspective, foreground props at the edges, depth through layered scenery and a clear mid-value center. A compact engineering workshop with a gunmetal service floor, amber tool cabinets at left, cyan energy conduit and a small illuminated charging dock at far right. Dark teal, warm steel, muted rust red, crisp electric cyan. Empty unobstructed service floor in the middle. Set the unobstructed standing plane directly below the central character slot at about 73% down the frame, measured from the top. Keep the region around the horizontal midpoint clear so a small separate sprite will read clearly. Match the finish of a detailed pixel-game diorama with one consistent pixel grid. The scene should fill the full rectangle to all four edges. No characters, animals, sprites, words, text, branding, emblems, trademarks, interface, border, frame or watermark.
+
+### Skybridge
+
+Asset: `website/public/habitat/scenes/skybridge.webp`
+
+Use case: stylized-concept. Asset type: Skybridge, a website companion habitat. Create one landscape 3:2 full-bleed cozy game environment in deliberate 16-bit pixel art, with crisp visible pixel clusters, three-quarter or gently elevated perspective, foreground props at the edges, depth through layered scenery and a clear mid-value center. A fantasy golden stone skybridge above a wide sea of clouds, viewed from a gentle overhead three-quarter angle, distant pale spires and luminous blue sky, ivory masonry, restrained gold inlays, and a tall abstract runestone at the far edge. Quiet blue and ivory light, clear empty central span on the bridge. Set the unobstructed standing plane directly below the central character slot at about 62% down the frame, measured from the top. Keep the region around the horizontal midpoint clear so a small separate sprite will read clearly. Match the finish of a detailed pixel-game diorama with one consistent pixel grid. The scene should fill the full rectangle to all four edges. No characters, animals, sprites, words, text, branding, emblems, trademarks, interface, border, frame or watermark.
+
+### Gamma test yard
+
+Asset: `website/public/habitat/scenes/gamma-yard.webp`
+
+Use case: stylized-concept. Asset type: Gamma test yard, a website companion habitat. Create one landscape 3:2 full-bleed cozy game environment in deliberate 16-bit pixel art, with crisp visible pixel clusters, three-quarter or gently elevated perspective, foreground props at the edges, depth through layered scenery and a clear mid-value center. An outdoor industrial research yard with concrete barriers on the edges, an amber warning lamp and one small lime-lit sealed canister off to the right, distant shadowy pipes, cool forest-green fog, segmented cracked concrete and a large empty central floor. Olive, stone gray and subtle bright lime. Set the unobstructed standing plane directly below the central character slot at about 67% down the frame, measured from the top. Keep the region around the horizontal midpoint clear so a small separate sprite will read clearly. Match the finish of a detailed pixel-game diorama with one consistent pixel grid. The scene should fill the full rectangle to all four edges. No characters, animals, sprites, words, text, branding, emblems, trademarks, interface, border, frame or watermark.
+
+### Hangar flight deck
+
+Asset: `website/public/habitat/scenes/flight-deck.webp`
+
+Use case: stylized-concept. Asset type: Hangar flight deck, a website companion habitat. Create one landscape 3:2 full-bleed cozy game environment in deliberate 16-bit pixel art, with crisp visible pixel clusters, three-quarter or gently elevated perspective, foreground props at the edges, depth through layered scenery and a clear mid-value center. A retro aircraft hangar and apron with a clear dark navy steel runway, low red-and-ivory safety stripes off center, distant hangar framing, a small control mast and amber runway lamps at the edges, a soft cloud or evening light beyond the opening. Muted navy, slate, honey gold and red details. Set the unobstructed standing plane directly below the central character slot at about 71% down the frame, measured from the top. Keep the region around the horizontal midpoint clear so a small separate sprite will read clearly. Match the finish of a detailed pixel-game diorama with one consistent pixel grid. The scene should fill the full rectangle to all four edges. No characters, animals, sprites, words, text, branding, emblems, trademarks, interface, border, frame or watermark.
+
+### Stealth ops balcony
+
+Asset: `website/public/habitat/scenes/ops-balcony.webp`
+
+Use case: stylized-concept. Asset type: Night watch balcony, a website companion habitat. Create one landscape 3:2 full-bleed cozy game environment in deliberate 16-bit pixel art, with crisp visible pixel clusters, three-quarter or gently elevated perspective, foreground props at the edges, depth through layered scenery and a clear mid-value center. A high night-city observation balcony in charcoal and violet concrete, geometric guard rails and discreet smoked-glass equipment at the sides, red instrument lights, layered distant skyline accents in deep indigo, and an empty central balcony floor area. Restrained violet, charcoal and signal red. Set the unobstructed standing plane directly below the central character slot at about 61% down the frame, measured from the top. Keep the region around the horizontal midpoint clear so a small separate sprite will read clearly. Match the finish of a detailed pixel-game diorama with one consistent pixel grid. The scene should fill the full rectangle to all four edges. No characters, animals, sprites, words, text, branding, emblems, trademarks, interface, border, frame or watermark.
+
+### Woodland archery deck
+
+Asset: `website/public/habitat/scenes/archery-deck.webp`
+
+Use case: stylized-concept. Asset type: Woodland archery deck, a website companion habitat. Create one landscape 3:2 full-bleed cozy game environment in deliberate 16-bit pixel art, with crisp visible pixel clusters, three-quarter or gently elevated perspective, foreground props at the edges, depth through layered scenery and a clear mid-value center. A wooden practice deck surrounded by a quiet woodland, with a simple round straw practice target far off to the right, low trees and rocks framing the view, fading evening light behind the tree line and a clear middle stretch of deck. Warm wood, dusty plum and dusk-green surroundings. Set the unobstructed standing plane directly below the central character slot at about 63% down the frame, measured from the top. Keep the region around the horizontal midpoint clear so a small separate sprite will read clearly. Match the finish of a detailed pixel-game diorama with one consistent pixel grid. The scene should fill the full rectangle to all four edges. No characters, animals, sprites, words, text, branding, emblems, trademarks, interface, border, frame or watermark.
 
 ## Original garden generation prompt
 

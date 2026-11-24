@@ -25,15 +25,15 @@ function skyline(width: number, depth: number) {
   if (!pen) return layer;
   pen.font = '13px monospace';
   pen.textBaseline = 'top';
-  const trim = ['#6a5079', '#9a6a89', '#de97a6'][depth];
-  const windows = ['#473950', '#62475c', '#886078'][depth];
+  const trim = ['#284c65', '#3d7298', '#63a9cb'][depth];
+  const windows = ['#18354c', '#29516d', '#376d88'][depth];
 
   for (let x = 0, building = 0; x < layer.width; building++) {
     const seed = building + depth * 37;
     const columns = 4 + Math.floor(variation(seed) * (5 + depth));
     const rows = 4 + Math.floor(variation(seed + 4) * (9 + depth));
     const roof = layer.height - rows * row;
-    pen.fillStyle = '#14111d';
+    pen.fillStyle = '#091827';
     pen.fillRect(x, roof + row, (columns + 2) * column, layer.height - roof);
     pen.fillStyle = trim;
     pen.fillText('.' + '_'.repeat(columns) + '.', x, roof);
@@ -49,7 +49,7 @@ function skyline(width: number, depth: number) {
       pen.fillText('|', x + (columns + 1) * column, y);
       for (let col = 1; col <= columns; col++) {
         const lit = variation(seed * 53 + y * 3 + col);
-        pen.fillStyle = lit > 0.89 ? '#eebc9e' : windows;
+        pen.fillStyle = lit > 0.89 ? '#8deaf8' : windows;
         if (lit > 0.26) {
           pen.fillText(':.#+'[Math.floor(lit * 4)], x + col * column, y);
         }
@@ -90,7 +90,7 @@ export function AsciiLandscape() {
       if (!pen) return;
       pen.clearRect(0, 0, width, height);
       pen.font = '10px monospace';
-      pen.fillStyle = '#f2badf';
+      pen.fillStyle = '#9cd7f5';
       for (const star of stars) {
         pen.globalAlpha = 0.19 + 0.16 * Math.sin(star.phase + elapsed * 0.9);
         pen.fillText(
@@ -105,7 +105,7 @@ export function AsciiLandscape() {
         const y = height * (0.07 + 0.1 * flight);
         for (let i = 0; i < 11; i++) {
           pen.globalAlpha = Math.sin(Math.PI * flight) * (1 - i / 11) * 0.82;
-          pen.fillStyle = i < 3 ? '#ffe5bd' : '#f3a3be';
+          pen.fillStyle = i < 3 ? '#d2f7ff' : '#69def5';
           pen.fillRect(Math.round(x + i * 4), Math.round(y - i * 2), 3, 2);
         }
       }

@@ -3,10 +3,11 @@
 import Image from 'next/image';
 import { useState, useReducer } from 'react';
 import { motion, type Variants } from 'motion/react';
+import blueJellyIcon from '@/app/icon.png';
 import {
   CompanionHabitat,
+  HABITAT_DIMENSIONS,
   HABITAT_SIZES,
-  habitatDimensions,
 } from '@/components/companion-habitat';
 import {
   createHabitatSelection,
@@ -34,7 +35,8 @@ const entranceGroup: Variants = {
   visible: { transition: { staggerChildren: 0.075 } },
 };
 
-const roster = [...avengers, ...companions];
+const roster = [...companions, ...avengers];
+const avengersStart = companions.length;
 
 export function CompanionHero() {
   const [habitat, dispatch] = useReducer(
@@ -44,8 +46,8 @@ export function CompanionHero() {
   );
   const selected = habitat.current;
   const loading = habitat.requested !== selected;
-  const [showAvengers, setShowAvengers] = useState(true);
-  const firstChoice = showAvengers ? 0 : avengers.length;
+  const [showAvengers, setShowAvengers] = useState(false);
+  const firstChoice = showAvengers ? avengersStart : 0;
   const choices = showAvengers ? avengers : companions;
   const [petMessage, setPetMessage] = useState<{
     pet: string;
@@ -60,7 +62,7 @@ export function CompanionHero() {
   const switchRoster = (heroes: boolean) => {
     if (heroes === showAvengers) return;
     setShowAvengers(heroes);
-    choose(heroes ? 0 : avengers.length);
+    choose(heroes ? avengersStart : 0);
   };
 
   return (
@@ -80,8 +82,15 @@ export function CompanionHero() {
             data-reveal
             variants={reduce ? stillEntrance : entrance}
           >
-            <span className="tiny-pixels" aria-hidden="true" /> Desktop
-            companions
+            <Image
+              className="hero-brand-icon"
+              src={blueJellyIcon}
+              alt=""
+              width={24}
+              height={24}
+              unoptimized
+            />
+            Desktop companions
           </motion.div>
           <motion.h1
             id="hero-heading"
@@ -107,8 +116,8 @@ export function CompanionHero() {
             data-reveal
             variants={reduce ? stillEntrance : entrance}
           >
-            Take Spider-Man from the rooftops to your desktop. Seven Avengers
-            and three desk spirits can keep your focus timer, tasks, and files
+            Meet Blue Jelly, a little jellyfish that floats beside your work.
+            Pick a desktop companion to keep your focus timer, tasks, and files
             close at hand.
           </motion.p>
           <motion.div
@@ -118,10 +127,10 @@ export function CompanionHero() {
           >
             <a
               className="button button-primary"
-              href="#avengers"
+              href="#companions"
               data-grid-avoid
             >
-              Meet the Avengers{' '}
+              Meet the companions{' '}
               <span className="button-arrow" aria-hidden="true">
                 ↓
               </span>
@@ -164,7 +173,7 @@ export function CompanionHero() {
                     key={`${pet.id}-${habitat.attempts[index]}`}
                     src={pet.habitat.image}
                     alt=""
-                    {...habitatDimensions(pet.habitat)}
+                    {...HABITAT_DIMENSIONS}
                     sizes={HABITAT_SIZES}
                     loading="eager"
                     onLoad={() =>
@@ -293,7 +302,7 @@ export function CompanionHero() {
         active={companion.id}
         onChoose={(index) => {
           setShowAvengers(true);
-          choose(index);
+          choose(avengersStart + index);
         }}
       />
     </>

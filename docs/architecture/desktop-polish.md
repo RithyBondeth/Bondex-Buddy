@@ -4,7 +4,7 @@ Phase 4 was committed and merged through PR #4 (`4ea801d`). The hosted macOS job
 
 ## Implemented
 
-- The user selected Ember fox on 2026-11-18. The working pet and generated desktop icons now use that reference. The reference is still sampled into a 48-pixel area; clean production animation sheets remain pending.
+- The user selected Ember fox on 2026-11-18. The working pet and the first desktop icons used that reference. The reference is still sampled into a 48-pixel area; clean production animation sheets remain pending.
 - Shelf dragging uses the native OS drag operation, with a held-left-button guard. Mouse release snaps within 16 logical pixels of the current monitor's work-area edges. Manual placement is clamped to usable bounds when the work area changes; Show retains placement, while Reset and display cycling return to docking.
 - The shelf is keyboard focusable. Arrow keys move by 24 logical pixels without magnetically trapping the window at an edge.
 - Optional Ghost Mode fades the Canvas to 30% during Working when the pointer is in the habitat. Artwork passes clicks through; toolbar/drawer controls remain interactive. Disable Ghost Mode to drag the shelf while working. Browser previews cannot enable native Ghost Mode.

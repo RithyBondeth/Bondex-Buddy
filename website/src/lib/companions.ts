@@ -2,6 +2,24 @@ import { heroNames } from '../../shared/hero-motion';
 
 export const companions = [
   {
+    id: 'blue-jelly',
+    name: 'Blue Jelly',
+    species: 'The blue jellyfish',
+    image: '/pets/blue-jelly.png',
+    habitat: {
+      id: 'tidepool',
+      label: 'Blue Jelly’s tidepool',
+      light: 'Filtered sunlight',
+      image: '/habitat/blue-jelly-tidepool.webp',
+    },
+    color: '#69def5',
+    word: 'A little drift.',
+    trait: 'Easygoing · Goes with the flow',
+    status: 'Desktop companion',
+    description:
+      'Blue Jelly floats beside your work and sends a bloom of bubbles upward when you tap it.',
+  },
+  {
     id: 'ember',
     name: 'Ember',
     species: 'The ember fox',
@@ -10,10 +28,9 @@ export const companions = [
       id: 'garden',
       label: 'Ember’s cozy garden',
       light: 'Warm daylight',
-      image: '/habitat/pixel-garden.png',
+      image: '/habitat/scenes/garden.webp',
     },
     color: '#e9b885',
-    background: '#463221',
     word: 'A little warmth.',
     trait: 'Warm-hearted · Quietly curious',
     status: 'First companion',
@@ -29,10 +46,9 @@ export const companions = [
       id: 'moonlight',
       label: 'Moon’s moonlit retreat',
       light: 'Soft moonlight',
-      image: '/habitat/pixel-moonlight.png',
+      image: '/habitat/scenes/moonlight.webp',
     },
     color: '#cbc6e3',
-    background: '#262e45',
     word: 'A little wonder.',
     trait: 'Dreamy · A natural night owl',
     status: 'Desktop companion',
@@ -48,10 +64,9 @@ export const companions = [
       id: 'forest',
       label: 'Moss’s forest hideaway',
       light: 'Woodland daylight',
-      image: '/habitat/pixel-forest.png',
+      image: '/habitat/scenes/forest.webp',
     },
     color: '#b5cca2',
-    background: '#253528',
     word: 'A little grounding.',
     trait: 'Gentle · Happiest taking it slow',
     status: 'Desktop companion',
@@ -65,8 +80,7 @@ export const avengers = (
     {
       id: 'spider-man',
       trait: 'Your friendly neighborhood companion',
-      background: '#4b2b3d',
-      platform: {
+      scene: {
         id: 'neighborhood-roof',
         label: 'Neighborhood rooftop',
         light: 'City at dusk',
@@ -76,8 +90,7 @@ export const avengers = (
     {
       id: 'iron-man',
       trait: 'A tiny suit with a lot of heart',
-      background: '#284c63',
-      platform: {
+      scene: {
         id: 'armor-workshop',
         label: 'Armor workshop',
         light: 'Arc glow',
@@ -87,8 +100,7 @@ export const avengers = (
     {
       id: 'thor',
       trait: 'Brings a little thunder',
-      background: '#534265',
-      platform: {
+      scene: {
         id: 'skybridge',
         label: 'Skybridge',
         light: 'Above the clouds',
@@ -98,8 +110,7 @@ export const avengers = (
     {
       id: 'hulk',
       trait: 'Big strength, small sprite',
-      background: '#354b37',
-      platform: {
+      scene: {
         id: 'gamma-yard',
         label: 'Gamma test yard',
         light: 'Gamma glow',
@@ -109,19 +120,17 @@ export const avengers = (
     {
       id: 'captain-america',
       trait: 'Always has your back',
-      background: '#34475a',
-      platform: {
+      scene: {
         id: 'flight-deck',
         label: 'Hangar flight deck',
         light: 'Runway lights',
-        ground: 29.4,
+        ground: 11,
       },
     },
     {
       id: 'black-widow',
       trait: 'Cool under pressure',
-      background: '#492a3c',
-      platform: {
+      scene: {
         id: 'ops-balcony',
         label: 'Stealth ops balcony',
         light: 'Night watch',
@@ -131,8 +140,7 @@ export const avengers = (
     {
       id: 'hawkeye',
       trait: 'Keeps an eye on the range',
-      background: '#3a4350',
-      platform: {
+      scene: {
         id: 'archery-deck',
         label: 'Woodland archery deck',
         light: 'Evening practice',
@@ -140,16 +148,14 @@ export const avengers = (
       },
     },
   ] as const
-).map(({ platform, ...hero }) => ({
+).map(({ scene, ...hero }) => ({
   ...hero,
   name: heroNames[hero.id],
   kind: 'hero' as const,
   image: `/pets/avengers/${hero.id}.png`,
   habitat: {
-    ...platform,
-    image: `/habitat/avengers/${platform.id}.webp`,
-    width: 768,
-    height: 512,
+    ...scene,
+    image: `/habitat/scenes/${scene.id}.webp`,
   },
   status: 'Desktop companion',
 }));

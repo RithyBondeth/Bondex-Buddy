@@ -38,6 +38,16 @@
       transparent 18px 26px
     );
 }
+[data-pocket-theme='blue-jelly'] {
+  --pocket-base: #102842;
+  --pocket-color: #69def5;
+  --pocket-trim: #488fc5;
+  --pocket-pattern:
+    radial-gradient(circle at 7px 5px, #a1ecfb36 0 1px, transparent 2px) 0 0 /
+      25px 27px,
+    radial-gradient(circle at 16px 17px, #69def528 0 2px, transparent 3px) 0 0 /
+      37px 33px;
+}
 [data-pocket-theme='spider-man'] {
   --pocket-base: #171e32;
   --pocket-color: #ff99a2;

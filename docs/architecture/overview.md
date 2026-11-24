@@ -24,7 +24,7 @@ Keep modules small; introduce concrete subfolders as features arrive rather than
 
 ## Phase 1 shell
 
-The main window is a transparent, undecorated 220 × 200 logical-pixel overlay with no shadow, resizing, or taskbar entry. On macOS it runs with the accessory activation policy to avoid a persistent Dock icon. Default Tauri scaffold icons are temporary and do not represent a chosen pet.
+The main window is a transparent, undecorated 220 × 200 logical-pixel overlay with no shadow, resizing, or taskbar entry. On macOS it runs with the accessory activation policy to avoid a persistent Dock icon. The desktop bundle and Windows tray use the Bondex Buddy platform mark. The macOS menu bar uses its monochrome template, which follows the menu bar appearance.
 
 `src-tauri/src/shell.rs` places the window at the bottom-right of the primary monitor's work area, excluding the Dock/taskbar. The tray can move it to another display. While visible, placement is reconciled every two seconds to account for work-area changes. Free dragging and snapping remain future polish work.
 

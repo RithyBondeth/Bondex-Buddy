@@ -6,29 +6,32 @@ import { MotionToggle } from '@/components/motion-preferences';
 import { Reveal } from '@/components/ui/reveal';
 import { PocketGuide } from '@/components/pocket-guide';
 import { companions, repository } from '@/lib/companions';
+import brandLogo from './brand-logo.png';
+import blueJellyIcon from './icon.png';
 import './field-guide.css';
 
-const habits = [
-  [
-    'Ember',
+const habits = {
+  'blue-jelly': [
+    'A little drift',
+    'Blue Jelly drifts through its tidepool. Tap it to send a bloom of bubbles upward.',
+  ],
+  ember: [
     'A fox on the move',
     'Ember pads across the desktop, picks up speed, and braces its paws to climb. Click the fox to open its pocket.',
   ],
-  [
-    'Moon',
+  moon: [
     'A softer footfall',
     'Moon takes low, measured steps. In the habitat, click the cat to trace a constellation and send a comet across it.',
   ],
-  [
-    'Moss',
+  moss: [
     'A little spring',
     'Moss gathers its hind legs before each hop. Its signature bloom sends butterflies up through a patch of wildflowers.',
   ],
-] as const;
+} as const;
 const questions = [
   [
     'How do I choose a companion?',
-    'Open Settings → Companion → Desktop companion. Choose Ember, Moon, Moss, or one of seven Avengers. Your timer, tasks, and progress carry over when you switch.',
+    'Open Settings → Companion → Desktop companion. Choose Blue Jelly, Ember, Moon, Moss, or one of seven Avengers. Your timer, tasks, and progress carry over when you switch.',
   ],
   [
     'Can my pet stay still?',
@@ -50,8 +53,7 @@ function Brand() {
       href="#main-content"
       aria-label="Bondex Buddy home"
     >
-      <Image src="/pets/idle.png" alt="" width={36} height={36} unoptimized />
-      Bondex<span>Buddy</span>
+      <Image src={brandLogo} alt="" unoptimized />
     </a>
   );
 }
@@ -126,9 +128,8 @@ export default function Home() {
               Meet the <em>desk spirits.</em>
             </h2>
             <p>
-              Watch them stroll to the screen edge, climb, pause for a grip, and
-              find their way down. Each has its own gait, habitat, and pocket
-              colors.
+              Watch your companion roam the screen edge. Each has its own way of
+              moving, a habitat, and pocket colors.
             </p>
           </Reveal>
           <div className="specimen-grid">
@@ -140,7 +141,7 @@ export default function Home() {
                       src={pet.habitat.image}
                       alt=""
                       fill
-                      sizes="(max-width:700px) 90vw, 30vw"
+                      sizes="(max-width:700px) 90vw, (max-width:1060px) 44vw, 22vw"
                     />
                     <Image
                       className="specimen-pet"
@@ -153,10 +154,10 @@ export default function Home() {
                   </div>
                   <div>
                     <small>
-                      {pet.name} / {habits[i][1]}
+                      {pet.name} / {habits[pet.id][0]}
                     </small>
                     <h3>{pet.species.replace(/^The /, '')}</h3>
-                    <p>{habits[i][2]}</p>
+                    <p>{habits[pet.id][1]}</p>
                   </div>
                 </article>
               </Reveal>
@@ -193,6 +194,14 @@ export default function Home() {
           aria-labelledby="release-title"
         >
           <div>
+            <Image
+              className="field-release-icon"
+              src={blueJellyIcon}
+              alt=""
+              width={64}
+              height={64}
+              unoptimized
+            />
             <p className="field-label">macOS + Windows</p>
             <h2 id="release-title">
               Bring a buddy <em>home.</em>

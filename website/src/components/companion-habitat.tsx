@@ -18,11 +18,7 @@ import { useCalmMotion } from '@/components/motion-preferences';
 export const HABITAT_SIZES =
   '(max-width: 523px) 88vw, (max-width: 767px) 460px, (max-width: 1340px) 42vw, 590px';
 
-export function habitatDimensions(habitat: Companion['habitat']) {
-  return 'width' in habitat
-    ? { width: habitat.width, height: habitat.height }
-    : { width: 1536, height: 1024 };
-}
+export const HABITAT_DIMENSIONS = { width: 768, height: 512 };
 
 function HabitatLayer({
   companion,
@@ -34,7 +30,7 @@ function HabitatLayer({
   const present = useIsPresent();
   const layer = useRef<HTMLDivElement>(null);
   const hero = 'kind' in companion;
-  const petWidth = hero ? 27 : 33;
+  const petWidth = hero ? 27 : companion.id === 'blue-jelly' ? 28 : 33;
   const ground = hero ? companion.habitat.ground : undefined;
   const offset = useMotionValue(0);
   const shadowX = useTransform(
@@ -70,16 +66,11 @@ function HabitatLayer({
       exit={{ opacity: 0, y: reduce ? 0 : -5, scale: reduce ? 1 : 0.99 }}
       transition={{ duration: reduce ? 0 : 0.68, ease: easeInOut }}
     >
-      <div
-        className="habitat-glow"
-        style={{ backgroundColor: companion.background }}
-        aria-hidden="true"
-      />
       <Image
-        className="habitat-island"
+        className="habitat-background"
         src={companion.habitat.image}
         alt=""
-        {...habitatDimensions(companion.habitat)}
+        {...HABITAT_DIMENSIONS}
         sizes={HABITAT_SIZES}
         loading="eager"
       />
@@ -137,7 +128,6 @@ export function CompanionHabitat({
       data-roster={'kind' in companion ? 'avengers' : undefined}
       aria-busy={loading}
     >
-      <div className="habitat-sky" aria-hidden="true" />
       <HabitatWorld companion={companion} onMessage={onMessage} />
     </div>
   );
