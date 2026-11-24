@@ -98,7 +98,8 @@ export function usePetCanvas({
       });
       if (walking && !hero) {
         const hop = kind === 'moss' ? Math.max(0, swing) : Math.abs(swing);
-        pose.lift = Math.round(hop * (kind === 'moss' ? 8 : 3));
+        if (kind === 'blue-jelly') pose.lift += Math.round(hop * 2);
+        else pose.lift = Math.round(hop * (kind === 'moss' ? 8 : 3));
         pose.lean = Math.round(swing * 2);
       }
       if (!rig || (t === null && !walking))

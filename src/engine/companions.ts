@@ -6,6 +6,7 @@ export const companionNames = {
   ember: 'Ember',
   moon: 'Moon',
   moss: 'Moss',
+  'blue-jelly': 'Blue Jelly',
   ...heroNames,
 } satisfies Record<CompanionId, string>;
 

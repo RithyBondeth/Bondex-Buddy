@@ -1,6 +1,6 @@
 # Bondex Buddy website
 
-The Next.js landing page for Bondex Buddy, featuring Ember fox, Moon cat, and Moss bunny. The split-canvas and pointer-reactive grid components are adapted from the supplied Hyperiux Vault examples.
+The Next.js landing page for Bondex Buddy, featuring Blue Jelly, Ember fox, Moon cat, Moss bunny, and the Avengers. The split-canvas and pointer-reactive grid components are adapted from the supplied Hyperiux Vault examples.
 
 ## Develop
 
@@ -37,7 +37,7 @@ See the [Next.js documentation](https://nextjs.org/docs/app/getting-started) for
 
 - `src/components/ui/split-canvas.tsx`: reusable client component with a Three.js shader. Each item gets a full-height section; scrolling transitions between the local transparent images with feathered pixel rows.
 - `src/components/ui/grid-pulse.tsx`: pointer-reactive canvas grid with an eased multicolor spotlight, faint background pulses, text avoidance, and offscreen and reduced-motion support.
-- `src/components/companion-hero.tsx` and `companion-hero.css`: a framed pixel habitat with three selectable living companions, scene transitions, and compact selection controls. Hero styles are kept beside the component.
+- `src/components/companion-hero.tsx` and `companion-hero.css`: a framed pixel habitat with selectable desk spirits and Avengers, scene transitions, and compact selection controls. Hero styles are kept beside the component.
 - `src/components/focus-playground.tsx`: interactive focus/break/rest preview with start, pause, resume, and reset. Countdown uses a wall-clock deadline so background throttling does not lose elapsed time.
 - `src/components/motion-preferences.tsx`: shared motion preference, honoring both the OS setting and the page’s pause button.
 - `src/components/ui/living-pet.tsx`: keyboard/touch-accessible pet preview with a 30 fps capped pixel Canvas, opacity-based pointer hit testing, a delayed hover greeting, and finite head-pat reactions. Breathing and blinking stop offscreen, in hidden tabs, or when motion is paused/reduced. The original PNG remains the loading/error/JavaScript-disabled fallback.
@@ -57,7 +57,7 @@ Artwork in `public/pets/` is copied from the existing project assets. See `publi
 
 The hero uses the existing Ember artwork and the Moon cat / Moss bunny concepts. Cat and bunny selection is a website preview, and both are marked in development. DM Sans and Pixelify Sans are self-hosted through their Fontsource packages, which include their SIL Open Font License texts.
 
-The three decorative habitats are `public/habitat/pixel-garden.png`, `pixel-moonlight.png`, and `pixel-forest.png`, generated with the built-in Imagegen tool. Ember has a cozy garden, Moon a moonlit retreat, and Moss a forest hideaway. Scenery and the living pet transition as one layer, with outgoing layers inert during the crossfade. The final prompt and provenance are recorded in [`docs/design/website-hero-habitat.md`](../docs/design/website-hero-habitat.md). This illustration is a website concept, not a desktop application screenshot.
+Every companion has a full-scene pixel-art habitat. Blue Jelly’s tidepool is in `public/habitat/blue-jelly-tidepool.webp`, and the other ten scenes are in `public/habitat/scenes/`. Scenery and the living pet transition as one layer, with outgoing layers inert during the crossfade. The Imagegen prompts and asset provenance are recorded in [`docs/design/website-hero-habitat.md`](../docs/design/website-hero-habitat.md).
 
 `src/components/companion-habitat.tsx` handles the coordinated scene transition. `src/lib/habitat-selection.ts` waits for preloaded images before committing a choice, preserves the current scene if an image fails, supports retry, and ignores stale loads during rapid switching. These cases are covered by `npm test`. Paused/reduced motion switches scenes instantly.
 

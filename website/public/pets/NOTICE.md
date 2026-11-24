@@ -8,6 +8,7 @@ These Ember images are copies of the Bondex Buddy character artwork, generated w
 Original sources and prompts remain in the repository. See `assets/NOTICE.md` and `assets/pets/ember-fox/artwork/prompts.json`. The project owner has not selected a project license; inclusion here does not grant a separate license.
 
 - `moon-cat.png` and `moss-bunny.png`: copies of the concept references in `docs/design/concepts/`, generated with Imagegen on 2026-11-17. These are character concepts, not approved runtime animation sheets.
+- `blue-jelly.png` is the 64 × 64 companion sprite drawn from the original Blue Jelly artwork in `assets/brand/bondex-buddy.svg`. See `docs/design/website-hero-habitat.md` for its tidepool habitat.
 
 ## Avengers preview artwork
 

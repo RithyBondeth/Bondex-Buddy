@@ -11,7 +11,7 @@ import {
   type MotionFrame,
 } from './motion';
 import type { Mood } from '../engine/spirit';
-import type { CompanionId } from '../engine/companions';
+import { isCompanion, type CompanionId } from '../engine/companions';
 import { companionArt } from './companion-art';
 import {
   drawHero,
@@ -36,7 +36,11 @@ import {
   createPetRenderer,
   PET_RESOLUTION,
 } from '../../website/src/lib/pet-renderer';
-import { petPose, type PetPose } from '../../website/src/lib/pet-animation';
+import {
+  petPose,
+  type DeskSpiritId,
+  type PetPose,
+} from '../../website/src/lib/pet-animation';
 import { drawParticles } from './particles';
 import { lifeAt, type LifeFrame } from './life';
 import {
@@ -66,12 +70,18 @@ const heroRoaming: Record<PlayAction, HeroAction> = {
   peek: 'idle',
 };
 
-type GardenFrame = {
-  id: 'moon' | 'moss';
+type SpriteSpirit = Exclude<DeskSpiritId, 'ember'>;
+type SpiritFrame = {
+  id: SpriteSpirit;
   paint: NonNullable<ReturnType<typeof createPetRenderer>>;
   pose: PetPose;
 };
 type HeroFrame = { id: CompanionId; image: HTMLImageElement; pose: HeroPose };
+const spiritAnchors = {
+  moon: { feet: 34, hat: -29, scarf: -12 },
+  moss: { feet: 35, hat: -25, scarf: -12 },
+  'blue-jelly': { feet: 38, hat: -34, scarf: -17 },
+} satisfies Record<SpriteSpirit, { feet: number; hat: number; scarf: number }>;
 
 /** Crop transparent padding at render time; source artwork stays untouched. */
 function opaqueBounds(
@@ -164,25 +174,25 @@ export async function createHabitatRenderer(
 
   const heroImages = new Map<CompanionId, HTMLImageElement>();
   const heroRigs = new Map<CompanionId, ReturnType<typeof createHeroRig>>();
-  const gardenPets = new Map<'moon' | 'moss', GardenFrame['paint']>();
-  const gardenSprite = document.createElement('canvas');
-  gardenSprite.width = gardenSprite.height = PET_RESOLUTION;
-  const gardenPen = gardenSprite.getContext('2d')!;
+  const spiritPets = new Map<SpriteSpirit, SpiritFrame['paint']>();
+  const spiritSprite = document.createElement('canvas');
+  spiritSprite.width = spiritSprite.height = PET_RESOLUTION;
+  const spiritPen = spiritSprite.getContext('2d')!;
   const [playFrames] = await Promise.all([
     loadPlayFrames(),
     Promise.all(
       Object.entries(companionArt).map(async ([id, url]) => {
-        if (id === 'ember') return;
+        if (!isCompanion(id) || id === 'ember') return;
         const image = new Image();
         image.src = url;
         await image.decode();
-        if (id === 'moon' || id === 'moss') {
-          const paint = createPetRenderer(image, id, 'idle');
-          if (!paint) throw new Error('Canvas is unavailable.');
-          gardenPets.set(id, paint);
-        } else if (isHero(id)) {
+        if (isHero(id)) {
           heroImages.set(id, image);
           heroRigs.set(id, createHeroRig(id, image));
+        } else {
+          const paint = createPetRenderer(image, id, 'idle');
+          if (!paint) throw new Error('Canvas is unavailable.');
+          spiritPets.set(id, paint);
         }
       }),
     ),
@@ -282,15 +292,15 @@ export async function createHabitatRenderer(
     life: LifeFrame,
     play: ReturnType<typeof playPose>,
     hero?: HeroFrame,
-    garden?: GardenFrame,
+    spirit?: SpiritFrame,
     acting?: AbilityPose,
     cell?: number,
   ) => {
     const { pose, x: sway, lift, breath } = motion;
     const baseKey = hero
       ? `${hero.id}:${mood}:${decor}:${outfit}:${JSON.stringify(hero.pose)}:${play.facing}:${play.free}`
-      : garden
-        ? `${garden.id}:${mood}:${JSON.stringify(garden.pose)}:${decor}:${outfit}:${play.facing}:${play.free}`
+      : spirit
+        ? `${spirit.id}:${mood}:${JSON.stringify(spirit.pose)}:${decor}:${outfit}:${play.facing}:${play.free}`
         : `${mood}:${pose}:${sway}:${lift}:${breath}:${decor}:${outfit}:${life.blink}:${life.ear}:${life.tail}:${life.look}:${play.sheet}:${play.frame}:${play.facing}:${play.free}`;
     const gaitKey = play.free
       ? ':' +
@@ -321,7 +331,8 @@ export async function createHabitatRenderer(
         shadowWidth - Math.min(acting?.lift ?? hero?.pose.lift ?? 0, 10) * 0.6,
       ),
     );
-    context.fillStyle = hero ? '#42313b' : '#4d3025';
+    context.fillStyle =
+      spirit?.id === 'blue-jelly' ? '#18344d' : hero ? '#42313b' : '#4d3025';
     if (play.grip < 0.5)
       context.fillRect(
         Math.round((canvas.width - shadow) / 2),
@@ -389,22 +400,22 @@ export async function createHabitatRenderer(
         context.fillStyle = '#aa866b';
         context.fillRect(center, deskY, 1, 2);
       }
-    } else if (garden) {
-      garden.paint(gardenPen, garden.pose);
+    } else if (spirit) {
+      spirit.paint(spiritPen, spirit.pose);
       context.translate(canvas.width / 2, baseline);
       context.scale(play.facing, 1);
-      const feet = garden.id === 'moon' ? 34 : 35;
-      context.drawImage(gardenSprite, -18, -feet, 36, 36);
-      const dy = (-garden.pose.lift * 36) / PET_RESOLUTION;
+      const anchors = spiritAnchors[spirit.id];
+      context.drawImage(spiritSprite, -18, -anchors.feet, 36, 36);
+      const dy = (-spirit.pose.lift * 36) / PET_RESOLUTION;
       if (mood !== 'Sleeping' && outfit === 'beanie') {
-        const hat = (garden.id === 'moon' ? -29 : -25) + dy;
+        const hat = anchors.hat + dy;
         context.fillStyle = '#708b9a';
         context.fillRect(-7, hat, 13, 3);
         context.fillRect(-5, hat - 2, 9, 2);
       } else if (mood !== 'Sleeping' && outfit === 'scarf') {
         context.fillStyle = '#c67557';
-        context.fillRect(-6, -12 + dy, 12, 2);
-        context.fillRect(-4, -11 + dy, 3, 4);
+        context.fillRect(-6, anchors.scarf + dy, 12, 2);
+        context.fillRect(-4, anchors.scarf + 1 + dy, 3, 4);
       }
     } else {
       const original = sprites.get(mood)!;
@@ -568,10 +579,9 @@ export async function createHabitatRenderer(
       const cell = t === null ? undefined : Math.floor(t * 40);
       const acting =
         cell === undefined ? undefined : abilityPose(id, cell / 40);
-      const gardenPaint =
-        id === 'moon' || id === 'moss' ? gardenPets.get(id) : undefined;
-      let garden: GardenFrame | undefined;
-      if (gardenPaint && (id === 'moon' || id === 'moss')) {
+      let spirit: SpiritFrame | undefined;
+      if (id !== 'ember' && !isHero(id)) {
+        const paint = spiritPets.get(id)!;
         const petMood =
           displayMood === 'Sleeping'
             ? 'sleeping'
@@ -596,6 +606,8 @@ export async function createHabitatRenderer(
             // A rabbit gathers its hind legs, springs, then settles onto both feet.
             pose.lift = Math.max(0, play.stride) * (running ? 3 : 2);
             pose.inhale = Math.min(0, play.stride);
+          } else if (id === 'blue-jelly') {
+            pose.lift += Math.abs(play.stride) * (running ? 1.5 : 0.75);
           } else {
             pose.lift = Math.abs(play.stride) * (running ? 1 : 0.5);
             pose.inhale = Math.round(play.stride / 3);
@@ -606,7 +618,7 @@ export async function createHabitatRenderer(
           pose.lean = play.stride;
           pose.inhale = Math.round(play.stride / 2);
         } else if (excursion?.action === 'hide') pose.inhale = -4;
-        garden = { id, paint: gardenPaint, pose };
+        spirit = { id, paint, pose };
       }
       const hero =
         isHero(id) && image
@@ -639,7 +651,7 @@ export async function createHabitatRenderer(
         life,
         play,
         hero,
-        garden,
+        spirit,
         acting,
         cell,
       );

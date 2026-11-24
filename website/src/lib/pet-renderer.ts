@@ -33,6 +33,13 @@ const faces: Partial<Record<PetKind, { eyes: Eye[]; ink: string }>> = {
       { x: 73, y: 65, width: 7, height: 7, center: 76 },
     ],
   },
+  'blue-jelly': {
+    ink: '#153e68',
+    eyes: [
+      { x: 40, y: 56, width: 8, height: 8, center: 44 },
+      { x: 80, y: 56, width: 8, height: 8, center: 84 },
+    ],
+  },
 };
 
 /** Render-time eye layers leave the preserved PNG artwork untouched. */
@@ -99,7 +106,17 @@ export function createPetRenderer(
         const x = eye.center + pose.look;
         const y = eye.y + 1;
         pen.fillStyle = face.ink;
-        if (pose.happy) {
+        if (kind === 'blue-jelly') {
+          const height = pose.happy
+            ? 3
+            : Math.max(2, Math.round(eye.height * pose.eyes));
+          pen.fillRect(
+            x - eye.width / 2,
+            eye.y + eye.height - height,
+            eye.width,
+            height,
+          );
+        } else if (pose.happy) {
           pen.fillRect(x - 2, y + 2, 1, 2);
           pen.fillRect(x - 1, y + 1, 3, 1);
           pen.fillRect(x + 2, y + 2, 1, 2);

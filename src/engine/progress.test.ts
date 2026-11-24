@@ -60,6 +60,15 @@ it('defaults to Ember for older saves and unrecognized companions', () => {
       .companion,
   ).toBe('ember');
 });
+it('saves Blue Jelly as a desktop companion without resetting progress', () => {
+  const progress = {
+    ...freshProgress(),
+    companion: 'blue-jelly',
+    completedFocusSessions: 3,
+    decor: 'lantern',
+  };
+  expect(decodeProgress(JSON.stringify(progress))).toEqual(progress);
+});
 it('loads old saves without tasks and preserves saved tasks and earned sessions', () => {
   expect(
     decodeProgress(

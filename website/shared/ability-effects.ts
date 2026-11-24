@@ -791,10 +791,25 @@ const trickShot: Effects = (c, t, body, front, bodyTime) => {
   }
 };
 
+const bubbles: Effects = (c, t, body, front) => {
+  for (let i = 0; i < 8; i++) {
+    if ((i % 2 === 0) !== front) continue;
+    const age = phase(t, i * 0.07, 0.65 + i * 0.045);
+    if (age === 0 || age === 1) continue;
+    const x =
+      body.x * (1 - age) + Math.sin(i * 2.4 + age * 3.5) * (8 + 17 * age);
+    const y = -12 - body.lift * (1 - age) - age * (23 + (i % 3) * 5);
+    const radius = (2 + (i % 3) * 0.9) * wave(age);
+    ring(c, x, y, radius, radius, '#69def5', 0.85);
+    dot(c, x - radius * 0.4, y - radius * 0.55, '#d2f7ff');
+  }
+};
+
 const effects: Record<CompanionId, Effects> = {
   ember: foxfire,
   moon: constellation,
   moss: bloom,
+  'blue-jelly': bubbles,
   'spider-man': webs,
   'iron-man': repulsor,
   thor: thunder,
